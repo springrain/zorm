@@ -14,7 +14,7 @@ golang开发脚手架
 具体可以参照 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
 0. 初始化zorm
-    ```
+  ```  
 dataSourceConfig := zorm.DataSourceConfig{
 		Host:     "127.0.0.1",
 		Port:     3306,
@@ -24,7 +24,7 @@ dataSourceConfig := zorm.DataSourceConfig{
 		DBType:   "mysql",
 	}
 	zorm.NewBaseDao(&dataSourceConfig)
-    ```
+  ```  
 1.  增
     ```
     var user permstruct.UserStruct
