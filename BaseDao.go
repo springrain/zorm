@@ -3,7 +3,7 @@ package zorm
 import (
 	"errors"
 	"fmt"
-	"readygo/logger"
+	"gitee.com/chunanyong/logger"
 	"reflect"
 	"strconv"
 	"strings"

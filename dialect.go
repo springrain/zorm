@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"readygo/zorm/typeconvert"
+	"gitee.com/chunanyong/zorm/typeconvert"
 )
 
 /**

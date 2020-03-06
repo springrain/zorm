@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"readygo/logger"
+	"gitee.com/chunanyong/logger"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
