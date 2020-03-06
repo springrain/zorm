@@ -1,4 +1,4 @@
-module zorm
+module gitee.com/chunanyong/zorm
 
 go 1.14
 require (
