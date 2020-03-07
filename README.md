@@ -55,17 +55,18 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 
   ```  
 2.  初始化zorm
-    ```
-dataSourceConfig := zorm.DataSourceConfig{
-		Host:     "127.0.0.1",
-		Port:     3306,
-		DBName:   "readygo",
-		UserName: "root",
-		PassWord: "root",
-		DBType:   "mysql",
-	}
-	zorm.NewBaseDao(&dataSourceConfig)
-  ```  
+
+    ```  
+    dataSourceConfig := zorm.DataSourceConfig{
+	Host:     "127.0.0.1",
+	Port:     3306,
+	DBName:   "readygo",
+	UserName: "root",
+	PassWord: "root",
+	DBType:   "mysql",
+     }
+     zorm.NewBaseDao(&dataSourceConfig)
+    ```  
 3.  增
     ```
     var user permstruct.UserStruct
