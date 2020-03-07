@@ -13,6 +13,18 @@ golang开发脚手架
 #### 例子
 具体可以参照 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
+0. 初始化zorm
+  ```  
+dataSourceConfig := zorm.DataSourceConfig{
+		Host:     "127.0.0.1",
+		Port:     3306,
+		DBName:   "readygo",
+		UserName: "root",
+		PassWord: "root",
+		DBType:   "mysql",
+	}
+	zorm.NewBaseDao(&dataSourceConfig)
+  ```  
 1.  增
     ```
     var user permstruct.UserStruct
@@ -53,7 +65,27 @@ golang开发脚手架
 
 	})
     ```
-6.  [测试](https://www.jianshu.com/p/1adc69468b6f)
+6.  查询示例
+    ```  
+    //FindUserOrgByUserId 根据userId查找部门UserOrg中间表对象
+    func FindUserOrgByUserId(dbConnection *zorm.DBConnection, userId string, page *zorm.Page) ([]permstruct.UserOrgStruct, error) {
+	if len(userId) < 1 {
+		return nil, errors.New("userId不能为空")
+	}
+	finder := zorm.NewFinder().Append("SELECT re.* FROM  ").Append(permstruct.UserOrgStructTableName).Append(" re ")
+	finder.Append("   WHERE re.userId=?    order by re.managerType desc   ", userId)
+
+	userOrgs := make([]permstruct.UserOrgStruct, 0)
+	errQueryList := zorm.QueryStructList(dbConnection, finder, &userOrgs, page)
+	if errQueryList != nil {
+		return nil, errQueryList
+	}
+
+	return userOrgs, nil
+    }
+    ```  
+
+7.  [测试](https://www.jianshu.com/p/1adc69468b6f)
     ```
     //函数测试
     go test -run TestAdd2
