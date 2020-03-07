@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"zorm/typeconvert"
+	"gitee.com/chunanyong/zorm/typeconvert"
 
 	uuid "github.com/satori/go.uuid"
 )
