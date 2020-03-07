@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
