@@ -1,7 +1,8 @@
 # zorm
 
 #### 介绍
-golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目
+golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目  
+[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)
 
 ``` 
 go get gitee.com/chunanyong/zorm 

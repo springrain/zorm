@@ -596,7 +596,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 }
 
 //UpdateFinder 更新Finder语句
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateFinder(ctx context.Context, finder *Finder) error {
 	if finder == nil {
 		return errors.New("finder不能为空")
@@ -633,7 +633,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -653,7 +653,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 
 //SaveStruct 保存Struct对象,必须是*IEntityStruct类型
 //bug(chunanuyong) 如果是自增主键,需要返回.需要sql驱动支持
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	if entity == nil {
@@ -693,7 +693,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -735,7 +735,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 }
 
 //UpdateStruct 更新struct所有属性,必须是*IEntityStruct类型
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
 	err := updateStructFunc(ctx, entity, false)
 	if err != nil {
@@ -746,7 +746,7 @@ func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
 }
 
 //UpdateStructNotNil 更新struct不为nil的属性,必须是*IEntityStruct类型
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func (baseDao *BaseDao) UpdateStructNotNil(ctx context.Context, entity IEntityStruct) error {
 	err := updateStructFunc(ctx, entity, true)
 	if err != nil {
@@ -757,7 +757,7 @@ func (baseDao *BaseDao) UpdateStructNotNil(ctx context.Context, entity IEntitySt
 }
 
 //DeleteStruct 根据主键删除一个对象.必须是*IEntityStruct类型
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	pkName, pkNameErr := entityPKFieldName(entity)
@@ -798,7 +798,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -818,7 +818,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 }
 
 //SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
 	checkerr := checkEntityKind(entity)
@@ -852,7 +852,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -872,7 +872,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 }
 
 //UpdateEntityMap 更新*IEntityMap对象.使用Map修改数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
 	checkerr := checkEntityKind(entity)
@@ -904,7 +904,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -1073,7 +1073,7 @@ func wrapMap(columns []string, values []columnValue) (map[string]columnValue, er
 */
 
 //更新对象
-//dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnull bool) error {
 
 	if entity == nil {
@@ -1107,7 +1107,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnu
 		return err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
@@ -1203,7 +1203,7 @@ func getDBConnectionFromContext(ctx context.Context) (*DBConnection, error) {
 }
 
 //变量名建议errFoo这样的驼峰
-var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用orm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
+var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用zorm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 //context上下文必须传入,如果外部有变量声明,禁止自行获取构建
