@@ -432,7 +432,9 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		return typeconvert.Float32(v)
 	} else if databaseTypeName == "DOUBLE" { //如果是DOUBLE
 		return typeconvert.Float64(v)
-	} else if databaseTypeName == "DATETIME" { //如果是DATETIME
+	} else if databaseTypeName == "DECIMAL" { //如果是DECIMAL
+		return typeconvert.Decimal(v)
+	}else if databaseTypeName == "DATETIME" { //如果是DATETIME
 		return typeconvert.Time(v, "2006-01-02 15:04:05", time.Local)
 	} else if databaseTypeName == "TIMESTAMP" { //如果是TIMESTAMP
 		return typeconvert.Time(v, "2006-01-02 15:04:05.000", time.Local)

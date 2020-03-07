@@ -784,3 +784,14 @@ func Float64(i interface{}) float64 {
 	v, _ := strconv.ParseFloat(String(i), 64)
 	return v
 }
+
+func Decimal(i interface{}) decimal.Decimal {
+	if i == nil {
+		return decimal.Zero
+	}
+	if v, ok := i.(decimal.Decimal); ok {
+		return v
+	}
+	v, _ := decimal.NewFromString(String(i))
+	return v
+}
