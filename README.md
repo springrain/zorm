@@ -6,7 +6,6 @@ golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目
 ``` 
 go get gitee.com/chunanyong/zorm 
 ```  
-#### 软件架构
 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
 [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codeGenerator)  
 代码简单,总计2000行左右,注释详细,方便定制修改.  
