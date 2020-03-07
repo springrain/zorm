@@ -12,7 +12,10 @@ import (
 	"gitee.com/chunanyong/logger"
 )
 
-const contextDBConnectionValueKey = "contextDBConnectionValueKey"
+type favContextKey string
+
+//context WithValue的key,不能在内置的基础类型,例如字符串
+const contextDBConnectionValueKey = favContextKey("contextDBConnectionValueKey")
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
 
