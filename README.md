@@ -11,7 +11,7 @@ go get gitee.com/chunanyong/zorm
 代码简单,总计2000行左右,注释详细,方便定制修改.  
 支持事务传播,这是zorm诞生的主要原因  
 
-具体可以参照 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
+生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
 #### 示例
 
