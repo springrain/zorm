@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/chunanyong/zorm/typeconvert"
+	"zorm/typeconvert"
+
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -398,6 +399,7 @@ func findFromIndex(strsql string) []int {
 func GenerateStringID() string {
 	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
 	pk := uuid.NewV4().String()
+
 	return pk
 }
 
