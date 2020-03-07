@@ -13,9 +13,9 @@ go get gitee.com/chunanyong/zorm
 
 生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
-#### 示例
+#### 示例  
 
-1.  生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
+ 1.  生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
   ```  
 
 //UserOrgStructTableName 表名常量,方便直接调用
