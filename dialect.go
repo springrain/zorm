@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gitee.com/chunanyong/zorm/typeconvert"
+	uuid "github.com/satori/go.uuid"
 )
 
 /**
@@ -395,7 +396,8 @@ func findFromIndex(strsql string) []int {
 
 //GenerateStringID 生成主键字符串
 func GenerateStringID() string {
-	pk := strconv.FormatInt(time.Now().UnixNano(), 10)
+	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
+	pk := uuid.NewV4().String()
 	return pk
 }
 
@@ -434,7 +436,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		return typeconvert.Float64(v)
 	} else if databaseTypeName == "DECIMAL" { //如果是DECIMAL
 		return typeconvert.Decimal(v)
-	}else if databaseTypeName == "DATETIME" { //如果是DATETIME
+	} else if databaseTypeName == "DATETIME" { //如果是DATETIME
 		return typeconvert.Time(v, "2006-01-02 15:04:05", time.Local)
 	} else if databaseTypeName == "TIMESTAMP" { //如果是TIMESTAMP
 		return typeconvert.Time(v, "2006-01-02 15:04:05.000", time.Local)
