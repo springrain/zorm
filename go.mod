@@ -1,9 +1,9 @@
-module zorm
+module gitee.com/chunanyong/zorm
 
 go 1.14
 
 require (
-	gitee.com/chunanyong/logger v1.1.3
+	gitee.com/chunanyong/logger v1.1.4
 
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/satori/go.uuid v1.2.0
