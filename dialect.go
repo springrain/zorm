@@ -420,6 +420,10 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	//如果是字符串
 	if databaseTypeName == "VARCHAR" || databaseTypeName == "NVARCHAR" || databaseTypeName == "TEXT" {
 		return typeconvert.String(v)
+	} else if databaseTypeName == "TINYINT" { //如果是TINYINT
+		return typeconvert.Int8(v)
+	} else if databaseTypeName == "SMALLINT" { //如果是SMALLINT
+		return typeconvert.Int16(v)
 	} else if databaseTypeName == "INT" { //如果是INT
 		return typeconvert.Int(v)
 	} else if databaseTypeName == "BIGINT" { //如果是BIGINT
