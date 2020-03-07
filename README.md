@@ -15,7 +15,7 @@ go get gitee.com/chunanyong/zorm
 
 #### 示例
 
-1. 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
+1.  生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
   ```  
 
 //UserOrgStructTableName 表名常量,方便直接调用
