@@ -1,14 +1,18 @@
 package zorm
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"gitee.com/chunanyong/logger"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitee.com/chunanyong/logger"
 )
+
+const contextDBConnectionValueKey = "contextDBConnectionValueKey"
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
 
@@ -88,7 +92,7 @@ func (baseDao *BaseDao) GetDBConnection() (*DBConnection, error) {
 /*
 Transaction 的示例代码
 //匿名函数return的error如果不为nil,事务就会回滚
-orm.Transaction(dbConnection *zorm.DBConnection,func(dbConnection *zorm.DBConnection) (interface{}, error) {
+zorm.Transaction(ctx context.Context,func(ctx context.Context) (interface{}, error) {
 
 	//业务代码
 
@@ -100,20 +104,21 @@ orm.Transaction(dbConnection *zorm.DBConnection,func(dbConnection *zorm.DBConnec
 //事务方法,隔离dbConnection相关的API.必须通过这个方法进行事务处理,统一事务方式
 //如果入参dbConnection为nil,使用defaultDao开启事务并最后提交.如果入参dbConnection没有事务,调用dbConnection.begin()开启事务并最后提交.如果入参dbConnection有事务,只使用不提交,有开启方提交事务.但是如果遇到错误或者异常,虽然不是事务的开启方,也会回滚事务,让事务尽早回滚.
 //dbConnection的传入,还可以处理多个数据库的情况.
-//不要去掉匿名函数的dbConnection参数,因为如果Transaction的dbConnection参数是nil,新建的dbConnection对象就会丢失,业务代码用的还是传递的nil,虽然是指针
-//bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为dbConnection2,这样业务代码实际使用的是Transaction的dbConnection参数,如果为nil,会抛异常,如果不为nil,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
+//不要去掉匿名函数的context参数,因为如果Transaction的context中没有dbConnection,会新建一个context并放入dbConnection,此时的context指针已经变化,不能直接使用Transaction的context参数
+//bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
 //return的error如果不为nil,事务就会回滚
-func Transaction(dbConnection *DBConnection, doTransaction func(dbConnection *DBConnection) (interface{}, error)) (interface{}, error) {
+func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
 	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	txOpen := false
 	//如果dbConnection不存在,则会用默认的datasource开启事务
+	var checkerr error
+	var dbConnection *DBConnection
+	ctx, dbConnection, checkerr = checkDBConnection(ctx, false)
+	if checkerr != nil {
+		return nil, checkerr
+	}
 	if dbConnection == nil || dbConnection.tx == nil {
-		var checkerr error
-		dbConnection, checkerr = checkDBConnection(dbConnection, false)
-		if checkerr != nil {
-			return nil, checkerr
-		}
-		beginerr := dbConnection.begin()
+		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("事务开启失败:%w ", beginerr)
 			logger.Error(beginerr)
@@ -147,7 +152,7 @@ func Transaction(dbConnection *DBConnection, doTransaction func(dbConnection *DB
 		}
 	}()
 
-	info, err := doTransaction(dbConnection)
+	info, err := doTransaction(ctx)
 	if err != nil {
 		err = fmt.Errorf("事务执行失败:%w", err)
 		logger.Error(err)
@@ -173,8 +178,8 @@ func Transaction(dbConnection *DBConnection, doTransaction func(dbConnection *DB
 
 //QueryStruct 不要偷懒调用QueryStructList返回第一条,1.需要构建一个selice,2.调用方传递的对象其他值会被抛弃或者覆盖.
 //根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func QueryStruct(dbConnection *DBConnection, finder *Finder, entity interface{}) error {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -182,7 +187,11 @@ func QueryStruct(dbConnection *DBConnection, finder *Finder, entity interface{})
 		logger.Error(checkerr)
 		return checkerr
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -205,13 +214,13 @@ func QueryStruct(dbConnection *DBConnection, finder *Finder, entity interface{})
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.query(sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
 	defer rows.Close()
 
 	if e != nil {
@@ -296,8 +305,8 @@ func QueryStruct(dbConnection *DBConnection, finder *Finder, entity interface{})
 
 //QueryStructList 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 //根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
 		return errors.New("数组必须是*[]struct类型或者基础类型数组的指针")
@@ -322,7 +331,11 @@ func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr in
 	if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
 		return errors.New("数组必须是*[]struct类型或者基础类型数组的指针")
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -344,13 +357,13 @@ func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr in
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.query(sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows异常:%w", e)
@@ -385,7 +398,7 @@ func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr in
 
 		//查询总条数
 		if page != nil && finder.SelectTotalCount {
-			count, counterr := selectCount(dbConnection, finder)
+			count, counterr := selectCount(ctx, finder)
 			if counterr != nil {
 				counterr = fmt.Errorf("查询总条数错误:%w", counterr)
 				logger.Error(counterr)
@@ -439,7 +452,7 @@ func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr in
 
 	//查询总条数
 	if page != nil && finder.SelectTotalCount {
-		count, counterr := selectCount(dbConnection, finder)
+		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("查询总条数错误:%w", counterr)
 			logger.Error(counterr)
@@ -454,14 +467,13 @@ func QueryStructList(dbConnection *DBConnection, finder *Finder, rowsSlicePtr in
 
 //QueryMap 根据Finder查询,封装Map
 //bug(springrain)需要测试一下 in 数组, like ,还有查询一个基础类型(例如 string)的功能
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func QueryMap(dbConnection *DBConnection, finder *Finder) (map[string]interface{}, error) {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
 		return nil, errors.New("QueryMap的finder参数不能为nil")
 	}
-
-	resultMapList, listerr := QueryMapList(dbConnection, finder, nil)
+	resultMapList, listerr := QueryMapList(ctx, finder, nil)
 	if listerr != nil {
 		listerr = fmt.Errorf("QueryMapList查询错误:%w", listerr)
 		logger.Error(listerr)
@@ -478,11 +490,16 @@ func QueryMap(dbConnection *DBConnection, finder *Finder) (map[string]interface{
 
 //QueryMapList 根据Finder查询,封装Map数组
 //根据数据库字段的类型,完成从[]byte到golang类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func QueryMapList(dbConnection *DBConnection, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
 		return nil, errors.New("QueryMap的finder参数不能为nil")
+	}
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return nil, errFromContxt
 	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
@@ -505,13 +522,13 @@ func QueryMapList(dbConnection *DBConnection, finder *Finder, page *Page) ([]map
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.query(sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows错误:%w", e)
@@ -566,7 +583,7 @@ func QueryMapList(dbConnection *DBConnection, finder *Finder, page *Page) ([]map
 	//bug(springrain) 还缺少查询总条数的逻辑
 	//查询总条数
 	if page != nil && finder.SelectTotalCount {
-		count, counterr := selectCount(dbConnection, finder)
+		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("查询总条数错误:%w", counterr)
 			logger.Error(counterr)
@@ -580,7 +597,7 @@ func QueryMapList(dbConnection *DBConnection, finder *Finder, page *Page) ([]map
 
 //UpdateFinder 更新Finder语句
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func UpdateFinder(dbConnection *DBConnection, finder *Finder) error {
+func UpdateFinder(ctx context.Context, finder *Finder) error {
 	if finder == nil {
 		return errors.New("finder不能为空")
 	}
@@ -589,6 +606,12 @@ func UpdateFinder(dbConnection *DBConnection, finder *Finder) error {
 		err = fmt.Errorf("finder.GetSQL()错误:%w", err)
 		logger.Error(err)
 		return err
+	}
+
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
 	}
 
 	//自己构建的dbConnection
@@ -612,13 +635,13 @@ func UpdateFinder(dbConnection *DBConnection, finder *Finder) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.exec(sqlstr, finder.values...)
+	_, errexec := dbConnection.execContext(ctx, sqlstr, finder.values...)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("执行更新错误:%w", errexec)
@@ -631,7 +654,7 @@ func UpdateFinder(dbConnection *DBConnection, finder *Finder) error {
 //SaveStruct 保存Struct对象,必须是*IEntityStruct类型
 //bug(chunanuyong) 如果是自增主键,需要返回.需要sql驱动支持
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func SaveStruct(dbConnection *DBConnection, entity IEntityStruct) error {
+func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	if entity == nil {
 		return errors.New("对象不能为空")
@@ -645,7 +668,11 @@ func SaveStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 	if len(columns) < 1 {
 		return errors.New("没有tag信息,请检查struct中 column 的tag")
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -668,13 +695,13 @@ func SaveStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	res, errexec := dbConnection.exec(sqlstr, values...)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveStruct执行保存错误:%w", errexec)
@@ -709,8 +736,8 @@ func SaveStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 
 //UpdateStruct 更新struct所有属性,必须是*IEntityStruct类型
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func UpdateStruct(dbConnection *DBConnection, entity IEntityStruct) error {
-	err := updateStructFunc(dbConnection, entity, false)
+func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
+	err := updateStructFunc(ctx, entity, false)
 	if err != nil {
 		err = fmt.Errorf("UpdateStruct-->updateStructFunc更新错误:%w", err)
 		return err
@@ -720,8 +747,8 @@ func UpdateStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 
 //UpdateStructNotNil 更新struct不为nil的属性,必须是*IEntityStruct类型
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func (baseDao *BaseDao) UpdateStructNotNil(dbConnection *DBConnection, entity IEntityStruct) error {
-	err := updateStructFunc(dbConnection, entity, true)
+func (baseDao *BaseDao) UpdateStructNotNil(ctx context.Context, entity IEntityStruct) error {
+	err := updateStructFunc(ctx, entity, true)
 	if err != nil {
 		err = fmt.Errorf("UpdateStructNotNil-->updateStructFunc更新错误:%w", err)
 		return err
@@ -731,7 +758,7 @@ func (baseDao *BaseDao) UpdateStructNotNil(dbConnection *DBConnection, entity IE
 
 //DeleteStruct 根据主键删除一个对象.必须是*IEntityStruct类型
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func DeleteStruct(dbConnection *DBConnection, entity IEntityStruct) error {
+func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	pkName, pkNameErr := entityPKFieldName(entity)
 	if pkNameErr != nil {
@@ -746,7 +773,11 @@ func DeleteStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 		logger.Error(e)
 		return e
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -769,12 +800,12 @@ func DeleteStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
-	_, errexec := dbConnection.exec(sqlstr, value)
+	_, errexec := dbConnection.execContext(ctx, sqlstr, value)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("DeleteStruct执行删除错误:%w", errexec)
@@ -788,11 +819,17 @@ func DeleteStruct(dbConnection *DBConnection, entity IEntityStruct) error {
 
 //SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func SaveEntityMap(dbConnection *DBConnection, entity IEntityMap) error {
+func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
 	checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return checkerr
+	}
+
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
 	}
 
 	//自己构建的dbConnection
@@ -817,13 +854,13 @@ func SaveEntityMap(dbConnection *DBConnection, entity IEntityMap) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.exec(sqlstr, values...)
+	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveMap执行保存错误:%w", errexec)
 		logger.Error(errexec)
@@ -836,13 +873,17 @@ func SaveEntityMap(dbConnection *DBConnection, entity IEntityMap) error {
 
 //UpdateEntityMap 更新*IEntityMap对象.使用Map修改数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func UpdateEntityMap(dbConnection *DBConnection, entity IEntityMap) error {
+func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
 	checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return checkerr
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -865,13 +906,13 @@ func UpdateEntityMap(dbConnection *DBConnection, entity IEntityMap) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.exec(sqlstr, values...)
+	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateMap执行更新错误:%w", errexec)
@@ -1033,12 +1074,16 @@ func wrapMap(columns []string, values []columnValue) (map[string]columnValue, er
 
 //更新对象
 //dbConnection不能为nil,参照使用orm.Transaction方法传入dbConnection.请不要自己构建DBConnection
-func updateStructFunc(dbConnection *DBConnection, entity IEntityStruct, onlyupdatenotnull bool) error {
+func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnull bool) error {
 
 	if entity == nil {
 		return errors.New("对象不能为空")
 	}
-
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return errFromContxt
+	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
@@ -1064,13 +1109,13 @@ func updateStructFunc(dbConnection *DBConnection, entity IEntityStruct, onlyupda
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	dbConnection, dbConnectionerr = checkDBConnection(dbConnection, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.exec(sqlstr, values...)
+	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
 		return errexec
@@ -1082,8 +1127,8 @@ func updateStructFunc(dbConnection *DBConnection, entity IEntityStruct, onlyupda
 }
 
 //根据finder查询总条数
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func selectCount(dbConnection *DBConnection, finder *Finder) (int, error) {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func selectCount(ctx context.Context, finder *Finder) (int, error) {
 
 	if finder == nil {
 		return -1, errors.New("参数为nil")
@@ -1091,7 +1136,7 @@ func selectCount(dbConnection *DBConnection, finder *Finder) (int, error) {
 	//自定义的查询总条数Finder,主要是为了在group by等复杂情况下,为了性能,手动编写总条数语句
 	if finder.CountFinder != nil {
 		count := -1
-		err := QueryStruct(dbConnection, finder.CountFinder, &count)
+		err := QueryStruct(ctx, finder.CountFinder, &count)
 		if err != nil {
 			return -1, err
 		}
@@ -1131,7 +1176,7 @@ func selectCount(dbConnection *DBConnection, finder *Finder) (int, error) {
 	countFinder.values = finder.values
 
 	count := -1
-	cerr := QueryStruct(dbConnection, countFinder, &count)
+	cerr := QueryStruct(ctx, countFinder, &count)
 	if cerr != nil {
 		return -1, cerr
 	}
@@ -1139,34 +1184,60 @@ func selectCount(dbConnection *DBConnection, finder *Finder) (int, error) {
 
 }
 
+//getDBConnectionFromContext 从Conext中获取数据库连接
+func getDBConnectionFromContext(ctx context.Context) (*DBConnection, error) {
+	if ctx == nil {
+		return nil, errors.New("context不能为空")
+	}
+	//获取数据库连接
+	value := ctx.Value(contextDBConnectionValueKey)
+	if value == nil {
+		return nil, nil
+	}
+	dbConnection, isdb := value.(*DBConnection)
+	if !isdb { //不是数据库连接
+		return nil, errors.New("context传递了错误的*DBConnection类型值")
+	}
+	return dbConnection, nil
+
+}
+
 //变量名建议errFoo这样的驼峰
 var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用orm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
-//如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
-func checkDBConnection(dbConnection *DBConnection, hastx bool) (*DBConnection, error) {
+//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBConnection, error) {
+
+	dbConnection, errFromContext := getDBConnectionFromContext(ctx)
+	if errFromContext != nil {
+		return ctx, nil, errFromContext
+	}
 
 	if dbConnection == nil { //dbConnection为空
 		if !hastx { //如果要求没有事务,实例化一个默认的dbConnection
 			var errGetDBConnection error
 			dbConnection, errGetDBConnection = getDefaultDao().GetDBConnection()
 			if errGetDBConnection != nil {
-				return nil, errGetDBConnection
+				return ctx, nil, errGetDBConnection
 			}
 		} else { //如果要求有事务,错误
-			return nil, errDBConnection
+			return ctx, nil, errDBConnection
 		}
+		//把dbConnection放入context
+		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
 
 	} else { //如果dbConnection存在
+
 		if dbConnection.db == nil { //禁止外部构建
-			return dbConnection, errDBConnection
+			return ctx, dbConnection, errDBConnection
 		}
 		tx := dbConnection.tx
 		if tx == nil && hastx { //如果要求有事务
-			return dbConnection, errDBConnection
+			return ctx, dbConnection, errDBConnection
 		}
 	}
 
-	return dbConnection, nil
+	return ctx, dbConnection, nil
 
 }

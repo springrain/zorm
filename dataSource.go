@@ -1,11 +1,13 @@
 package zorm
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"gitee.com/chunanyong/logger"
 	"time"
+
+	"gitee.com/chunanyong/logger"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -64,7 +66,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 //const beginStatus = 1
 
 //DBConnection 数据库dbConnection会话,可以原生查询或者事务
-//方法都应包含 dbConnection DBConnection这样的入参,如果有dbConnection就传入,不考虑从哪获得的.如果在上下文中找不到dbConnection,就传入nil,会新建dbConnection,传nil要谨慎啊
+//方法都应包含 dbConnection DBConnection这样的入参,context上下文必须传入,如果外部有变量声明,禁止自行获取构建
 type DBConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
@@ -75,11 +77,11 @@ type DBConnection struct {
 	//rollbackSign bool    // 回滚标记，控制是否回滚事务
 }
 
-// begin 开启事务
-func (dbConnection *DBConnection) begin() error {
+// beginTx 开启事务
+func (dbConnection *DBConnection) beginTx(ctx context.Context) error {
 	//s.rollbackSign = true
 	if dbConnection.tx == nil {
-		tx, err := dbConnection.db.Begin()
+		tx, err := dbConnection.db.BeginTx(ctx, nil)
 		if err != nil {
 			err = fmt.Errorf("事务开启失败:%w", err)
 			//logger.Error(err)
@@ -127,35 +129,35 @@ func (dbConnection *DBConnection) commit() error {
 
 }
 
-// exec 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) exec(query string, args ...interface{}) (sql.Result, error) {
+// execContext 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
+func (dbConnection *DBConnection) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if dbConnection.tx != nil {
-		return dbConnection.tx.Exec(query, args...)
+		return dbConnection.tx.ExecContext(ctx, query, args...)
 	}
-	return dbConnection.db.Exec(query, args...)
+	return dbConnection.db.ExecContext(ctx, query, args...)
 }
 
-// queryRow 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) queryRow(query string, args ...interface{}) *sql.Row {
+// queryRowContext 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
+func (dbConnection *DBConnection) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryRow(query, args...)
+		return dbConnection.tx.QueryRowContext(ctx, query, args...)
 	}
-	return dbConnection.db.QueryRow(query, args...)
+	return dbConnection.db.QueryRowContext(ctx, query, args...)
 }
 
-// query 查询数据，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) query(query string, args ...interface{}) (*sql.Rows, error) {
+// queryContext 查询数据，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
+func (dbConnection *DBConnection) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	if dbConnection.tx != nil {
-		return dbConnection.tx.Query(query, args...)
+		return dbConnection.tx.QueryContext(ctx, query, args...)
 	}
-	return dbConnection.db.Query(query, args...)
+	return dbConnection.db.QueryContext(ctx, query, args...)
 }
 
-// prepare 预执行，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) prepare(query string) (*sql.Stmt, error) {
+// prepareContext 预执行，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
+func (dbConnection *DBConnection) prepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	if dbConnection.tx != nil {
-		return dbConnection.tx.Prepare(query)
+		return dbConnection.tx.PrepareContext(ctx, query)
 	}
 
-	return dbConnection.db.Prepare(query)
+	return dbConnection.db.PrepareContext(ctx, query)
 }

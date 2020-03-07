@@ -69,33 +69,33 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 3.  增
     ```
     var user permstruct.UserStruct
-    err := zorm.SaveStruct(nil, &user)
+    err := zorm.SaveStruct(context.Background(), &user)
     ```
 4.  删
     ```
-    err := zorm.DeleteStruct(nil,&user)
+    err := zorm.DeleteStruct(context.Background(),&user)
     ```
   
 5.  改
     ```
-    err := zorm.UpdateStruct(nil,&user)
+    err := zorm.UpdateStruct(context.Background(),&user)
     //finder更新
-    err := zorm.UpdateFinder(nil,finder)
+    err := zorm.UpdateFinder(context.Background(),finder)
     ```
 6.  查
     ```
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
-	err := zorm.QueryStructList(nil, finder, &users, &page)
+	err := zorm.QueryStructList(context.Background(), finder, &users, &page)
     ```
 7.  事务传播
     ```
     //匿名函数return的error如果不为nil,事务就会回滚
-	_, errSaveUserStruct := zorm.Transaction(dbConnection, func(dbConnection *zorm.DBConnection) (interface{}, error) {
+	_, errSaveUserStruct := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//事务下的业务代码开始
-		errSaveUserStruct := zorm.SaveStruct(dbConnection, userStruct)
+		errSaveUserStruct := zorm.SaveStruct(ctx, userStruct)
 
 		if errSaveUserStruct != nil {
 			return nil, errSaveUserStruct
@@ -109,7 +109,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 8.  生产示例
     ```  
     //FindUserOrgByUserId 根据userId查找部门UserOrg中间表对象
-    func FindUserOrgByUserId(dbConnection *zorm.DBConnection, userId string, page *zorm.Page) ([]permstruct.UserOrgStruct, error) {
+    func FindUserOrgByUserId(ctx context.Context, userId string, page *zorm.Page) ([]permstruct.UserOrgStruct, error) {
 	if len(userId) < 1 {
 		return nil, errors.New("userId不能为空")
 	}
@@ -117,7 +117,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 	finder.Append("   WHERE re.userId=?    order by re.managerType desc   ", userId)
 
 	userOrgs := make([]permstruct.UserOrgStruct, 0)
-	errQueryList := zorm.QueryStructList(dbConnection, finder, &userOrgs, page)
+	errQueryList := zorm.QueryStructList(ctx, finder, &userOrgs, page)
 	if errQueryList != nil {
 		return nil, errQueryList
 	}
