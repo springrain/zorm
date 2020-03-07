@@ -11,10 +11,9 @@ go get gitee.com/chunanyong/zorm
 代码简单,总计2000行左右,注释详细,方便定制修改.  
 支持事务传播,这是zorm诞生的主要原因  
 
-
-
-#### 例子
 具体可以参照 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
+
+#### 示例
 
 1. 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
   ```  
@@ -107,7 +106,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 
 	})
     ```
-8.  查询示例
+8.  生产示例
     ```  
     //FindUserOrgByUserId 根据userId查找部门UserOrg中间表对象
     func FindUserOrgByUserId(dbConnection *zorm.DBConnection, userId string, page *zorm.Page) ([]permstruct.UserOrgStruct, error) {
