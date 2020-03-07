@@ -9,14 +9,15 @@ go get gitee.com/chunanyong/zorm
 #### 软件架构
 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
 [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codeGenerator)  
-使用zorm.Finder作为sql载体,所有的sql语句最终都是通过finder执行.  
-支持事务传播,这也是不使用gorm或xorm,使用zorm的主要原因  
+代码简单,总计2000行左右,注释详细,方便定制修改.  
+支持事务传播,这是zorm诞生的主要原因  
+
 
 
 #### 例子
 具体可以参照 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
-1. 编写实体类,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
+1. 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codeGenerator
   ```  
 
 //UserOrgStructTableName 表名常量,方便直接调用
