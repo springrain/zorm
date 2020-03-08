@@ -14,7 +14,7 @@ import (
 
 type favContextKey string
 
-//context WithValue的key,不能在内置的基础类型,例如字符串
+//context WithValue的key,不能是基础类型,例如字符串,包装一下
 const contextDBConnectionValueKey = favContextKey("contextDBConnectionValueKey")
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
@@ -47,7 +47,7 @@ var allowBaseTypeMap = map[reflect.Kind]bool{
 	reflect.Float64: true,
 }
 
-//BaseDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过BaseDao进行.
+//BaseDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过BaseDao进行
 type BaseDao struct {
 	config     *DataSourceConfig
 	dataSource *dataSource
@@ -81,7 +81,8 @@ func getDefaultDao() *BaseDao {
 }
 
 // GetDBConnection 获取一个dbConnection
-//如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection.如果是多库,就需要使用Dao手动调用GetDBConnection(),获得dbConnection,传给需要的方法
+//如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection
+//如果是多库,Dao手动调用GetDBConnection(),获得dbConnection,WithValue绑定到子context
 func (baseDao *BaseDao) GetDBConnection() (*DBConnection, error) {
 	if baseDao == nil || baseDao.dataSource == nil {
 		return nil, errors.New("请不要自己创建baseDao,使用NewBaseDao方法进行创建")
@@ -184,7 +185,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 //QueryStruct 不要偷懒调用QueryStructList返回第一条,1.需要构建一个selice,2.调用方传递的对象其他值会被抛弃或者覆盖.
 //根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//context必须传入,不能为空
 func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	checkerr := checkEntityKind(entity)
@@ -311,7 +312,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 //QueryStructList 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 //根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//context必须传入,不能为空
 func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
@@ -472,8 +473,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 }
 
 //QueryMap 根据Finder查询,封装Map
-//bug(springrain)需要测试一下 in 数组, like ,还有查询一个基础类型(例如 string)的功能
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//context必须传入,不能为空
 func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
@@ -496,7 +496,7 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 
 //QueryMapList 根据Finder查询,封装Map数组
 //根据数据库字段的类型,完成从[]byte到golang类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//context必须传入,不能为空
 func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
@@ -658,7 +658,6 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 }
 
 //SaveStruct 保存Struct对象,必须是*IEntityStruct类型
-//bug(chunanuyong) 如果是自增主键,需要返回.需要sql驱动支持
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
@@ -751,9 +750,9 @@ func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
 	return nil
 }
 
-//UpdateStructNotNil 更新struct不为nil的属性,必须是*IEntityStruct类型
+//UpdateStructValueNotZero 更新struct不为nil的属性,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func (baseDao *BaseDao) UpdateStructNotNil(ctx context.Context, entity IEntityStruct) error {
+func UpdateStructValueNotZero(ctx context.Context, entity IEntityStruct) error {
 	err := updateStructFunc(ctx, entity, true)
 	if err != nil {
 		err = fmt.Errorf("UpdateStructNotNil-->updateStructFunc更新错误:%w", err)
@@ -1080,7 +1079,7 @@ func wrapMap(columns []string, values []columnValue) (map[string]columnValue, er
 
 //更新对象
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnull bool) error {
+func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) error {
 
 	if entity == nil {
 		return errors.New("对象不能为空")
@@ -1108,7 +1107,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnu
 	}
 
 	//SQL语句
-	sqlstr, err := wrapUpdateStructSQL(dbType, entity, columns, values, onlyupdatenotnull)
+	sqlstr, err := wrapUpdateStructSQL(dbType, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return err
 	}
@@ -1127,13 +1126,12 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyupdatenotnu
 		return errexec
 	}
 
-	//fmt.Println(entity.GetTableName() + " update success")
 	return nil
 
 }
 
-//根据finder查询总条数
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//selectCount 根据finder查询总条数
+//context必须传入,不能为空
 func selectCount(ctx context.Context, finder *Finder) (int, error) {
 
 	if finder == nil {
@@ -1212,7 +1210,7 @@ func getDBConnectionFromContext(ctx context.Context) (*DBConnection, error) {
 var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用zorm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
-//context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//context必须传入,不能为空
 func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBConnection, error) {
 
 	dbConnection, errFromContext := getDBConnectionFromContext(ctx)

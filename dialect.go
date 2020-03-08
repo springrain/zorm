@@ -159,7 +159,8 @@ func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.S
 }
 
 //包装更新Struct语句
-func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns []reflect.StructField, values []interface{}, onlyupdatenotnull bool) (string, error) {
+//数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
+func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -170,8 +171,8 @@ func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns []reflect.
 	//主键的值
 	var pkValue interface{}
 
-	for i := 0; i < len(columns); i++ {
-		field := columns[i]
+	for i := 0; i < len(*columns); i++ {
+		field := (*columns)[i]
 
 		fieldName, e := entityPKFieldName(entity)
 		if e != nil {
@@ -179,19 +180,19 @@ func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns []reflect.
 		}
 
 		if field.Name == fieldName { //如果是主键
-			pkValue = values[i]
+			pkValue = (*values)[i]
 			//去掉这一列,最后处理主键
-			columns = append(columns[:i], columns[i+1:]...)
-			values = append(values[:i], values[i+1:]...)
+			*columns = append((*columns)[:i], (*columns)[i+1:]...)
+			*values = append((*values)[:i], (*values)[i+1:]...)
 			i = i - 1
 			continue
 		}
 
-		//只更新不为nil的字段
-		if onlyupdatenotnull && (values[i] == nil) {
+		//如果是默认值字段,删除掉,不更新
+		if onlyUpdateNotZero && (reflect.ValueOf((*values)[i]).IsZero()) {
 			//去掉这一列,不再处理
-			columns = append(columns[:i], columns[i+1:]...)
-			values = append(values[:i], values[i+1:]...)
+			*columns = append((*columns)[:i], (*columns)[i+1:]...)
+			*values = append((*values)[:i], (*values)[i+1:]...)
 			i = i - 1
 			continue
 
@@ -202,7 +203,7 @@ func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns []reflect.
 
 	}
 	//主键的值是最后一个
-	values = append(values, pkValue)
+	*values = append(*values, pkValue)
 	//去掉字符串最后的 , 号
 	sqlstr := sqlBuilder.String()
 	sqlstr = sqlstr[:len(sqlstr)-1]

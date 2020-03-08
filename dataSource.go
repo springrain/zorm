@@ -66,7 +66,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 //const beginStatus = 1
 
 //DBConnection 数据库dbConnection会话,可以原生查询或者事务
-//方法都应包含 dbConnection DBConnection这样的入参,context上下文必须传入,如果外部有变量声明,禁止自行获取构建
+//方法都应包含 dbConnection DBConnection这样的入参,context必须传入,不能为空
 type DBConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
