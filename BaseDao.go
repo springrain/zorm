@@ -750,9 +750,9 @@ func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
 	return nil
 }
 
-//UpdateStructValueNotZero 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
+//UpdateStructNotZeroValue 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateStructValueNotZero(ctx context.Context, entity IEntityStruct) error {
+func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) error {
 	err := updateStructFunc(ctx, entity, true)
 	if err != nil {
 		err = fmt.Errorf("UpdateStructNotNil-->updateStructFunc更新错误:%w", err)
