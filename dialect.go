@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"gitee.com/chunanyong/gouuid"
 	"gitee.com/chunanyong/zorm/typeconvert"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 /**
@@ -395,14 +394,6 @@ func findFromIndex(strsql string) []int {
 	return loc
 }
 
-//GenerateStringID 生成主键字符串
-func GenerateStringID() string {
-	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
-	pk := uuid.NewV4().String()
-
-	return pk
-}
-
 //根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
 
@@ -446,4 +437,14 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	//其他类型以后再写.....
 
 	return nil
+}
+
+//GenerateStringID 生成主键字符串
+func GenerateStringID() string {
+	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
+	pk, errUUID := gouuid.NewV4()
+	if errUUID != nil {
+		return ""
+	}
+	return pk.String()
 }
