@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"gitee.com/chunanyong/logger"
 )
@@ -19,9 +18,10 @@ const contextDBConnectionValueKey = favContextKey("contextDBConnectionValueKey")
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
 
+//不再处理日期零值,会干扰反射判断零值
 //默认的零时时间1970-01-01 00:00:00 +0000 UTC,兼容数据库,避免0001-01-01 00:00:00 +0000 UTC的零值.数据库不让存值,加上1秒,跪了
 //因为mysql 5.7后,The TIMESTAMP data type is used for values that contain both date and time parts. TIMESTAMP has a range of '1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' UTC.
-var defaultZeroTime = time.Date(1970, time.January, 1, 0, 0, 1, 0, time.UTC)
+//var defaultZeroTime = time.Date(1970, time.January, 1, 0, 0, 1, 0, time.UTC)
 
 //var defaultZeroTime = time.Now()
 
@@ -750,7 +750,7 @@ func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
 	return nil
 }
 
-//UpdateStructValueNotZero 更新struct不为nil的属性,必须是*IEntityStruct类型
+//UpdateStructValueNotZero 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateStructValueNotZero(ctx context.Context, entity IEntityStruct) error {
 	err := updateStructFunc(ctx, entity, true)
@@ -965,12 +965,15 @@ func columnAndValue(entity interface{}) ([]reflect.StructField, []interface{}, e
 		columns = append(columns, field)
 		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值
 		value := valueOf.FieldByName(field.Name).Interface()
-		if value != nil { //如果不是nil
-			timeValue, ok := value.(time.Time)
-			if ok && timeValue.IsZero() { //如果是日期零时,需要设置一个初始值1970-01-01 00:00:01,兼容数据库
-				value = defaultZeroTime
+
+		/*
+			if value != nil { //如果不是nil
+				timeValue, ok := value.(time.Time)
+				if ok && timeValue.IsZero() { //如果是日期零时,需要设置一个初始值1970-01-01 00:00:01,兼容数据库
+					value = defaultZeroTime
+				}
 			}
-		}
+		*/
 
 		//添加到记录值的数组
 		values = append(values, value)
