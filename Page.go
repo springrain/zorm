@@ -21,11 +21,11 @@ type Page struct {
 }
 
 //NewPage 创建Page对象
-func NewPage() Page {
+func NewPage() *Page {
 	page := Page{}
 	page.PageNo = 1
 	page.PageSize = 20
-	return page
+	return &page
 }
 
 //setTotalCount 设置总条数,计算其他值
