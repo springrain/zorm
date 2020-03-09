@@ -88,7 +88,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
-	err := zorm.QueryStructList(context.Background(), finder, &users, &page)
+	err := zorm.QueryStructList(context.Background(), finder, &users, page)
     ```
 7.  事务传播
     ```

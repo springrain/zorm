@@ -17,6 +17,8 @@
 *.patch
 *.tmp
 *debug.test
+debug.test
+go.sum
 
 # system ignore
 .DS_Store
@@ -27,15 +29,6 @@ Thumbs.db
 *.key
 .test
 iprepo.txt
-
-
-
-
-readygo/*/*/cmd/cmd
-readygo/*/*/*/cmd/cmd
-readygo/*/*/cmd/debug
-readygo/*/*/*/cmd/debug
-readygo/tool/kratos/kratos
 
 
 _output
