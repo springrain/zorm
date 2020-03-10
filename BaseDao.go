@@ -11,10 +11,17 @@ import (
 	"gitee.com/chunanyong/logger"
 )
 
-type favContextKey string
+type wrapContextStringKey string
 
 //context WithValue的key,不能是基础类型,例如字符串,包装一下
-const contextDBConnectionValueKey = favContextKey("contextDBConnectionValueKey")
+//const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
+
+//NewContextDBConnectionValueKey 创建context中存放DBConnection的key
+//故意使用一个公开方法,返回私有类型wrapContextStringKey,多库时禁止自定义contextKey,只能调用这个方法,不能接收也不能改变
+//例如:ctx = context.WithValue(ctx, zorm.NewContextDBConnectionValueKey(), dbConnection)
+func NewContextDBConnectionValueKey() wrapContextStringKey {
+	return wrapContextStringKey("contextDBConnectionValueKey")
+}
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
 
@@ -766,6 +773,7 @@ func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) error {
 func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	pkName, pkNameErr := entityPKFieldName(entity)
+
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("DeleteStruct-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
 		logger.Error(pkNameErr)
@@ -1197,7 +1205,7 @@ func getDBConnectionFromContext(ctx context.Context) (*DBConnection, error) {
 		return nil, errors.New("context不能为空")
 	}
 	//获取数据库连接
-	value := ctx.Value(contextDBConnectionValueKey)
+	value := ctx.Value(NewContextDBConnectionValueKey())
 	if value == nil {
 		return nil, nil
 	}
@@ -1232,7 +1240,7 @@ func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBCon
 			return ctx, nil, errDBConnection
 		}
 		//把dbConnection放入context
-		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
+		ctx = context.WithValue(ctx, NewContextDBConnectionValueKey(), dbConnection)
 
 	} else { //如果dbConnection存在
 
