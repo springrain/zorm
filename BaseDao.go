@@ -19,9 +19,9 @@ const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionVal
 //NewContextDBConnectionValueKey 创建context中存放DBConnection的key
 //故意使用一个公开方法,返回私有类型wrapContextStringKey,多库时禁止自定义contextKey,只能调用这个方法,不能接收也不能改变
 //例如:ctx = context.WithValue(ctx, zorm.NewContextDBConnectionValueKey(), dbConnection)
-func NewContextDBConnectionValueKey() wrapContextStringKey {
-	return contextDBConnectionValueKey
-}
+//func NewContextDBConnectionValueKey() wrapContextStringKey {
+//	return contextDBConnectionValueKey
+//}
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
 
@@ -87,17 +87,26 @@ func getDefaultDao() *BaseDao {
 	return defaultDao
 }
 
-// GetDBConnection 获取一个dbConnection
+// newDBConnection 获取一个dbConnection
 //如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection
-//如果是多库,Dao手动调用GetDBConnection(),获得dbConnection,WithValue绑定到子context
-func (baseDao *BaseDao) GetDBConnection() (*DBConnection, error) {
+//如果是多库,Dao手动调用newDBConnection(),获得dbConnection,WithValue绑定到子context
+func (baseDao *BaseDao) newDBConnection() (*dataBaseConnection, error) {
 	if baseDao == nil || baseDao.dataSource == nil {
 		return nil, errors.New("请不要自己创建baseDao,使用NewBaseDao方法进行创建")
 	}
-	dbConnection := new(DBConnection)
+	dbConnection := new(dataBaseConnection)
 	dbConnection.db = baseDao.dataSource.DB
 	dbConnection.dbType = baseDao.config.DBType
 	return dbConnection, nil
+}
+
+func (baseDao *BaseDao) BindContextDBConnection(parent context.Context) (context.Context, error) {
+	dbConnection, errDBConnection := baseDao.newDBConnection()
+	if errDBConnection != nil {
+		return parent, errDBConnection
+	}
+	ctx := context.WithValue(parent, contextDBConnectionValueKey, dbConnection)
+	return ctx, nil
 }
 
 /*
@@ -126,7 +135,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	txOpen := false
 	//如果dbConnection不存在,则会用默认的datasource开启事务
 	var checkerr error
-	var dbConnection *DBConnection
+	var dbConnection *dataBaseConnection
 	ctx, dbConnection, checkerr = checkDBConnection(ctx, false)
 	if checkerr != nil {
 		return nil, checkerr
@@ -1200,16 +1209,16 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 }
 
 //getDBConnectionFromContext 从Conext中获取数据库连接
-func getDBConnectionFromContext(ctx context.Context) (*DBConnection, error) {
+func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error) {
 	if ctx == nil {
 		return nil, errors.New("context不能为空")
 	}
 	//获取数据库连接
-	value := ctx.Value(NewContextDBConnectionValueKey())
+	value := ctx.Value(contextDBConnectionValueKey)
 	if value == nil {
 		return nil, nil
 	}
-	dbConnection, isdb := value.(*DBConnection)
+	dbConnection, isdb := value.(*dataBaseConnection)
 	if !isdb { //不是数据库连接
 		return nil, errors.New("context传递了错误的*DBConnection类型值")
 	}
@@ -1222,7 +1231,7 @@ var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使�
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 //context必须传入,不能为空
-func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBConnection, error) {
+func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *dataBaseConnection, error) {
 
 	dbConnection, errFromContext := getDBConnectionFromContext(ctx)
 	if errFromContext != nil {
@@ -1232,7 +1241,7 @@ func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBCon
 	if dbConnection == nil { //dbConnection为空
 		if !hastx { //如果要求没有事务,实例化一个默认的dbConnection
 			var errGetDBConnection error
-			dbConnection, errGetDBConnection = getDefaultDao().GetDBConnection()
+			dbConnection, errGetDBConnection = getDefaultDao().newDBConnection()
 			if errGetDBConnection != nil {
 				return ctx, nil, errGetDBConnection
 			}
@@ -1240,7 +1249,7 @@ func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *DBCon
 			return ctx, nil, errDBConnection
 		}
 		//把dbConnection放入context
-		ctx = context.WithValue(ctx, NewContextDBConnectionValueKey(), dbConnection)
+		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
 
 	} else { //如果dbConnection存在
 

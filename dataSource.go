@@ -65,9 +65,9 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
 //const beginStatus = 1
 
-//DBConnection 数据库dbConnection会话,可以原生查询或者事务
-//方法都应包含 dbConnection DBConnection这样的入参,context必须传入,不能为空
-type DBConnection struct {
+//dataBaseConnection 数据库dbConnection会话,可以原生查询或者事务
+//方法都应包含 dbConnection dataBaseConnection这样的入参,context必须传入,不能为空
+type dataBaseConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
 	//mysql,postgres,oci8,adodb
@@ -78,7 +78,7 @@ type DBConnection struct {
 }
 
 // beginTx 开启事务
-func (dbConnection *DBConnection) beginTx(ctx context.Context) error {
+func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 	//s.rollbackSign = true
 	if dbConnection.tx == nil {
 		tx, err := dbConnection.db.BeginTx(ctx, nil)
@@ -96,7 +96,7 @@ func (dbConnection *DBConnection) beginTx(ctx context.Context) error {
 }
 
 // rollback 回滚事务
-func (dbConnection *DBConnection) rollback() error {
+func (dbConnection *dataBaseConnection) rollback() error {
 	//if s.tx != nil && s.rollbackSign == true {
 	if dbConnection.tx != nil {
 		err := dbConnection.tx.Rollback()
@@ -112,7 +112,7 @@ func (dbConnection *DBConnection) rollback() error {
 }
 
 // commit 提交事务
-func (dbConnection *DBConnection) commit() error {
+func (dbConnection *dataBaseConnection) commit() error {
 	//s.rollbackSign = false
 	if dbConnection.tx == nil {
 		return errors.New("事务为空")
@@ -130,7 +130,7 @@ func (dbConnection *DBConnection) commit() error {
 }
 
 // execContext 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (dbConnection *dataBaseConnection) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if dbConnection.tx != nil {
 		return dbConnection.tx.ExecContext(ctx, query, args...)
 	}
@@ -138,7 +138,7 @@ func (dbConnection *DBConnection) execContext(ctx context.Context, query string,
 }
 
 // queryRowContext 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	if dbConnection.tx != nil {
 		return dbConnection.tx.QueryRowContext(ctx, query, args...)
 	}
@@ -146,7 +146,7 @@ func (dbConnection *DBConnection) queryRowContext(ctx context.Context, query str
 }
 
 // queryContext 查询数据，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	if dbConnection.tx != nil {
 		return dbConnection.tx.QueryContext(ctx, query, args...)
 	}
@@ -154,7 +154,7 @@ func (dbConnection *DBConnection) queryContext(ctx context.Context, query string
 }
 
 // prepareContext 预执行，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *DBConnection) prepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	if dbConnection.tx != nil {
 		return dbConnection.tx.PrepareContext(ctx, query)
 	}
