@@ -14,13 +14,13 @@ import (
 type wrapContextStringKey string
 
 //context WithValue的key,不能是基础类型,例如字符串,包装一下
-//const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
+const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
 
 //NewContextDBConnectionValueKey 创建context中存放DBConnection的key
 //故意使用一个公开方法,返回私有类型wrapContextStringKey,多库时禁止自定义contextKey,只能调用这个方法,不能接收也不能改变
 //例如:ctx = context.WithValue(ctx, zorm.NewContextDBConnectionValueKey(), dbConnection)
 func NewContextDBConnectionValueKey() wrapContextStringKey {
-	return wrapContextStringKey("contextDBConnectionValueKey")
+	return contextDBConnectionValueKey
 }
 
 //bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
