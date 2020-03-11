@@ -100,7 +100,12 @@ func (baseDao *BaseDao) newDBConnection() (*dataBaseConnection, error) {
 	return dbConnection, nil
 }
 
+//BindContextDBConnection 多库的时候,通过baseDao创建DBConnection绑定到子context,返回的context就有了DBConnection
+//parent 不能为空
 func (baseDao *BaseDao) BindContextDBConnection(parent context.Context) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("context的parent不能为nil")
+	}
 	dbConnection, errDBConnection := baseDao.newDBConnection()
 	if errDBConnection != nil {
 		return parent, errDBConnection
