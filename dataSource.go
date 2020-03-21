@@ -19,13 +19,10 @@ type dataSource struct {
 
 //DataSourceConfig 数据库连接池的配置
 type DataSourceConfig struct {
-	Host     string
-	Port     int
-	DBName   string
-	UserName string
-	PassWord string
+	//dataSourceName 连接字符串
+	DSN string
 	//mysql,postgres,oci8,adodb
-	DBType string
+	DriverName string
 	//数据库最大连接数 默认50
 	MaxOpenConns int
 	//数据库最大空闲连接数 默认50
@@ -36,14 +33,15 @@ type DataSourceConfig struct {
 
 //newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
-	dsn, e := wrapDBDSN(config)
-	if e != nil {
-		e = fmt.Errorf("获取数据库连接字符串失败:%w", e)
-		logger.Error(e)
-		return nil, e
-	}
-
-	db, err := sql.Open(config.DBType, dsn)
+	/*
+		dsn, e := wrapDBDSN(config)
+		if e != nil {
+			e = fmt.Errorf("获取数据库连接字符串失败:%w", e)
+			logger.Error(e)
+			return nil, e
+		}
+	*/
+	db, err := sql.Open(config.DriverName, config.DSN)
 	if err != nil {
 		err = fmt.Errorf("数据库打开失败:%w", err)
 		logger.Error(err)

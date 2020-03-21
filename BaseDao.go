@@ -99,7 +99,7 @@ func (baseDao *BaseDao) newDBConnection() (*dataBaseConnection, error) {
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = baseDao.dataSource.DB
-	dbConnection.dbType = baseDao.config.DBType
+	dbConnection.dbType = baseDao.config.DriverName
 	return dbConnection, nil
 }
 
@@ -230,7 +230,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -374,7 +374,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -538,7 +538,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -651,7 +651,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -709,7 +709,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -815,7 +815,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -869,7 +869,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -921,7 +921,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -1124,7 +1124,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DriverName
 	} else {
 		dbType = dbConnection.dbType
 	}

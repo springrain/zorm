@@ -25,14 +25,13 @@ const (
 )
 
 
-**/
 
 //数据库连接字符串
 func wrapDBDSN(config *DataSourceConfig) (string, error) {
 	if config == nil {
 		return "", nil
 	}
-	if config.DBType == "mysql" {
+	if config.DriverName == "mysql" {
 		//username:password@tcp(127.0.0.1:3306)/dbName
 		dsn := config.UserName + ":" + config.PassWord + "@tcp(" + config.Host + ":" + strconv.Itoa(config.Port) + ")/" + config.DBName + "?charset=utf8&loc=Asia%2FShanghai&parseTime=true"
 		return dsn, nil
@@ -40,6 +39,7 @@ func wrapDBDSN(config *DataSourceConfig) (string, error) {
 
 	return "", errors.New("不支持的数据库")
 }
+**/
 
 //包装基础的SQL语句
 func wrapSQL(dbType string, sqlstr string) (string, error) {
