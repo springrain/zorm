@@ -19,7 +19,7 @@ go get gitee.com/chunanyong/zorm
 #### 示例  
 
  1.  生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
-  ```  
+  ```go  
 
 //UserOrgStructTableName 表名常量,方便直接调用
 const UserOrgStructTableName = "t_user_org"
@@ -58,7 +58,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
   ```  
 2.  初始化zorm
 
-    ```  
+    ```go
     dataSourceConfig := zorm.DataSourceConfig{
 	DSN:     "root:root@tcp(127.0.0.1:3306)/readygo",
 	DriverName:   "mysql",
@@ -66,30 +66,30 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
      zorm.NewBaseDao(&dataSourceConfig)
     ```  
 3.  增
-    ```
+    ```go
     var user permstruct.UserStruct
     err := zorm.SaveStruct(context.Background(), &user)
     ```
 4.  删
-    ```
+    ```go
     err := zorm.DeleteStruct(context.Background(),&user)
     ```
   
 5.  改
-    ```
+    ```go
     err := zorm.UpdateStruct(context.Background(),&user)
     //finder更新
     err := zorm.UpdateFinder(context.Background(),finder)
     ```
 6.  查
-    ```
+    ```go
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
 	err := zorm.QueryStructList(context.Background(), finder, &users, page)
     ```
 7.  事务传播
-    ```
+    ```go
     //匿名函数return的error如果不为nil,事务就会回滚
 	_, errSaveUserStruct := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
@@ -106,7 +106,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 	})
     ```
 8.  生产示例
-    ```  
+    ```go    
     //FindUserOrgByUserId 根据userId查找部门UserOrg中间表对象
     func FindUserOrgByUserId(ctx context.Context, userId string, page *zorm.Page) ([]permstruct.UserOrgStruct, error) {
 	if len(userId) < 1 {
@@ -126,7 +126,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
     ```  
 
 9.  [测试](https://www.jianshu.com/p/1adc69468b6f)
-    ```
+    ```go 
     //函数测试
     go test -run TestAdd2
     //性能测试
