@@ -11,6 +11,9 @@ import (
 	"gitee.com/chunanyong/logger"
 )
 
+//FuncReadWriteBaseDao 读写分离的BaseDao函数,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
+var FuncReadWriteBaseDao func(rwType int) *BaseDao = getDefaultDao
+
 type wrapContextStringKey string
 
 //context WithValue的key,不能是基础类型,例如字符串,包装一下
@@ -75,7 +78,7 @@ func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
 		return nil, err
 	}
 
-	if getDefaultDao() == nil {
+	if FuncReadWriteBaseDao(1) == nil {
 		defaultDao = &BaseDao{config, dataSource}
 		return defaultDao, nil
 	}
@@ -83,7 +86,7 @@ func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
 }
 
 //获取默认的Dao,用于隔离读写的Dao
-func getDefaultDao() *BaseDao {
+func getDefaultDao(rwType int) *BaseDao {
 	return defaultDao
 }
 
@@ -141,7 +144,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	//如果dbConnection不存在,则会用默认的datasource开启事务
 	var checkerr error
 	var dbConnection *dataBaseConnection
-	ctx, dbConnection, checkerr = checkDBConnection(ctx, false)
+	ctx, dbConnection, checkerr = checkDBConnection(ctx, false, 1)
 	if checkerr != nil {
 		return nil, checkerr
 	}
@@ -227,7 +230,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -242,7 +245,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -371,7 +374,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -385,7 +388,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -535,7 +538,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -549,7 +552,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
@@ -648,7 +651,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -662,7 +665,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -706,7 +709,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -721,7 +724,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -812,7 +815,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -827,7 +830,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -866,7 +869,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -881,7 +884,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -918,7 +921,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -933,7 +936,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -1121,7 +1124,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = getDefaultDao().config.DBType
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -1139,7 +1142,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -1235,8 +1238,8 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用zorm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
-//context必须传入,不能为空
-func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *dataBaseConnection, error) {
+//context必须传入,不能为空.rwType=0 read,rwType=1 write
+func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Context, *dataBaseConnection, error) {
 
 	dbConnection, errFromContext := getDBConnectionFromContext(ctx)
 	if errFromContext != nil {
@@ -1246,7 +1249,7 @@ func checkDBConnection(ctx context.Context, hastx bool) (context.Context, *dataB
 	if dbConnection == nil { //dbConnection为空
 		if !hastx { //如果要求没有事务,实例化一个默认的dbConnection
 			var errGetDBConnection error
-			dbConnection, errGetDBConnection = getDefaultDao().newDBConnection()
+			dbConnection, errGetDBConnection = FuncReadWriteBaseDao(rwType).newDBConnection()
 			if errGetDBConnection != nil {
 				return ctx, nil, errGetDBConnection
 			}
