@@ -23,6 +23,8 @@ type DataSourceConfig struct {
 	DSN string
 	//mysql,postgres,oci8,adodb
 	DriverName string
+	//是否打印SQL语句
+	PrintSQL bool
 	//数据库最大连接数 默认50
 	MaxOpenConns int
 	//数据库最大空闲连接数 默认50
@@ -89,7 +91,9 @@ type dataBaseConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
 	//mysql,postgres,oci8,adodb
-	dbType string
+	driverName string
+	//是否打印sql
+	printSQL bool
 
 	//commitSign   int8    // 提交标记，控制是否提交事务
 	//rollbackSign bool    // 回滚标记，控制是否回滚事务
@@ -149,6 +153,12 @@ func (dbConnection *dataBaseConnection) commit() error {
 
 // execContext 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+
+	//打印SQL
+	if dbConnection.printSQL {
+		logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
+	}
+
 	if dbConnection.tx != nil {
 		return dbConnection.tx.ExecContext(ctx, query, args...)
 	}
@@ -157,6 +167,11 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, query s
 
 // queryRowContext 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	//打印SQL
+	if dbConnection.printSQL {
+		logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
+	}
+
 	if dbConnection.tx != nil {
 		return dbConnection.tx.QueryRowContext(ctx, query, args...)
 	}
@@ -165,6 +180,11 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 
 // queryContext 查询数据，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	//打印SQL
+	if dbConnection.printSQL {
+		logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
+	}
+
 	if dbConnection.tx != nil {
 		return dbConnection.tx.QueryContext(ctx, query, args...)
 	}
@@ -173,6 +193,11 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 
 // prepareContext 预执行，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
 func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	//打印SQL
+	if dbConnection.printSQL {
+		logger.Info("printSQL", logger.String("sql", query))
+	}
+
 	if dbConnection.tx != nil {
 		return dbConnection.tx.PrepareContext(ctx, query)
 	}

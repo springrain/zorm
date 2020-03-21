@@ -16,12 +16,12 @@ import (
 /**
 
 const (
-	DBType_MYSQL      DBTYPE = "mysql"
-	DBType_MSSQL      DBTYPE = "adodb"
-	DBType_ORACLE     DBTYPE = "oci8"
-	DBType_POSTGRESQL DBTYPE = "postgres"
-	DBType_SQLITE     DBTYPE = "sqlite3"
-	DBType_UNKNOWN    DBTYPE = "mysql"
+	DBType_MYSQL      driverName= "mysql"
+	DBType_MSSQL      driverName= "adodb"
+	DBType_ORACLE     driverName= "oci8"
+	DBType_POSTGRESQL driverName= "postgres"
+	DBType_SQLITE     driverName= "sqlite3"
+	DBType_UNKNOWN    driverName= "mysql"
 )
 
 
@@ -42,59 +42,59 @@ func wrapDBDSN(config *DataSourceConfig) (string, error) {
 **/
 
 //包装基础的SQL语句
-func wrapSQL(dbType string, sqlstr string) (string, error) {
+func wrapSQL(driverName string, sqlstr string) (string, error) {
 
 	//根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-	sqlstr = rebind(dbType, sqlstr)
+	sqlstr = rebind(driverName, sqlstr)
 	return sqlstr, nil
 }
 
 //包装分页的SQL语句
-func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
+func wrapPageSQL(driverName string, sqlstr string, page *Page) (string, error) {
 
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" { //MySQL数据库
+	if driverName == "mysql" { //MySQL数据库
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	} else if dbType == "postgres" { //postgresql
+	} else if driverName == "postgres" { //postgresql
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "adodb" { //mssql 2012+
+	} else if driverName == "adodb" { //mssql 2012+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 
-	} else if dbType == "oci8" { //oracle 12c+
+	} else if driverName == "oci8" { //oracle 12c+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
-	} else if dbType == "sqlite3" { //sqlite3
+	} else if driverName == "sqlite3" { //sqlite3
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
-	} else if dbType == "db2" { //db2
+	} else if driverName == "db2" { //db2
 
 		//先不写啦
 		//bug(springrain) 还需要其他的数据库分页语句
 	}
 	sqlstr = sqlbuilder.String()
-	return wrapSQL(dbType, sqlstr)
+	return wrapSQL(driverName, sqlstr)
 }
 
 //包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapSaveStructSQL(driverName string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
@@ -168,14 +168,14 @@ func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.S
 		valuestr = valuestr[:len(valuestr)-1]
 	}
 	sqlstr = sqlstr + ")" + valuestr + ")"
-	savesql, err := wrapSQL(dbType, sqlstr)
+	savesql, err := wrapSQL(driverName, sqlstr)
 	return savesql, autoIncrement, err
 
 }
 
 //包装更新Struct语句
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateStructSQL(driverName string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -225,11 +225,11 @@ func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns *[]reflect
 
 	sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 
-	return wrapSQL(dbType, sqlstr)
+	return wrapSQL(driverName, sqlstr)
 }
 
 //包装删除Struct语句
-func wrapDeleteStructSQL(dbType string, entity IEntityStruct) (string, error) {
+func wrapDeleteStructSQL(driverName string, entity IEntityStruct) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -240,12 +240,12 @@ func wrapDeleteStructSQL(dbType string, entity IEntityStruct) (string, error) {
 	sqlBuilder.WriteString("=?")
 	sqlstr := sqlBuilder.String()
 
-	return wrapSQL(dbType, sqlstr)
+	return wrapSQL(driverName, sqlstr)
 
 }
 
 //包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
+func wrapSaveMapSQL(driverName string, entity IEntityMap) (string, []interface{}, error) {
 
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
@@ -283,7 +283,7 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, er
 	sqlstr = sqlstr + ")" + valuestr + ")"
 
 	var e error
-	sqlstr, e = wrapSQL(dbType, sqlstr)
+	sqlstr, e = wrapSQL(driverName, sqlstr)
 	if e != nil {
 		return "", nil, e
 	}
@@ -291,7 +291,7 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, er
 }
 
 //包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-func wrapUpdateMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
+func wrapUpdateMapSQL(driverName string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
 		return "", nil, errors.New("GetDBFieldMap()返回值不能为空")
@@ -328,7 +328,7 @@ func wrapUpdateMapSQL(dbType string, entity IEntityMap) (string, []interface{}, 
 	sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 
 	var e error
-	sqlstr, e = wrapSQL(dbType, sqlstr)
+	sqlstr, e = wrapSQL(driverName, sqlstr)
 	if e != nil {
 		return "", nil, e
 	}
@@ -336,7 +336,7 @@ func wrapUpdateMapSQL(dbType string, entity IEntityMap) (string, []interface{}, 
 }
 
 //封装查询语句
-func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
+func wrapQuerySQL(driverName string, finder *Finder, page *Page) (string, error) {
 
 	//获取到没有page的sql的语句
 	sqlstr, err := finder.GetSQL()
@@ -344,9 +344,9 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 		return "", err
 	}
 	if page == nil {
-		sqlstr, err = wrapSQL(dbType, sqlstr)
+		sqlstr, err = wrapSQL(driverName, sqlstr)
 	} else {
-		sqlstr, err = wrapPageSQL(dbType, sqlstr, page)
+		sqlstr, err = wrapPageSQL(driverName, sqlstr, page)
 	}
 
 	if err != nil {
@@ -356,8 +356,8 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 }
 
 //根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-func rebind(dbType string, sqlstr string) string {
-	if dbType == "mysql" || dbType == "sqlite3" {
+func rebind(driverName string, sqlstr string) string {
+	if driverName == "mysql" || driverName == "sqlite3" {
 		return sqlstr
 	}
 
@@ -368,13 +368,13 @@ func rebind(dbType string, sqlstr string) string {
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
-		if dbType == "postgres" { //postgresql
+		if driverName == "postgres" { //postgresql
 			sqlBuilder.WriteString("$")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dbType == "adodb" { //mssql
+		} else if driverName == "adodb" { //mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dbType == "oci8" { //oracle
+		} else if driverName == "oci8" { //oracle
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else { //其他情况,还是使用?
