@@ -17,7 +17,7 @@ import (
 
 const (
 	DBType_MYSQL      driverName= "mysql"
-	DBType_MSSQL      driverName= "adodb"
+	DBType_MSSQL      driverName= "sqlserver"
 	DBType_ORACLE     driverName= "oci8"
 	DBType_POSTGRESQL driverName= "postgres"
 	DBType_SQLITE     driverName= "sqlite3"
@@ -65,7 +65,7 @@ func wrapPageSQL(driverName string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if driverName == "adodb" { //mssql 2012+
+	} else if driverName == "sqlserver" { //sqlserver 2012+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
@@ -371,7 +371,7 @@ func rebind(driverName string, sqlstr string) string {
 		if driverName == "postgres" { //postgresql
 			sqlBuilder.WriteString("$")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if driverName == "adodb" { //mssql
+		} else if driverName == "sqlserver" { //mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else if driverName == "oci8" { //oracle
