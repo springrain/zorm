@@ -51,7 +51,11 @@ func wrapSQL(driverName string, sqlstr string) (string, error) {
 
 //包装分页的SQL语句
 func wrapPageSQL(driverName string, sqlstr string, page *Page) (string, error) {
-
+	//查询order by 的位置
+	locOrderBy := findOrderByIndex(sqlstr)
+	if len(locOrderBy) <= 0 { //如果没有 order by
+		return "", errors.New("分页语句必须有 order by")
+	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
 	if driverName == "mysql" { //MySQL数据库

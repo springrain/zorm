@@ -152,17 +152,17 @@ func (dbConnection *dataBaseConnection) commit() error {
 }
 
 // execContext 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *dataBaseConnection) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql string, args ...interface{}) (sql.Result, error) {
 
 	//打印SQL
 	if dbConnection.printSQL {
-		logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
+		logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.ExecContext(ctx, query, args...)
+		return dbConnection.tx.ExecContext(ctx, execsql, args...)
 	}
-	return dbConnection.db.ExecContext(ctx, query, args...)
+	return dbConnection.db.ExecContext(ctx, execsql, args...)
 }
 
 // queryRowContext 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
