@@ -21,7 +21,7 @@ type dataSource struct {
 type DataSourceConfig struct {
 	//dataSourceName 连接字符串
 	DSN string
-	//mysql,postgres,oci8,adodb
+	//mysql,postgres,oci8,sqlserver
 	DriverName string
 	//是否打印SQL语句
 	PrintSQL bool
@@ -90,7 +90,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 type dataBaseConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
-	//mysql,postgres,oci8,adodb
+	//mysql,postgres,oci8,sqlserver
 	driverName string
 	//是否打印sql
 	printSQL bool
