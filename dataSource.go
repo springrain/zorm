@@ -26,6 +26,12 @@ type DataSourceConfig struct {
 	PassWord string
 	//mysql,postgres,oci8,adodb
 	DBType string
+	//数据库最大连接数 默认50
+	MaxOpenConns int
+	//数据库最大空闲连接数 默认50
+	MaxIdleConns int
+	//连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+	ConnMaxLifetimeSecond int
 }
 
 //newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
@@ -44,12 +50,26 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 		return nil, err
 	}
 
+	maxOpenConns := config.MaxOpenConns
+	maxIdleConns := config.MaxIdleConns
+	connMaxLifetimeSecond := config.ConnMaxLifetimeSecond
+	if maxOpenConns == 0 {
+		maxOpenConns = 50
+	}
+	if maxIdleConns == 0 {
+		maxIdleConns = 50
+	}
+
+	if connMaxLifetimeSecond == 0 {
+		connMaxLifetimeSecond = 600
+	}
+
 	//设置数据库最大连接数
-	db.SetMaxOpenConns(50)
+	db.SetMaxOpenConns(maxOpenConns)
 	//设置数据库最大空闲连接数
-	db.SetMaxIdleConns(50)
-	//连接存活10分钟,10分钟后连接被销毁重建.避免数据库断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
-	db.SetConnMaxLifetime(time.Minute * 10)
+	db.SetMaxIdleConns(maxIdleConns)
+	//连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+	db.SetConnMaxLifetime(time.Second * time.Duration(connMaxLifetimeSecond))
 
 	//验证连接
 	if pingerr := db.Ping(); pingerr != nil {
