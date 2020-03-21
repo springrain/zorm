@@ -17,8 +17,6 @@ import (
 
 const (
 	DBType_MYSQL      DBTYPE = "mysql"
-	DBType_DB2        DBTYPE = "db2"
-	DBType_INFORMIX   DBTYPE = "informix"
 	DBType_MSSQL      DBTYPE = "adodb"
 	DBType_ORACLE     DBTYPE = "oci8"
 	DBType_POSTGRESQL DBTYPE = "postgres"
@@ -45,9 +43,7 @@ func wrapDBDSN(config *DataSourceConfig) (string, error) {
 
 //包装基础的SQL语句
 func wrapSQL(dbType string, sqlstr string) (string, error) {
-	if dbType == "mysql" {
-		return sqlstr, nil
-	}
+
 	//根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 	sqlstr = rebind(dbType, sqlstr)
 	return sqlstr, nil
@@ -59,17 +55,36 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
 	if dbType == "mysql" { //MySQL数据库
-		sqlbuilder.WriteString(" limit ")
+		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
 	} else if dbType == "postgres" { //postgresql
-		sqlbuilder.WriteString(" limit ")
+		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
-		sqlbuilder.WriteString(" offset ")
+		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 	} else if dbType == "adodb" { //mssql
+		sqlbuilder.WriteString(" OFFSET ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
+		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
+		sqlbuilder.WriteString(" ROWS ONLY ")
+
+	} else if dbType == "oci8" { //oracle
+		sqlbuilder.WriteString(" OFFSET ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
+		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
+		sqlbuilder.WriteString(" ROWS ONLY ")
+	} else if dbType == "sqlite3" { //sqlite3
+		sqlbuilder.WriteString(" LIMIT ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
+		sqlbuilder.WriteString(",")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
+	} else if dbType == "db2" { //db2
+
 		//先不写啦
 		//bug(springrain) 还需要其他的数据库分页语句
 	}
@@ -342,7 +357,9 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 //根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 func rebind(dbType string, query string) string {
-
+	if dbType == "mysql" || dbType == "sqlite3" {
+		return query
+	}
 	// Add space enough for 10 params before we have to allocate
 	rqb := make([]byte, 0, len(query)+10)
 
@@ -355,6 +372,8 @@ func rebind(dbType string, query string) string {
 			rqb = append(rqb, '$')
 		} else if dbType == "adodb" { //mssql
 			rqb = append(rqb, '@', 'p')
+		} else if dbType == "oci8" { //oracle
+			rqb = append(rqb, ':')
 		}
 		j++
 		rqb = strconv.AppendInt(rqb, int64(j), 10)
