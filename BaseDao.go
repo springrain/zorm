@@ -380,7 +380,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 		driverName = dbConnection.driverName
 	}
 
-	sqlstr, err := wrapQuerySQL(driverName, finder, nil)
+	sqlstr, err := wrapQuerySQL(driverName, finder, page)
 	if err != nil {
 		err = fmt.Errorf("获取查询SQL语句错误:%w", err)
 		logger.Error(err)
@@ -544,7 +544,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 		driverName = dbConnection.driverName
 	}
 
-	sqlstr, err := wrapQuerySQL(driverName, finder, nil)
+	sqlstr, err := wrapQuerySQL(driverName, finder, page)
 	if err != nil {
 		err = fmt.Errorf("QueryMapList查询SQL语句错误:%w", err)
 		logger.Error(err)
