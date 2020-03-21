@@ -356,32 +356,33 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 }
 
 //根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-func rebind(dbType string, query string) string {
+func rebind(dbType string, sqlstr string) string {
 	if dbType == "mysql" || dbType == "sqlite3" {
-		return query
+		return sqlstr
 	}
-	// Add space enough for 10 params before we have to allocate
-	rqb := make([]byte, 0, len(query)+10)
 
-	var i, j int
-
-	for i = strings.Index(query, "?"); i != -1; i = strings.Index(query, "?") {
-		rqb = append(rqb, query[:i]...)
-
+	strs := strings.Split(sqlstr, "?")
+	if len(strs) < 1 {
+		return sqlstr
+	}
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString(strs[0])
+	for i := 1; i < len(strs); i++ {
 		if dbType == "postgres" { //postgresql
-			rqb = append(rqb, '$')
+			sqlBuilder.WriteString("$")
+			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else if dbType == "adodb" { //mssql
-			rqb = append(rqb, '@', 'p')
+			sqlBuilder.WriteString("@p")
+			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else if dbType == "oci8" { //oracle
-			rqb = append(rqb, ':')
+			sqlBuilder.WriteString(":")
+			sqlBuilder.WriteString(strconv.Itoa(i))
+		} else { //其他情况,还是使用?
+			sqlBuilder.WriteString("?")
 		}
-		j++
-		rqb = strconv.AppendInt(rqb, int64(j), 10)
-
-		query = query[i+1:]
+		sqlBuilder.WriteString(strs[i])
 	}
-
-	return string(append(rqb, query...))
+	return sqlBuilder.String()
 }
 
 //查询order by在sql中出现的开始位置和结束位置
