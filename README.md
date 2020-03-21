@@ -60,8 +60,8 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 
     ```go
     dataSourceConfig := zorm.DataSourceConfig{
-	DSN:     "root:root@tcp(127.0.0.1:3306)/readygo",
-	DriverName:   "mysql",
+	   DSN:     "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
+	   DriverName:   "mysql",
      }
      zorm.NewBaseDao(&dataSourceConfig)
     ```  
