@@ -99,6 +99,7 @@ func (baseDao *BaseDao) newDBConnection() (*dataBaseConnection, error) {
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = baseDao.dataSource.DB
+	dbConnection.dbType = baseDao.config.DBType
 	dbConnection.driverName = baseDao.config.DriverName
 	dbConnection.printSQL = baseDao.config.PrintSQL
 	return dbConnection, nil
@@ -229,15 +230,15 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(0).config.DriverName
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	//获取到sql语句
-	sqlstr, err := wrapQuerySQL(driverName, finder, nil)
+	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
 	if err != nil {
 		err = fmt.Errorf("获取查询SQL语句错误:%w", err)
 		logger.Error(err)
@@ -373,14 +374,14 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(0).config.DriverName
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
-	sqlstr, err := wrapQuerySQL(driverName, finder, page)
+	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("获取查询SQL语句错误:%w", err)
 		logger.Error(err)
@@ -537,14 +538,14 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 		return nil, errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(0).config.DriverName
+		dbType = FuncReadWriteBaseDao(0).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
-	sqlstr, err := wrapQuerySQL(driverName, finder, page)
+	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("QueryMapList查询SQL语句错误:%w", err)
 		logger.Error(err)
@@ -650,14 +651,14 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
-	sqlstr, err = wrapSQL(driverName, sqlstr)
+	sqlstr, err = wrapSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->wrapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
@@ -708,15 +709,15 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	//SQL语句
-	sqlstr, autoIncrement, err := wrapSaveStructSQL(driverName, entity, &columns, &values)
+	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("SaveStruct-->wrapSaveStructSQL获取保存语句错误:%w", err)
 		logger.Error(err)
@@ -814,15 +815,15 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	//SQL语句
-	sqlstr, err := wrapDeleteStructSQL(driverName, entity)
+	sqlstr, err := wrapDeleteStructSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("DeleteStruct-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
@@ -868,15 +869,15 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	//SQL语句
-	sqlstr, values, err := wrapSaveMapSQL(driverName, entity)
+	sqlstr, values, err := wrapSaveMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("SaveMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
@@ -920,15 +921,15 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	//SQL语句
-	sqlstr, values, err := wrapUpdateMapSQL(driverName, entity)
+	sqlstr, values, err := wrapUpdateMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("UpdateMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
@@ -1123,11 +1124,11 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 		return errDBConnection
 	}
 
-	var driverName string = ""
+	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		driverName = FuncReadWriteBaseDao(1).config.DriverName
+		dbType = FuncReadWriteBaseDao(1).config.DBType
 	} else {
-		driverName = dbConnection.driverName
+		dbType = dbConnection.dbType
 	}
 
 	columns, values, columnAndValueErr := columnAndValue(entity)
@@ -1136,7 +1137,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	}
 
 	//SQL语句
-	sqlstr, err := wrapUpdateStructSQL(driverName, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateStructSQL(dbType, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return err
 	}

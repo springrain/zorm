@@ -17,10 +17,12 @@ type dataSource struct {
 
 //DataSourceConfig 数据库连接池的配置
 type DataSourceConfig struct {
-	//dataSourceName 连接字符串
+	//DSN dataSourceName 连接字符串
 	DSN string
-	//mysql,postgres,oci8,sqlserver
+	//DriverName 数据库驱动名称mysql,postgres,oci8,sqlserver,sqlite3 和DBType对应,处理数据库有多个驱动
 	DriverName string
+	//数据库类型  mysql,postgresql,oracle,mssql,sqlite 和 DriverName 对应,处理数据库有多个驱动
+	DBType string
 	//是否打印SQL语句
 	PrintSQL bool
 	//数据库最大连接数 默认50
@@ -88,8 +90,11 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 type dataBaseConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
-	//mysql,postgres,oci8,sqlserver
+	//数据库驱动名称mysql,postgres,oci8,sqlserver,sqlite3 和DBType对应,处理数据库有多个驱动
 	driverName string
+	//mysql,postgresql,oracle,mssql,sqlite 和 DriverName 对应,处理数据库有多个驱动
+	dbType string
+
 	//是否打印sql
 	printSQL bool
 

@@ -61,9 +61,13 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 2.  初始化zorm
 
     ```go
+    import _ "github.com/go-sql-driver/mysql"
+
+
     dataSourceConfig := zorm.DataSourceConfig{
-	   DSN:     "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-	   DriverName:   "mysql",
+		DSN:        "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
+		DriverName: "mysql",
+		DBType:     "mysql",
      }
      zorm.NewBaseDao(&dataSourceConfig)
     ```  
@@ -115,8 +119,8 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 	if len(userId) < 1 {
 		return nil, errors.New("userId不能为空")
 	}
-	finder := zorm.NewFinder().Append("SELECT re.* FROM  ").Append(permstruct.UserOrgStructTableName).Append(" re ")
-	finder.Append("   WHERE re.userId=?    order by re.managerType desc   ", userId)
+	finder := zorm.NewFinder().Append("SELECT re.* FROM ").Append(permstruct.UserOrgStructTableName).Append(" re ")
+	finder.Append(" WHERE re.userId=? order by re.managerType desc ", userId)
 
 	userOrgs := make([]permstruct.UserOrgStruct, 0)
 	errQueryList := zorm.QueryStructList(ctx, finder, &userOrgs, page)
