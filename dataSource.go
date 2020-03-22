@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"gitee.com/chunanyong/logger"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 // dataSorce对象,隔离mysql原生对象
