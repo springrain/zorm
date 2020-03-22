@@ -86,7 +86,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 6.  查
     ```go
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
-	finder.Append(" order by id ")
+	finder.Append(" order by id asc ")
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
 	err := zorm.QueryStructList(context.Background(), finder, &users, page)
