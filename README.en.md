@@ -12,7 +12,7 @@ go get gitee.com/chunanyong/zorm
 * 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
-* 支持事务传播,这是zorm诞生的主要原因  
+* <font color=#FF0000>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持MySQL,SQLServer,Oracle,PostgreSQL,SQLite3
 * 支持数据库读写分离
 
