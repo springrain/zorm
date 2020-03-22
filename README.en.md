@@ -2,7 +2,9 @@
 
 #### 介绍
 golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目  
-[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)
+[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
+
+源码地址:https://gitee.com/chunanyong/zorm
 
 ``` 
 go get gitee.com/chunanyong/zorm 
@@ -84,6 +86,7 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 6.  查
     ```go
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
+	finder.Append(" order by id ")
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
 	err := zorm.QueryStructList(context.Background(), finder, &users, page)
