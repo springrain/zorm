@@ -69,7 +69,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "sqlserver" { //sqlserver 2012+
+	} else if dbType == "mssql" { //sqlserver 2012+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
