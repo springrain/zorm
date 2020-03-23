@@ -140,7 +140,7 @@ func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.S
 
 			} else if (pkKind == reflect.String) && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
 				//生成主键字符串
-				id := GenerateStringID()
+				id := FuncGenerateStringID()
 				(*values)[i] = id
 				//给对象主键赋值
 				v := reflect.ValueOf(entity).Elem()
@@ -464,8 +464,11 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	return nil
 }
 
-//GenerateStringID 生成主键字符串
-func GenerateStringID() string {
+//FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
+var FuncGenerateStringID func() string = generateStringID
+
+//generateStringID 生成主键字符串
+func generateStringID() string {
 	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
 	pk, errUUID := gouuid.NewV4()
 	if errUUID != nil {
