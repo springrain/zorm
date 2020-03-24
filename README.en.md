@@ -73,31 +73,47 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
     ```  
 3.  增
     ```go
-	//保存Struct对象
-    var user permstruct.UserStruct
-    err := zorm.SaveStruct(context.Background(), &user)
+	_, tErr := zorm.Transaction(context.Background(), func(ctx context.Context) (interface{}, error) {
 
-	//保存EntityMap
-	entityMap := zorm.NewEntityMap("t_user")
-	entityMap.Set("id", "admin")
-	zorm.SaveEntityMap(context.Background(), entityMap)
+		//保存Struct对象
+		var user permstruct.UserStruct
+		err := zorm.SaveStruct(ctx, &user)
 
+		//保存EntityMap
+		entityMap := zorm.NewEntityMap("t_user")
+		entityMap.Set("id", "admin")
+		zorm.SaveEntityMap(ctx, entityMap)
+
+
+		return nil, nil
+	})
     ```
 4.  删
     ```go
-    err := zorm.DeleteStruct(context.Background(),&user)
+	_, tErr := zorm.Transaction(context.Background(), func(ctx context.Context) (interface{}, error) {
+
+    	err := zorm.DeleteStruct(context.Background(),&user)
+		
+		return nil, nil
+	})
     ```
   
 5.  改
     ```go
-	//更新Struct对象
-    err := zorm.UpdateStruct(context.Background(),&user)
+	_, tErr := zorm.Transaction(context.Background(), func(ctx context.Context) (interface{}, error) {
+		
+		//更新Struct对象
+		err := zorm.UpdateStruct(context.Background(),&user)
 
-	//更新EntityMap
-	err := zorm.UpdateEntityMap(context.Background(),entityMap)
-	
-    //finder更新
-    err := zorm.UpdateFinder(context.Background(),finder)
+		//更新EntityMap
+		err := zorm.UpdateEntityMap(context.Background(),entityMap)
+		
+		//finder更新
+		err := zorm.UpdateFinder(context.Background(),finder)
+
+
+		return nil, nil
+	})
     ```
 6.  查
     ```go

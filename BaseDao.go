@@ -1237,7 +1237,7 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 }
 
 //变量名建议errFoo这样的驼峰
-var errDBConnection = errors.New("如果没有事务,dbConnection传入nil,使用默认的BaseDao.如果有事务,参照使用zorm.Transaction方法传入dbConnection.手动获取BaseDao.GetDBConnection()是为多数据库预留的方法,正常不建议使用")
+var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteBaseDao(rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 //context必须传入,不能为空.rwType=0 read,rwType=1 write
@@ -1249,14 +1249,16 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 	}
 
 	if dbConnection == nil { //dbConnection为空
-		if !hastx { //如果要求没有事务,实例化一个默认的dbConnection
-			var errGetDBConnection error
-			dbConnection, errGetDBConnection = FuncReadWriteBaseDao(rwType).newDBConnection()
-			if errGetDBConnection != nil {
-				return ctx, nil, errGetDBConnection
-			}
-		} else { //如果要求有事务,错误
+
+		if hastx { //如果要求有事务,事务需要手动显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, nil, errDBConnection
+		}
+
+		//如果要求没有事务,实例化一个默认的dbConnection
+		var errGetDBConnection error
+		dbConnection, errGetDBConnection = FuncReadWriteBaseDao(rwType).newDBConnection()
+		if errGetDBConnection != nil {
+			return ctx, nil, errGetDBConnection
 		}
 		//把dbConnection放入context
 		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
@@ -1267,7 +1269,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 			return ctx, dbConnection, errDBConnection
 		}
 		tx := dbConnection.tx
-		if tx == nil && hastx { //如果要求有事务
+		if tx == nil && hastx { //如果要求有事务,事务需要手动显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
 	}
