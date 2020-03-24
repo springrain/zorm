@@ -92,8 +92,10 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
     ```go
 	//更新Struct对象
     err := zorm.UpdateStruct(context.Background(),&user)
+
 	//更新EntityMap
 	err := zorm.UpdateEntityMap(context.Background(),entityMap)
+	
     //finder更新
     err := zorm.UpdateFinder(context.Background(),finder)
     ```
