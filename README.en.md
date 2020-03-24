@@ -73,8 +73,15 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
     ```  
 3.  增
     ```go
+	//保存Struct对象
     var user permstruct.UserStruct
     err := zorm.SaveStruct(context.Background(), &user)
+
+	//保存EntityMap
+	entityMap := zorm.NewEntityMap("t_user")
+	entityMap.Set("id", "admin")
+	zorm.SaveEntityMap(context.Background(), entityMap)
+
     ```
 4.  删
     ```go
@@ -83,17 +90,33 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
   
 5.  改
     ```go
+	//更新Struct对象
     err := zorm.UpdateStruct(context.Background(),&user)
+	//更新EntityMap
+	err := zorm.UpdateEntityMap(context.Background(),entityMap)
     //finder更新
     err := zorm.UpdateFinder(context.Background(),finder)
     ```
 6.  查
     ```go
+	//查询Struct对象列表
 	finder := zorm.NewSelectFinder(permstruct.UserStructTableName)
 	finder.Append(" order by id asc ")
 	page := zorm.NewPage()
 	var users = make([]permstruct.UserStruct, 0)
 	err := zorm.QueryStructList(context.Background(), finder, &users, page)
+
+	//总条数
+	fmt.Println(page.TotalCount)
+
+	//查询一个Struct对象
+	zorm.QueryStruct(context.Background(), finder, &user)
+
+    //查询[]map[string]interface{}
+	mapList,err := zorm.QueryMapList(context.Background(), finder, page)
+
+	//查询一个map[string]interface{}
+	zorm.QueryMap(context.Background(), finder)
     ```
 7.  事务传播
     ```go
