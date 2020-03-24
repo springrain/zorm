@@ -85,7 +85,7 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 		}
 
 		finder.sqlBuilder.WriteString(s)
-		//默认加一个空格,
+		//默认加一个空格,避免手误两个字符串连接再一起
 		finder.sqlBuilder.WriteString(" ")
 	}
 	if values == nil || len(values) < 1 {
