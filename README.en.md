@@ -173,12 +173,34 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
     }
     ```  
 
-9.  [测试](https://www.jianshu.com/p/1adc69468b6f)
+9.  性能压测
+
+   测试代码:https://github.com/alphayan/goormbenchmark
+
     ```go 
-    //函数测试
-    go test -run TestAdd2
-    //性能测试
-    go test -bench=.
-    go test -v -bench=. -cpu=8 -benchtime="3s" -timeout="5s" -benchmem
+    2000 times - Insert
+      zorm:     9.05s      4524909 ns/op    2146 B/op     33 allocs/op
+      gorm:     9.60s      4800617 ns/op    5407 B/op    119 allocs/op
+      xorm:    12.63s      6315205 ns/op    2365 B/op     56 allocs/op
+
+  2000 times - BulkInsert 100 row
+      xorm:    23.89s     11945333 ns/op  253812 B/op   4250 allocs/op
+      gorm:     Don't support bulk insert - https://github.com/jinzhu/gorm/issues/255
+      zorm:     Don't support bulk insert
+
+  2000 times - Update
+      xorm:     0.39s       195846 ns/op    2529 B/op     87 allocs/op
+      zorm:     0.51s       253577 ns/op    2232 B/op     32 allocs/op
+      gorm:     0.73s       366905 ns/op    9157 B/op    226 allocs/op
+
+  2000 times - Read
+      zorm:     0.28s       141890 ns/op    1616 B/op     43 allocs/op
+      gorm:     0.45s       223720 ns/op    5931 B/op    138 allocs/op
+      xorm:     0.55s       276055 ns/op    8648 B/op    227 allocs/op
+
+  2000 times - MultiRead limit 1000
+      zorm:    13.93s      6967146 ns/op  694286 B/op  23054 allocs/op
+      gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
+      xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
     ```
 
