@@ -98,7 +98,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 
 //包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
@@ -114,7 +114,7 @@ func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.S
 
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
-		fieldName, e := entityPKFieldName(entity)
+		fieldName, e := entityPKFieldName(entity, typeOf)
 		if e != nil {
 			return "", autoIncrement, e
 		}
@@ -179,7 +179,7 @@ func wrapSaveStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.S
 
 //包装更新Struct语句
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -193,7 +193,7 @@ func wrapUpdateStructSQL(dbType string, entity IEntityStruct, columns *[]reflect
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 
-		fieldName, e := entityPKFieldName(entity)
+		fieldName, e := entityPKFieldName(entity, typeOf)
 		if e != nil {
 			return "", e
 		}

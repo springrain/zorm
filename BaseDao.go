@@ -214,7 +214,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 //context必须传入,不能为空
 func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error {
 
-	checkerr := checkEntityKind(entity)
+	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		checkerr = fmt.Errorf("类型检查错误:%w", checkerr)
 		logger.Error(checkerr)
@@ -262,7 +262,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 		return e
 	}
 
-	typeOf := reflect.TypeOf(entity).Elem()
+	//typeOf := reflect.TypeOf(entity).Elem()
 
 	//数据库返回的列名
 	columns, cne := rows.Columns()
@@ -690,7 +690,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 	if entity == nil {
 		return errors.New("对象不能为空")
 	}
-	columns, values, columnAndValueErr := columnAndValue(entity)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("SaveStruct-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
 		logger.Error(columnAndValueErr)
@@ -717,7 +717,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 	}
 
 	//SQL语句
-	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, entity, &columns, &values)
+	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("SaveStruct-->wrapSaveStructSQL获取保存语句错误:%w", err)
 		logger.Error(err)
@@ -790,8 +790,12 @@ func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) error {
 //DeleteStruct 根据主键删除一个对象.必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
+	typeOf, checkerr := checkEntityKind(entity)
+	if checkerr != nil {
+		return checkerr
+	}
 
-	pkName, pkNameErr := entityPKFieldName(entity)
+	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
 
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("DeleteStruct-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
@@ -853,7 +857,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
-	checkerr := checkEntityKind(entity)
+	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return checkerr
 	}
@@ -907,7 +911,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
-	checkerr := checkEntityKind(entity)
+	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return checkerr
 	}
@@ -957,21 +961,21 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 }
 
 //根据保存的对象,返回插入的语句,需要插入的字段,字段的值.
-func columnAndValue(entity interface{}) ([]reflect.StructField, []interface{}, error) {
-	checkerr := checkEntityKind(entity)
+func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
+	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
-		return nil, nil, checkerr
+		return typeOf, nil, nil, checkerr
 	}
 	// 获取实体类的反射,指针下的struct
 	valueOf := reflect.ValueOf(entity).Elem()
 	//reflect.Indirect
 
 	//先从本地缓存中查找
-	typeOf := reflect.TypeOf(entity).Elem()
+	//typeOf := reflect.TypeOf(entity).Elem()
 
 	dbMap, err := getDBColumnFieldMap(typeOf)
 	if err != nil {
-		return nil, nil, err
+		return typeOf, nil, nil, err
 	}
 
 	//实体类公开字段的长度
@@ -1009,21 +1013,21 @@ func columnAndValue(entity interface{}) ([]reflect.StructField, []interface{}, e
 
 	//缓存数据库的列
 
-	return columns, values, nil
+	return typeOf, columns, values, nil
 
 }
 
 //获取实体类主键属性名称
-func entityPKFieldName(entity IEntityStruct) (string, error) {
+func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error) {
 
 	//检查是否是指针对象
-	checkerr := checkEntityKind(entity)
-	if checkerr != nil {
-		return "", checkerr
-	}
+	//typeOf, checkerr := checkEntityKind(entity)
+	//if checkerr != nil {
+	//	return "", checkerr
+	//}
 
 	//缓存的key,TypeOf和ValueOf的String()方法,返回值不一样
-	typeOf := reflect.TypeOf(entity).Elem()
+	//typeOf := reflect.TypeOf(entity).Elem()
 
 	dbMap, err := getDBColumnFieldMap(typeOf)
 	if err != nil {
@@ -1035,19 +1039,19 @@ func entityPKFieldName(entity IEntityStruct) (string, error) {
 }
 
 //检查entity类型必须是*struct类型或者基础类型的指针
-func checkEntityKind(entity interface{}) error {
+func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	if entity == nil {
-		return errors.New("参数不能为空,必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("参数不能为空,必须是*struct类型或者基础类型的指针")
 	}
 	typeOf := reflect.TypeOf(entity)
 	if typeOf.Kind() != reflect.Ptr { //如果不是指针
-		return errors.New("必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
 	if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
-		return errors.New("必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("必须是*struct类型或者基础类型的指针")
 	}
-	return nil
+	return typeOf, nil
 }
 
 //根据数据库返回的sql.Rows,查询出列名和对应的值.废弃
@@ -1131,13 +1135,13 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 		dbType = dbConnection.dbType
 	}
 
-	columns, values, columnAndValueErr := columnAndValue(entity)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		return columnAndValueErr
 	}
 
 	//SQL语句
-	sqlstr, err := wrapUpdateStructSQL(dbType, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateStructSQL(dbType, typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return err
 	}
