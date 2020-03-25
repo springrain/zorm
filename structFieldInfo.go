@@ -31,7 +31,7 @@ const (
 var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
 //用于缓存field对应的column的tag值
-var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
+//var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
 
 //获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型.
 //第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
@@ -47,7 +47,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	exportCacheKey := exportPrefix + entityName
 	privateCacheKey := privatePrefix + entityName
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
-	structFieldTagCacheKey := structFieldTagPrefix + entityName
+	//structFieldTagCacheKey := structFieldTagPrefix + entityName
 	//dbPKNameCacheKey := dbPKNamePrefix + entityName
 	//缓存的数据库主键值
 	//_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
@@ -118,7 +118,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
 	cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
 	cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
-	cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
+	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
 	return nil
 }
 
@@ -255,6 +255,7 @@ func getDBColumnFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, e
 	return dbColumnFieldMap, nil
 }
 
+/*
 //获取 fileName 属性 中 tag column的值
 func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string {
 	entityName := typeOf.String()
@@ -270,3 +271,4 @@ func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string 
 
 	return structFieldTagMap[fieldName]
 }
+*/

@@ -128,8 +128,8 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 			pkValue := (*values)[i]
 			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
 				//拼接字符串
-				sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(entity.GetPkSequence())
 				valueSQLBuilder.WriteString(",")
@@ -158,8 +158,8 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 			}
 		}
 		//拼接字符串
-		sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-		//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+		sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 		sqlBuilder.WriteString(",")
 		valueSQLBuilder.WriteString("?,")
 
@@ -217,8 +217,8 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 			continue
 
 		}
-		sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-		//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+		sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 		sqlBuilder.WriteString("=?,")
 
 	}
