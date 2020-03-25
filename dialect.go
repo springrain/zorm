@@ -114,11 +114,11 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
-		fieldName, e := entityPKFieldName(entity, typeOf)
+		pkFieldName, e := entityPKFieldName(entity, typeOf)
 		if e != nil {
 			return "", autoIncrement, e
 		}
-		if field.Name == fieldName { //如果是主键
+		if field.Name == pkFieldName { //如果是主键
 			pkKind := field.Type.Kind()
 
 			if !(pkKind == reflect.String || pkKind == reflect.Int) { //只支持字符串和int类型的主键
@@ -128,7 +128,8 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 			pkValue := (*values)[i]
 			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
 				//拼接字符串
-				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+				sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(entity.GetPkSequence())
 				valueSQLBuilder.WriteString(",")
@@ -157,7 +158,8 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 			}
 		}
 		//拼接字符串
-		sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+		sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+		//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 		sqlBuilder.WriteString(",")
 		valueSQLBuilder.WriteString("?,")
 
@@ -193,12 +195,12 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 
-		fieldName, e := entityPKFieldName(entity, typeOf)
+		pkFieldName, e := entityPKFieldName(entity, typeOf)
 		if e != nil {
 			return "", e
 		}
 
-		if field.Name == fieldName { //如果是主键
+		if field.Name == pkFieldName { //如果是主键
 			pkValue = (*values)[i]
 			//去掉这一列,最后处理主键
 			*columns = append((*columns)[:i], (*columns)[i+1:]...)
@@ -216,8 +218,8 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 			continue
 
 		}
-
-		sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+		sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
+		//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 		sqlBuilder.WriteString("=?,")
 
 	}
