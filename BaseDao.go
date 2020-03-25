@@ -976,7 +976,7 @@ func columnAndValue(entity interface{}) ([]reflect.StructField, []interface{}, e
 
 	//实体类公开字段的长度
 	fLen := len(dbMap)
-	//接收列的数组
+	//接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
 	columns := make([]reflect.StructField, 0, fLen)
 	//接收值的数组
 	values := make([]interface{}, 0, fLen)
