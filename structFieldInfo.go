@@ -24,7 +24,9 @@ const (
 )
 
 // 用于缓存反射的信息,sync.Map内部处理了并发锁
-var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
+//var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
+
+var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
 //获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型.
 //第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
@@ -42,7 +44,8 @@ func structFieldInfo(typeOf reflect.Type) error {
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
 	//dbPKNameCacheKey := dbPKNamePrefix + entityName
 	//缓存的数据库主键值
-	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
+	//_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
+	_, exportOk := cacheStructFieldInfoMap[exportCacheKey]
 	//如果存在值,认为缓存中有所有的信息,不再处理
 	if exportOk {
 		return nil
@@ -100,9 +103,13 @@ func structFieldInfo(typeOf reflect.Type) error {
 	allFieldMap.Range(f)
 
 	//加入缓存
-	cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
-	cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
-	cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
+	//cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
+	//cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
+	//cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
+
+	cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
+	cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
+	cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 
 	return nil
 }
@@ -218,19 +225,24 @@ func deepCopy(dst, src interface{}) error {
 func getDBColumnFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, error) {
 	entityName := typeOf.String()
 
-	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
+	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
+	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[dbColumnNamePrefix+entityName]
 	if !dbOk { //缓存不存在
 		//获取实体类的输出字段和私有 字段
 		err := structFieldInfo(typeOf)
 		if err != nil {
 			return nil, err
 		}
-		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
+		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
+		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[dbColumnNamePrefix+entityName]
 	}
 
-	dbMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
-	if !efOK {
-		return nil, errors.New("缓存数据库字段异常")
-	}
-	return dbMap, nil
+	/*
+		dbMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
+		if !efOK {
+			return nil, errors.New("缓存数据库字段异常")
+		}
+		return dbMap, nil
+	*/
+	return dbColumnFieldMap, nil
 }
