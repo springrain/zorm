@@ -111,13 +111,13 @@ func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct,
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	var valueSQLBuilder strings.Builder
 	valueSQLBuilder.WriteString(" VALUES (")
-
+	//主键的名称
+	pkFieldName, e := entityPKFieldName(entity, typeOf)
+	if e != nil {
+		return "", autoIncrement, e
+	}
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
-		pkFieldName, e := entityPKFieldName(entity, typeOf)
-		if e != nil {
-			return "", autoIncrement, e
-		}
 		if field.Name == pkFieldName { //如果是主键
 			pkKind := field.Type.Kind()
 
@@ -191,15 +191,14 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 
 	//主键的值
 	var pkValue interface{}
+	//主键的名称
+	pkFieldName, e := entityPKFieldName(entity, typeOf)
+	if e != nil {
+		return "", e
+	}
 
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
-
-		pkFieldName, e := entityPKFieldName(entity, typeOf)
-		if e != nil {
-			return "", e
-		}
-
 		if field.Name == pkFieldName { //如果是主键
 			pkValue = (*values)[i]
 			//去掉这一列,最后处理主键
