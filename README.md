@@ -177,18 +177,21 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
 
    测试代码:https://github.com/alphayan/goormbenchmark
 
-    ```go 
-    2000 times - Insert
+
+
+
+```
+2000 times - Insert
       zorm:     9.05s      4524909 ns/op    2146 B/op     33 allocs/op
       gorm:     9.60s      4800617 ns/op    5407 B/op    119 allocs/op
       xorm:    12.63s      6315205 ns/op    2365 B/op     56 allocs/op
 
-  2000 times - BulkInsert 100 row
+    2000 times - BulkInsert 100 row
       xorm:    23.89s     11945333 ns/op  253812 B/op   4250 allocs/op
       gorm:     Don't support bulk insert - https://github.com/jinzhu/gorm/issues/255
       zorm:     Don't support bulk insert
 
-  2000 times - Update
+    2000 times - Update
       xorm:     0.39s       195846 ns/op    2529 B/op     87 allocs/op
       zorm:     0.51s       253577 ns/op    2232 B/op     32 allocs/op
       gorm:     0.73s       366905 ns/op    9157 B/op    226 allocs/op
@@ -202,5 +205,5 @@ func (entity *UserOrgStruct) GetPKColumnName() string {
       zorm:    13.93s      6967146 ns/op  694286 B/op  23054 allocs/op
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
-    ```
+```
 
