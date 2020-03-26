@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"gitee.com/chunanyong/logger"
 	"gitee.com/chunanyong/zorm"
-	permstruct "gitee.com/chunanyong/zorm/test/code/struct"
+	permstruct "test/code/struct"
 )
 
 //SaveDemoStruct 保存栗子

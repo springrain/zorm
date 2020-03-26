@@ -1,10 +1,12 @@
-module gitee.com/chunanyong/zorm
+module test
 
 go 1.14
 
 require (
 	gitee.com/chunanyong/gouuid v1.3.0
 	gitee.com/chunanyong/logger v1.2.4
+	gitee.com/chunanyong/zorm v1.2.8
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
 
 )
