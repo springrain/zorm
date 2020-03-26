@@ -286,3 +286,29 @@ func TestDeleteStruct(t *testing.T) {
 	}
 
 }
+
+//TestOther 13.其他的一些说明.非常感谢能看到这一行
+func TestOther(t *testing.T) {
+
+	//场景1.多个数据库.通过对应数据库的baseDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
+	newCtx, err := baseDao.BindContextDBConnection(ctx)
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//把新产生的ctx传递到zorm的函数
+	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
+	list, _ := zorm.QueryMapList(newCtx, finder, nil)
+	fmt.Println(list)
+
+	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
+	zorm.FuncReadWriteStrategy = myReadWriteFuc
+
+	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理
+
+}
+
+//单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
+func myReadWriteFuc(rwType int) *zorm.BaseDao {
+	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
+	return baseDao
+}

@@ -16,8 +16,8 @@ import (
 	"gitee.com/chunanyong/logger"
 )
 
-//FuncReadWriteBaseDao 读写分离的BaseDao函数,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
-var FuncReadWriteBaseDao func(rwType int) *BaseDao = getDefaultDao
+//FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
+var FuncReadWriteStrategy func(rwType int) *BaseDao = getDefaultDao
 
 type wrapContextStringKey string
 
@@ -81,7 +81,7 @@ func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
 		return nil, err
 	}
 
-	if FuncReadWriteBaseDao(1) == nil {
+	if FuncReadWriteStrategy(1) == nil {
 		defaultDao = &BaseDao{config, dataSource}
 		return defaultDao, nil
 	}
@@ -235,7 +235,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -379,7 +379,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -545,7 +545,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(0).config.DBType
+		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -658,7 +658,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -716,7 +716,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -826,7 +826,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -880,7 +880,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -948,7 +948,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -1151,7 +1151,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteBaseDao(1).config.DBType
+		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
 		dbType = dbConnection.dbType
 	}
@@ -1281,7 +1281,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 
 		//如果要求没有事务,实例化一个默认的dbConnection
 		var errGetDBConnection error
-		dbConnection, errGetDBConnection = FuncReadWriteBaseDao(rwType).newDBConnection()
+		dbConnection, errGetDBConnection = FuncReadWriteStrategy(rwType).newDBConnection()
 		if errGetDBConnection != nil {
 			return ctx, nil, errGetDBConnection
 		}
