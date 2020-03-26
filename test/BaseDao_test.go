@@ -182,41 +182,46 @@ func TestQueryMapList(t *testing.T) {
 
 //TestUpdateStructNotZeroValue 08.更新struct对象,只更新不为零值的字段.主键必须有值
 func TestUpdateStructNotZeroValue(t *testing.T) {
-	//声明一个对象的指针,用于承载返回的数据
-	demo := &demoStruct{}
-	demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
-	demo.UserName = "UpdateStructNotZeroValue"
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//更新
-		err := zorm.UpdateStructNotZeroValue(ctx, demo)
-		return nil, err
-	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
-	}
-	//打印结果
-	fmt.Println(demo)
-}
 
-//TestUpdateStruct 09.更新struct对象,更新所有字段.主键必须有值
-func TestUpdateStruct(t *testing.T) {
-	//声明一个对象的指针,用于承载返回的数据
-	demo := &demoStruct{}
-	demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
-	demo.UserName = "TestUpdateStruct"
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//更新
-		err := zorm.UpdateStruct(ctx, demo)
+		//声明一个对象的指针,用于承载返回的数据
+		demo := &demoStruct{}
+		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.UserName = "UpdateStructNotZeroValue"
+
+		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateStructNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		err := zorm.UpdateStructNotZeroValue(ctx, demo)
+
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
 	})
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-	//打印结果
-	fmt.Println(demo)
+
+}
+
+//TestUpdateStruct 09.更新struct对象,更新所有字段.主键必须有值
+func TestUpdateStruct(t *testing.T) {
+
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+		//声明一个对象的指针,用于承载返回的数据
+		demo := &demoStruct{}
+		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.UserName = "TestUpdateStruct"
+
+		//更新 "sql":"UPDATE t_demo SET password=?,createTime=?,active=?,userName=? WHERE id=?","args":["","0001-01-01T00:00:00Z",0,"TestUpdateStruct","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		err := zorm.UpdateStruct(ctx, demo)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
 }
 
 //TestUpdateFinder 10.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
@@ -226,12 +231,33 @@ func TestUpdateFinder(t *testing.T) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
-
-		//"sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 
-		//执行查询
+		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		err := zorm.UpdateFinder(ctx, finder)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+
+}
+
+//TestUpdateEntityMap 11.更新一个EntityMap,主键必须有值
+func TestUpdateEntityMap(t *testing.T) {
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		//创建一个EntityMap,需要传入表名
+		entityMap := zorm.NewEntityMap(demoStructTableName)
+		//设置主键名称
+		entityMap.PkColumnName = "id"
+		//Set 设置数据库的字段值,主键必须有值
+		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		entityMap.Set("userName", "TestUpdateEntityMap")
+		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		err := zorm.UpdateEntityMap(ctx, entityMap)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
