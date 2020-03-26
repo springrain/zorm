@@ -15,7 +15,6 @@ CREATE TABLE `t_demo`  (
   `id` varchar(50)  NOT NULL COMMENT '主键',
   `userName` varchar(30)  NOT NULL COMMENT '姓名',
   `password` varchar(50)  NOT NULL COMMENT '密码',
-  `mobile` varchar(16)  NOT NULL COMMENT '手机号码',
   `createTime` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `active` int(0) NOT NULL DEFAULT 1 COMMENT '是否有效(0否,1是)',
   PRIMARY KEY (`id`)
@@ -39,9 +38,6 @@ type demoStruct struct {
 
 	//Password 密码
 	Password string `column:"password"`
-
-	//Mobile 手机号码
-	Mobile string `column:"mobile"`
 
 	//CreateTime <no value>
 	CreateTime time.Time `column:"createTime"`
