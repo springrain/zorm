@@ -856,7 +856,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 }
 
-//SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,如果主键是自增或者序列,不要entityMap.Set主键的值
+//SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
@@ -926,7 +926,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 }
 
-//UpdateEntityMap 更新*IEntityMap对象.使用Map修改数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
+//UpdateEntityMap 更新*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象

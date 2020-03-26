@@ -1,6 +1,6 @@
 package zorm
 
-//IEntityStruct Entity实体类接口,所有实体类必须实现,否则baseDao无法执行.baseDao函数形参只有Finder和IBaseEntity
+//IEntityStruct structe实体类的接口,所有的struct实体类都要实现这个接口
 type IEntityStruct interface {
 	//获取表名称
 	GetTableName() string
@@ -10,7 +10,7 @@ type IEntityStruct interface {
 	GetPkSequence() string
 }
 
-//IEntityMap Entity实体类接口,所有实体类必须实现,否则baseDao无法执行.baseDao函数形参只有Finder和IBaseEntity
+//IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 type IEntityMap interface {
 	//获取表名称
 	GetTableName() string
@@ -50,7 +50,7 @@ func (entity *EntityStruct) GetPkSequence() string {
 
 //-------------------------------------------------------------------------//
 
-//EntityMap IBaseEntity的基础实现,所有的实体类都匿名注入.这样就类似实现继承了,如果接口增加方法,调整这个默认实现即可
+//EntityMap IEntityMap的基础实现,可以直接使用或者匿名注入
 type EntityMap struct {
 	//表名
 	tableName string
