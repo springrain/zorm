@@ -83,10 +83,11 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 		if len(finder.sqlstr) > 0 {
 			finder.sqlstr = ""
 		}
-
-		finder.sqlBuilder.WriteString(s)
 		//默认加一个空格,避免手误两个字符串连接再一起
 		finder.sqlBuilder.WriteString(" ")
+
+		finder.sqlBuilder.WriteString(s)
+
 	}
 	if values == nil || len(values) < 1 {
 		return finder
@@ -172,12 +173,6 @@ func (finder *Finder) GetSQL() (string, error) {
 			typeOf = typeOf.Elem()
 			kind = valueOf.Kind()
 		}
-		//获取数组类型参数值的长度
-		sliceLen := valueOf.Len()
-		//数组类型的参数长度小于1,认为是有异常的参数
-		if sliceLen < 1 {
-			return sqlstr, errors.New("语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
-		}
 
 		//如果不是数组或者slice
 		if !(kind == reflect.Array || kind == reflect.Slice) {
@@ -195,6 +190,15 @@ func (finder *Finder) GetSQL() (string, error) {
 			newSQLStr.WriteString(questions[i+1])
 			continue
 		}
+
+		//如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
+		//获取数组类型参数值的长度
+		sliceLen := valueOf.Len()
+		//数组类型的参数长度小于1,认为是有异常的参数
+		if sliceLen < 1 {
+			return sqlstr, errors.New("语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+		}
+
 		for j := 0; j < sliceLen; j++ {
 			//每多一个参数,对应",?" 两个符号.增加的问号长度总计是(sliceLen-1)*2.
 			if j >= 1 {

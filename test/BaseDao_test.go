@@ -8,6 +8,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//baseDao 代表一个数据库的操作,如果有多个数据库,就声明多个BaseDao
+//baseDao 代表一个数据库,如果有多个数据库,就对应声明多个BaseDao
 var baseDao *zorm.BaseDao
 
 // ctx默认应该有 web层传入,例如gin的c.Request.Context().这里只是模拟
@@ -93,4 +94,29 @@ func TestSaveEntityMap(t *testing.T) {
 	if err != nil {
 		t.Errorf("错误:%v", err)
 	}
+}
+
+//TestQueryStruct 04.测试查询一个struct对象
+func TestQueryStruct(t *testing.T) {
+
+	//声明一个对象的指针,用于承载返回的数据
+	demo := &demoStruct{}
+
+	//构造查询用的finder
+	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
+	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+
+	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	finder.Append("WHERE id=? and active=?", "41b2aa4f-379a-4319-8af9-08472b6e514e", 1)
+
+	//执行查询
+	err := zorm.QueryStruct(ctx, finder, demo)
+
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//打印结果
+	fmt.Println(demo)
+
 }
