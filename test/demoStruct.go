@@ -1,12 +1,18 @@
 package test
 
+import (
+	"time"
 
+	"gitee.com/chunanyong/zorm"
+)
 
 //建表语句
+
 /*
+
 DROP TABLE IF EXISTS `t_demo`;
 CREATE TABLE `t_demo`  (
-  `id` varchar(50)  NOT NULL COMMENT ' ',
+  `id` varchar(50)  NOT NULL COMMENT '主键',
   `userName` varchar(30)  NOT NULL COMMENT '姓名',
   `password` varchar(50)  NOT NULL COMMENT '密码',
   `mobile` varchar(16)  NOT NULL COMMENT '手机号码',
@@ -14,8 +20,8 @@ CREATE TABLE `t_demo`  (
   `active` int(0) NOT NULL DEFAULT 1 COMMENT '是否有效(0否,1是)',
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = '例子' ;
-*/
 
+*/
 
 //demoStructTableName 表名常量,方便直接调用
 const demoStructTableName = "t_demo"
@@ -25,7 +31,7 @@ type demoStruct struct {
 	//引入默认的struct,隔离IEntityStruct的方法改动
 	zorm.EntityStruct
 
-	//Id
+	//Id 主键
 	Id string `column:"id"`
 
 	//UserName 姓名
@@ -58,8 +64,9 @@ func (entity *demoStruct) GetPKColumnName() string {
 }
 
 //newDemoStruct 创建一个默认对象
-func newDemoStruct() demoStruct{
+func newDemoStruct() demoStruct {
 	demo := demoStruct{
+		//如果Id=="",保存时zorm会调用zorm.FuncGenerateStringID(),默认UUID字符串,也可以自己定义实现方式,例如 zorm.FuncGenerateStringID=funcmyId
 		Id:         zorm.FuncGenerateStringID(),
 		UserName:   "defaultUserName",
 		Password:   "defaultPassword",

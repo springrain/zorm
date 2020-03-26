@@ -13,34 +13,6 @@ import (
 	"gitee.com/chunanyong/zorm/typeconvert"
 )
 
-/**
-
-const (
-	DBType_MYSQL      dbType= "mysql"
-	DBType_MSSQL      dbType= "sqlserver"
-	DBType_ORACLE     dbType= "oci8"
-	DBType_POSTGRESQL dbType= "postgres"
-	DBType_SQLITE     dbType= "sqlite3"
-	DBType_UNKNOWN    dbType= "mysql"
-)
-
-
-
-//数据库连接字符串
-func wrapDBDSN(config *DataSourceConfig) (string, error) {
-	if config == nil {
-		return "", nil
-	}
-	if config.DriverName == "mysql" {
-		//username:password@tcp(127.0.0.1:3306)/dbName
-		dsn := config.UserName + ":" + config.PassWord + "@tcp(" + config.Host + ":" + strconv.Itoa(config.Port) + ")/" + config.DBName + "?charset=utf8&loc=Asia%2FShanghai&parseTime=true"
-		return dsn, nil
-	}
-
-	return "", errors.New("不支持的数据库")
-}
-**/
-
 //包装基础的SQL语句
 func wrapSQL(dbType string, sqlstr string) (string, error) {
 

@@ -19,17 +19,17 @@ type dataSource struct {
 type DataSourceConfig struct {
 	//DSN dataSourceName 连接字符串
 	DSN string
-	//DriverName 数据库驱动名称mysql,postgres,oci8,sqlserver,sqlite3 和DBType对应,处理数据库有多个驱动
+	//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
 	DriverName string
-	//数据库类型  mysql,postgresql,oracle,mssql,sqlite 和 DriverName 对应,处理数据库有多个驱动
+	//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
 	DBType string
-	//是否打印SQL语句
+	//PrintSQL 是否打印SQL语句.使用logger.info记录SQL
 	PrintSQL bool
-	//数据库最大连接数 默认50
+	//MaxOpenConns 数据库最大连接数 默认50
 	MaxOpenConns int
-	//数据库最大空闲连接数 默认50
+	//MaxIdleConns 数据库最大空闲连接数 默认50
 	MaxIdleConns int
-	//连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+	//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 	ConnMaxLifetimeSecond int
 }
 
