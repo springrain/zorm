@@ -465,5 +465,8 @@ func typeConvertInt64toInt(from int64) (int, error) {
 	//int64 转 int
 	strInt64 := strconv.FormatInt(from, 10)
 	to, err := strconv.Atoi(strInt64)
+	if err != nil {
+		return -1, err
+	}
 	return to, err
 }

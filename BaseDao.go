@@ -635,26 +635,28 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 
 //UpdateFinder 更新Finder语句
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateFinder(ctx context.Context, finder *Finder) error {
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
+	affected := -1
 	if finder == nil {
-		return errors.New("finder不能为空")
+		return affected, errors.New("finder不能为空")
 	}
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
 		err = fmt.Errorf("finder.GetSQL()错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -668,51 +670,57 @@ func UpdateFinder(ctx context.Context, finder *Finder) error {
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->wrapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
-	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.execContext(ctx, sqlstr, finder.values...)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, finder.values...)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("执行更新错误:%w", errexec)
 		logger.Error(errexec)
-		return errexec
+		return affected, errexec
 	}
-	return nil
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
+	}
+
+	return affected, nil
 }
 
 //SaveStruct 保存Struct对象,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func SaveStruct(ctx context.Context, entity IEntityStruct) error {
-
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+	affected := -1
 	if entity == nil {
-		return errors.New("对象不能为空")
+		return affected, errors.New("对象不能为空")
 	}
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("SaveStruct-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
 		logger.Error(columnAndValueErr)
-		return columnAndValueErr
+		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
-		return errors.New("没有tag信息,请检查struct中 column 的tag")
+		return affected, errors.New("没有tag信息,请检查struct中 column 的tag")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -727,14 +735,14 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 	if err != nil {
 		err = fmt.Errorf("SaveStruct-->wrapSaveStructSQL获取保存语句错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
@@ -743,7 +751,12 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveStruct执行保存错误:%w", errexec)
 		logger.Error(errexec)
-		return errexec
+		return affected, errexec
+	}
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
 	}
 	//如果是自增主键
 	if autoIncrement {
@@ -752,7 +765,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给struct属性:%w", e)
 			logger.Error(e)
-			return nil
+			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
 		//int64 转 int
@@ -762,42 +775,44 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 		if seterr != nil {
 			seterr = fmt.Errorf("反射赋值数据库返回的自增主键错误:%w", seterr)
 			logger.Error(seterr)
-			return seterr
+			return affected, seterr
 		}
 	}
 
-	return nil
+	return affected, nil
 
 }
 
 //UpdateStruct 更新struct所有属性,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateStruct(ctx context.Context, entity IEntityStruct) error {
-	err := updateStructFunc(ctx, entity, false)
+func UpdateStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+	affected, err := updateStructFunc(ctx, entity, false)
 	if err != nil {
 		err = fmt.Errorf("UpdateStruct-->updateStructFunc更新错误:%w", err)
-		return err
+		return affected, err
 	}
-	return nil
+	return affected, nil
 }
 
 //UpdateStructNotZeroValue 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) error {
-	err := updateStructFunc(ctx, entity, true)
+func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
+	affected, err := updateStructFunc(ctx, entity, true)
 	if err != nil {
 		err = fmt.Errorf("UpdateStructNotNil-->updateStructFunc更新错误:%w", err)
-		return err
+		return affected, err
 	}
-	return nil
+	return affected, nil
 }
 
 //DeleteStruct 根据主键删除一个对象.必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+	affected := -1
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
-		return checkerr
+		return affected, checkerr
 	}
 
 	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
@@ -805,23 +820,23 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("DeleteStruct-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
 		logger.Error(pkNameErr)
-		return pkNameErr
+		return affected, pkNameErr
 	}
 
 	value, e := structFieldValue(entity, pkName)
 	if e != nil {
 		e = fmt.Errorf("DeleteStruct-->structFieldValue获取主键值错误:%w", e)
 		logger.Error(e)
-		return e
+		return affected, e
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -836,46 +851,54 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 	if err != nil {
 		err = fmt.Errorf("DeleteStruct-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
-	_, errexec := dbConnection.execContext(ctx, sqlstr, value)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, value)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("DeleteStruct执行删除错误:%w", errexec)
 		logger.Error(errexec)
-		return errexec
+		return affected, errexec
 	}
 
-	return nil
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
+	}
+
+	return affected, nil
 
 }
 
 //SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func SaveEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
+	affected := -1
 	//检查是否是指针对象
 	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
-		return checkerr
+		return affected, checkerr
 	}
 
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -890,14 +913,14 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	if err != nil {
 		err = fmt.Errorf("SaveMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
@@ -905,7 +928,13 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveMap执行保存错误:%w", errexec)
 		logger.Error(errexec)
-		return errexec
+		return affected, errexec
+	}
+
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
 	}
 
 	//如果是自增主键
@@ -915,7 +944,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
 			logger.Error(e)
-			return nil
+			return affected, nil
 		}
 		//int64 转 int
 		strInt64 := strconv.FormatInt(autoIncrementIDInt64, 10)
@@ -924,26 +953,28 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 		entity.Set(entity.GetPKColumnName(), autoIncrementIDInt)
 	}
 
-	return nil
+	return affected, nil
 
 }
 
 //UpdateEntityMap 更新*IEntityMap对象.用于不方便使用struct的场景,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
+	affected := -1
 	//检查是否是指针对象
 	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
-		return checkerr
+		return affected, checkerr
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -958,26 +989,30 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	if err != nil {
 		err = fmt.Errorf("UpdateMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateMap执行更新错误:%w", errexec)
 		logger.Error(errexec)
-		return errexec
+		return affected, errexec
 	}
-	//fmt.Println(entity.GetTableName() + " update success")
-	return nil
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
+	}
+	return affected, nil
 
 }
 
@@ -1134,19 +1169,20 @@ func wrapMap(columns []string, values []columnValue) (map[string]columnValue, er
 
 //更新对象
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) error {
-
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (int, error) {
+	affected := -1
 	if entity == nil {
-		return errors.New("对象不能为空")
+		return affected, errors.New("对象不能为空")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return affected, errFromContxt
 	}
 	//自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return affected, errDBConnection
 	}
 
 	var dbType string = ""
@@ -1158,30 +1194,35 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
-		return columnAndValueErr
+		return affected, columnAndValueErr
 	}
 
 	//SQL语句
 	sqlstr, err := wrapUpdateStructSQL(dbType, typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
-		return err
+		return affected, err
 	}
 
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return affected, dbConnectionerr
 	}
 
-	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
-		return errexec
+		return affected, errexec
 	}
 
-	return nil
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
+	}
+
+	return affected, nil
 
 }
 

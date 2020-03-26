@@ -57,7 +57,7 @@ func TestSaveStruct(t *testing.T) {
 		demo := newDemoStruct()
 
 		//保存对象,参数是对象指针.如果主键是自增,会赋值到对象的主键属性
-		err := zorm.SaveStruct(ctx, &demo)
+		_, err := zorm.SaveStruct(ctx, &demo)
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
 	})
@@ -87,7 +87,7 @@ func TestSaveEntityMap(t *testing.T) {
 		entityMap.Set("createTime", time.Now())
 		entityMap.Set("active", 1)
 
-		err := zorm.SaveEntityMap(ctx, entityMap)
+		_, err := zorm.SaveEntityMap(ctx, entityMap)
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
 	})
@@ -192,7 +192,7 @@ func TestUpdateStructNotZeroValue(t *testing.T) {
 		demo.UserName = "UpdateStructNotZeroValue"
 
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateStructNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
-		err := zorm.UpdateStructNotZeroValue(ctx, demo)
+		_, err := zorm.UpdateStructNotZeroValue(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -214,7 +214,7 @@ func TestUpdateStruct(t *testing.T) {
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "TestUpdateStruct"
 
-		err := zorm.UpdateStruct(ctx, demo)
+		_, err := zorm.UpdateStruct(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -234,7 +234,7 @@ func TestUpdateFinder(t *testing.T) {
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 
 		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
-		err := zorm.UpdateFinder(ctx, finder)
+		_, err := zorm.UpdateFinder(ctx, finder)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -257,7 +257,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 		entityMap.Set("userName", "TestUpdateEntityMap")
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
-		err := zorm.UpdateEntityMap(ctx, entityMap)
+		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -276,7 +276,7 @@ func TestDeleteStruct(t *testing.T) {
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
 
 		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
-		err := zorm.DeleteStruct(ctx, demo)
+		_, err := zorm.DeleteStruct(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
