@@ -1,9 +1,8 @@
-// zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体,具体使用方法参见Finder.go文件
+// zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,语句执行前会自动替换占位符,postgresql 把?替换成$1,$2...;mssql替换成@P1,@p2...;orace替换成:1,:2...
-// 为了保持数据库兼容性,分页语句需要有order by.mysql没有order by可以正常分页,mssql就必须要有order by才能分页,避免以后迁移风险,zorm对没有order by的分页语句会抛出异常
-// zorm的执行方法第一个参数都是 ctx context.Context,业务方法一直传递ctx参数即可,事务传播也是依靠ctx实现.这是golang的标准方式,从web层传递进来即可,例如gin的c.Request.Context()
-// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启,zorm通过ctx实现了事务传播,如果当前有事务就使用当前事务,如果当前无事务,就开启新的事务
-
+// 为了保持数据库兼容性,分页语句必须有order by
+// zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
+// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 package test
 
 import (
