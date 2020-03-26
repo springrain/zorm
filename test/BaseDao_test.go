@@ -139,7 +139,9 @@ func TestQueryMap(t *testing.T) {
 
 //TestQueryStructList 06.测试查询对象列表
 func TestQueryStructList(t *testing.T) {
+	//创建用于接收结果的slice
 	list := make([]demoStruct, 0)
+
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//为了保证数据库迁移,分页语句必须要有order by
@@ -147,14 +149,33 @@ func TestQueryStructList(t *testing.T) {
 
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-	page.PageNo = 1    //查询第一页
-	page.PageSize = 20 //每页20条
+	page.PageNo = 1    //查询第1页,默认是1
+	page.PageSize = 20 //每页20条,默认是20
 
 	//执行查询
 	err := zorm.QueryStructList(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-	//zorm会把总条数赋值给page.TotalCount
+	//打印结果
 	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
+}
+
+//TestQueryMapList 07.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+func TestQueryMapList(t *testing.T) {
+	//构造查询用的finder
+	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//为了保证数据库迁移,分页语句必须要有order by
+	finder.Append("order by id asc")
+
+	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
+	page := zorm.NewPage()
+
+	//执行查询
+	listMap, err := zorm.QueryMapList(ctx, finder, page)
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//打印结果
+	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
 }
