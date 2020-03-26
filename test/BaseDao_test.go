@@ -108,7 +108,7 @@ func TestQueryStruct(t *testing.T) {
 	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
-	finder.Append("WHERE id=? and active=?", "41b2aa4f-379a-4319-8af9-08472b6e514e", 1)
+	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//执行查询
 	err := zorm.QueryStruct(ctx, finder, demo)
@@ -118,5 +118,43 @@ func TestQueryStruct(t *testing.T) {
 	}
 	//打印结果
 	fmt.Println(demo)
+}
 
+//TestQueryMap 05.测试查询map接收结果,用于不太适合struct的场景,比较灵活
+func TestQueryMap(t *testing.T) {
+
+	//构造查询用的finder
+	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	//执行查询
+	resultMap, err := zorm.QueryMap(ctx, finder)
+
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//打印结果
+	fmt.Println(resultMap)
+}
+
+//TestQueryStructList 06.测试查询对象列表
+func TestQueryStructList(t *testing.T) {
+	list := make([]demoStruct, 0)
+	//构造查询用的finder
+	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//为了保证数据库迁移,分页语句必须要有order by
+	finder.Append("order by id asc")
+
+	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
+	page := zorm.NewPage()
+	page.PageNo = 1    //查询第一页
+	page.PageSize = 20 //每页20条
+
+	//执行查询
+	err := zorm.QueryStructList(ctx, finder, &list, page)
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//zorm会把总条数赋值给page.TotalCount
+	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
 }
