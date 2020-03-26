@@ -55,6 +55,7 @@ func TestSaveStruct(t *testing.T) {
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个demo对象
 		demo := newDemoStruct()
+
 		//保存对象,参数是对象指针.如果主键是自增,会赋值到对象的主键属性
 		err := zorm.SaveStruct(ctx, &demo)
 		//如果返回的err不是nil,事务就会回滚
@@ -213,7 +214,6 @@ func TestUpdateStruct(t *testing.T) {
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "TestUpdateStruct"
 
-		//更新 "sql":"UPDATE t_demo SET password=?,createTime=?,active=?,userName=? WHERE id=?","args":["","0001-01-01T00:00:00Z",0,"TestUpdateStruct","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		err := zorm.UpdateStruct(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
@@ -258,6 +258,25 @@ func TestUpdateEntityMap(t *testing.T) {
 		entityMap.Set("userName", "TestUpdateEntityMap")
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		err := zorm.UpdateEntityMap(ctx, entityMap)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+
+}
+
+//TestDeleteStruct 12.删除一个struct对象,主键必须有值
+func TestDeleteStruct(t *testing.T) {
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		demo := &demoStruct{}
+		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
+
+		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
+		err := zorm.DeleteStruct(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
