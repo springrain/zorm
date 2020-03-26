@@ -179,3 +179,22 @@ func TestQueryMapList(t *testing.T) {
 	//打印结果
 	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
 }
+
+//TestUpdateStructNotZeroValue 08.更新struct对象,只更新不为零值的字段.主键必须有值
+func TestUpdateStructNotZeroValue(t *testing.T) {
+	//声明一个对象的指针,用于承载返回的数据
+	demo := &demoStruct{}
+	demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+	demo.UserName = "UpdateStructNotZeroValue"
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		//更新
+		err := zorm.UpdateStructNotZeroValue(ctx, demo)
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//打印结果
+	fmt.Println(demo)
+}
