@@ -519,6 +519,8 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 	}
 	if len(resultMapList) > 1 {
 		return resultMapList[0], errors.New("查询出多条数据")
+	} else if len(resultMapList) == 0 { //数据库不存在值
+		return nil, nil
 	}
 	return resultMapList[0], nil
 }
@@ -926,7 +928,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 
 }
 
-//UpdateEntityMap 更新*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
+//UpdateEntityMap 更新*IEntityMap对象.用于不方便使用struct的场景,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
