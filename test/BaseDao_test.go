@@ -78,7 +78,6 @@ func TestSaveEntityMap(t *testing.T) {
 		entityMap.Set("id", zorm.FuncGenerateStringID())
 		entityMap.Set("userName", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
-		entityMap.Set("mobile", "mobile")
 		entityMap.Set("createTime", time.Now())
 		entityMap.Set("active", 1)
 
