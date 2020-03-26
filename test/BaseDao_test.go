@@ -198,3 +198,46 @@ func TestUpdateStructNotZeroValue(t *testing.T) {
 	//打印结果
 	fmt.Println(demo)
 }
+
+//TestUpdateStruct 09.更新struct对象,更新所有字段.主键必须有值
+func TestUpdateStruct(t *testing.T) {
+	//声明一个对象的指针,用于承载返回的数据
+	demo := &demoStruct{}
+	demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+	demo.UserName = "TestUpdateStruct"
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		//更新
+		err := zorm.UpdateStruct(ctx, demo)
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	//打印结果
+	fmt.Println(demo)
+}
+
+//TestUpdateFinder 10.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
+func TestUpdateFinder(t *testing.T) {
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
+		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE t_demo
+		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
+
+		//"sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+
+		//执行查询
+		err := zorm.UpdateFinder(ctx, finder)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	if err != nil { //标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+
+}
