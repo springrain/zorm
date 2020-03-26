@@ -17,6 +17,7 @@ import (
 )
 
 //FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
+//不要放到BaseDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为单数据库读写分离的处理方式,不归属到BaseDao
 var FuncReadWriteStrategy func(rwType int) *BaseDao = getDefaultDao
 
 type wrapContextStringKey string
