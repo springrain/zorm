@@ -856,7 +856,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) error {
 
 }
 
-//SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,需要在数据中封装好包括Id在内的所有数据.不适用于复杂情况
+//SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	//检查是否是指针对象
@@ -884,7 +884,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	}
 
 	//SQL语句
-	sqlstr, values, err := wrapSaveMapSQL(dbType, entity)
+	sqlstr, values, autoIncrement, err := wrapSaveMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("SaveMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
 		logger.Error(err)
@@ -899,11 +899,27 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) error {
 	}
 
 	//流弊的...,把数组展开变成多个参数的形式
-	_, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveMap执行保存错误:%w", errexec)
 		logger.Error(errexec)
 		return errexec
+	}
+
+	//如果是自增主键
+	if autoIncrement {
+		//需要数据库支持,获取自增主键
+		autoIncrementIDInt64, e := res.LastInsertId()
+		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
+			e = fmt.Errorf("数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
+			logger.Error(e)
+			return nil
+		}
+		//int64 转 int
+		strInt64 := strconv.FormatInt(autoIncrementIDInt64, 10)
+		autoIncrementIDInt, _ := strconv.Atoi(strInt64)
+		//设置自增主键的值
+		entity.Set(entity.GetPKColumnName(), autoIncrementIDInt)
 	}
 
 	return nil

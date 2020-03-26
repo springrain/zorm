@@ -222,11 +222,12 @@ func wrapDeleteStructSQL(dbType string, entity IEntityStruct) (string, error) {
 }
 
 //包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
-
+func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bool, error) {
+	//是否自增,默认false
+	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", nil, errors.New("GetDBFieldMap()返回值不能为空")
+		return "", nil, autoIncrement, errors.New("GetDBFieldMap()返回值不能为空")
 	}
 	//SQL对应的参数
 	values := []interface{}{}
@@ -240,6 +241,17 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, er
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	var valueSQLBuilder strings.Builder
 	valueSQLBuilder.WriteString(" VALUES (")
+	//是否Set了主键
+	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
+	if !hasPK { //如果没有设置主键,认为是自增或者序列
+		autoIncrement = true
+		if len(entity.GetPkSequence()) > 0 { //如果是序列
+			sqlBuilder.WriteString(entity.GetPKColumnName())
+			sqlBuilder.WriteString(",")
+			valueSQLBuilder.WriteString(entity.GetPkSequence())
+			valueSQLBuilder.WriteString(",")
+		}
+	}
 
 	for k, v := range dbFieldMap {
 		//拼接字符串
@@ -262,9 +274,9 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, er
 	var e error
 	sqlstr, e = wrapSQL(dbType, sqlstr)
 	if e != nil {
-		return "", nil, e
+		return "", nil, autoIncrement, e
 	}
-	return sqlstr, values, nil
+	return sqlstr, values, autoIncrement, nil
 }
 
 //包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.

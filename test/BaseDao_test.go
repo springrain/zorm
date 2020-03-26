@@ -65,7 +65,7 @@ func TestSaveStruct(t *testing.T) {
 	}
 }
 
-//TestSaveEntityMap 03.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体,不支持自增id返回值
+//TestSaveEntityMap 03.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
 func TestSaveEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
@@ -73,17 +73,18 @@ func TestSaveEntityMap(t *testing.T) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
 		//设置主键名称
-		entityMap.SetPKColumnName("id")
+		entityMap.PkColumnName = "id"
+		//如果是自增序列,设置序列的值
+		//entityMap.PkSequence = "mySequence"
+
 		//Set 设置数据库的字段值
+		//如果主键是自增或者序列,不要entityMap.Set主键的值
 		entityMap.Set("id", zorm.FuncGenerateStringID())
 		entityMap.Set("userName", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
 		entityMap.Set("createTime", time.Now())
 		entityMap.Set("active", 1)
 
-		//Put 设置非数据库字段,用于保存自定义的业务值,和数据库无关的键值
-		entityMap.Put("testPut", "testPut")
-		//保存EntityMap,参数是EntityMap对象指针,不支持自增id返回值
 		err := zorm.SaveEntityMap(ctx, entityMap)
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
