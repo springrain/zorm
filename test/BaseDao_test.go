@@ -287,7 +287,7 @@ func TestDeleteStruct(t *testing.T) {
 
 }
 
-//TestOther 13.其他的一些说明.非常感谢能看到这一行
+//TestOther 13.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
 	//场景1.多个数据库.通过对应数据库的baseDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
@@ -295,8 +295,9 @@ func TestOther(t *testing.T) {
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-	//把新产生的ctx传递到zorm的函数
+
 	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
+	//把新产生的newCtx传递到zorm的函数
 	list, _ := zorm.QueryMapList(newCtx, finder, nil)
 	fmt.Println(list)
 

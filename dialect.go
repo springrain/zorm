@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"gitee.com/chunanyong/gouuid"
-	"gitee.com/chunanyong/zorm/typeconvert"
 )
 
 //包装基础的SQL语句
@@ -424,25 +423,25 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 	//如果是字符串
 	if databaseTypeName == "VARCHAR" || databaseTypeName == "NVARCHAR" || databaseTypeName == "TEXT" {
-		return typeconvert.String(v)
+		return typeConvertString(v)
 	} else if databaseTypeName == "TINYINT" { //如果是TINYINT
-		return typeconvert.Int8(v)
+		return typeConvertInt8(v)
 	} else if databaseTypeName == "SMALLINT" { //如果是SMALLINT
-		return typeconvert.Int16(v)
+		return typeConvertInt16(v)
 	} else if databaseTypeName == "INT" { //如果是INT
-		return typeconvert.Int(v)
+		return typeConvertInt(v)
 	} else if databaseTypeName == "BIGINT" { //如果是BIGINT
-		return typeconvert.Int64(v)
+		return typeConvertInt64(v)
 	} else if databaseTypeName == "FLOAT" { //如果是FLOAT
-		return typeconvert.Float32(v)
+		return typeConvertFloat32(v)
 	} else if databaseTypeName == "DOUBLE" { //如果是DOUBLE
-		return typeconvert.Float64(v)
+		return typeConvertFloat64(v)
 	} else if databaseTypeName == "DECIMAL" { //如果是DECIMAL
-		return typeconvert.Decimal(v)
+		return typeConvertDecimal(v)
 	} else if databaseTypeName == "DATETIME" { //如果是DATETIME
-		return typeconvert.Time(v, "2006-01-02 15:04:05", time.Local)
+		return typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
 	} else if databaseTypeName == "TIMESTAMP" { //如果是TIMESTAMP
-		return typeconvert.Time(v, "2006-01-02 15:04:05.000", time.Local)
+		return typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
 	}
 	//其他类型以后再写.....
 

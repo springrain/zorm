@@ -756,8 +756,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) error {
 		}
 		pkName := entity.GetPKColumnName()
 		//int64 转 int
-		strInt64 := strconv.FormatInt(autoIncrementIDInt64, 10)
-		autoIncrementIDInt, _ := strconv.Atoi(strInt64)
+		autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
 		//设置自增主键的值
 		seterr := setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		if seterr != nil {
