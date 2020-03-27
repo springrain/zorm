@@ -147,6 +147,14 @@ var ctx = context.Background()
 
 //01.初始化BaseDao
 func init() {
+
+	//自定义zorm日志输出
+	//zorm.LogCalldepth = 4 //日志调用的层级
+	//zorm.FuncLogError = myFuncLogError //记录异常日志的函数
+	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
+	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
+
+
 	//baseDaoConfig 数据库的配置
 	baseDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
