@@ -6,6 +6,7 @@ import (
 )
 
 func init() {
+	//设置默认的日志显示信息,显示文件和行号
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 }
 
