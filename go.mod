@@ -1,6 +1,6 @@
 module gitee.com/chunanyong/zorm
 
-go 1.12
+go 1.13
 
 require (
 	gitee.com/chunanyong/gouuid v1.3.1
