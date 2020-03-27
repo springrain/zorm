@@ -15,7 +15,7 @@ var ZormLogCalldepth = 4
 //ZormErrorLog 记录error日志
 var ZormErrorLog func(err error) = zormErrorLog
 
-//ZormPanicLog 记录panic日志
+//ZormPanicLog 记录panic日志,默认使用ZormErrorLog实现
 var ZormPanicLog func(err error) = zormPanicLog
 
 //ZormPrintSQL 打印sql语句和参数
@@ -25,7 +25,7 @@ func zormErrorLog(err error) {
 	log.Output(ZormLogCalldepth, fmt.Sprintln(err))
 }
 func zormPanicLog(err error) {
-	log.Output(ZormLogCalldepth, fmt.Sprintln(err))
+	zormErrorLog(err)
 }
 func zormPrintSQL(sqlstr string, args []interface{}) {
 	if args != nil {
