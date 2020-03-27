@@ -115,7 +115,7 @@ func newDemoStruct() demoStruct {
 
 ```
 
-#### 测试用例即文档
+## 测试用例即文档
 
 ```go  
 
@@ -124,8 +124,7 @@ func newDemoStruct() demoStruct {
 // 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
 // zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
-
-package test
+package testzorm
 
 import (
 	"context"
@@ -154,7 +153,6 @@ func init() {
 	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
 	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
 
-
 	//baseDaoConfig 数据库的配置
 	baseDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
@@ -169,7 +167,7 @@ func init() {
 		MaxIdleConns: 50,
 		//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 		ConnMaxLifetimeSecond: 600,
-		//PrintSQL 打印SQL.会使用logger.info记录SQL
+		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
 		PrintSQL: true,
 	}
 
@@ -187,6 +185,7 @@ func TestSaveStruct(t *testing.T) {
 
 		//保存对象,参数是对象指针.如果主键是自增,会赋值到对象的主键属性
 		_, err := zorm.SaveStruct(ctx, &demo)
+
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
 	})
@@ -216,7 +215,9 @@ func TestSaveEntityMap(t *testing.T) {
 		entityMap.Set("createTime", time.Now())
 		entityMap.Set("active", 1)
 
+		//执行
 		_, err := zorm.SaveEntityMap(ctx, entityMap)
+
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
 	})
@@ -315,7 +316,7 @@ func TestUpdateStructNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//声明一个对象的指针,用于承载返回的数据
+		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "UpdateStructNotZeroValue"
@@ -338,7 +339,7 @@ func TestUpdateStruct(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//声明一个对象的指针,用于承载返回的数据
+		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "TestUpdateStruct"
@@ -358,7 +359,7 @@ func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
-		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE t_demo
+		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 
@@ -445,13 +446,10 @@ func myReadWriteFuc(rwType int) *zorm.BaseDao {
 
 
 
-
-
-
 ```  
 
 
-####  性能压测
+##  性能压测
 
    测试代码:https://github.com/alphayan/goormbenchmark
 
