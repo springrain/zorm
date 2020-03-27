@@ -20,7 +20,7 @@ go get gitee.com/chunanyong/zorm
 
 ## 测试用例
 
-https://gitee.com/chunanyong/zorm/blob/master/test/BaseDao_test.go
+https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 
 ```go  
 // zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
@@ -33,7 +33,7 @@ https://gitee.com/chunanyong/zorm/blob/master/test/BaseDao_test.go
 
 
 #### 数据库脚本和实体类
-https://gitee.com/chunanyong/zorm/blob/master/test/demoStruct.go
+https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
 ```go 
