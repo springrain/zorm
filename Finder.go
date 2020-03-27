@@ -135,7 +135,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	finder.sqlstr = sqlstr
 	//包含单引号,属于非法字符串
 	if finder.InjectionCheck && (strings.Index(sqlstr, "'") >= 0) {
-		return sqlstr, errors.New("SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
+		return "", errors.New("SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
 	}
 
 	//处理sql语句中的in,实际就是把数组变量展开,例如 id in(?) ["1","2","3"] 语句变更为 id in (?,?,?) 参数也展开到参数数组里
