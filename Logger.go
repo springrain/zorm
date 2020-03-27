@@ -9,7 +9,7 @@ func init() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 }
 
-//LogCalldepth 记录日志行数的文件深度,用于定位到业务层代码
+//LogCalldepth 记录日志调用层级,用于定位到业务层代码
 var LogCalldepth = 4
 
 //FuncLogError 记录error日志
