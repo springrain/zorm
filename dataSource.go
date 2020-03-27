@@ -44,7 +44,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	db, err := sql.Open(config.DriverName, config.DSN)
 	if err != nil {
 		err = fmt.Errorf("数据库打开失败:%w", err)
-		ZormErrorLog(err)
+		FuncLogError(err)
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	//验证连接
 	if pingerr := db.Ping(); pingerr != nil {
 		pingerr = fmt.Errorf("ping数据库失败:%w", pingerr)
-		ZormErrorLog(pingerr)
+		FuncLogError(pingerr)
 		return nil, pingerr
 	}
 
@@ -158,7 +158,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
-		ZormPrintSQL(execsql, args)
+		FuncPrintSQL(execsql, args)
 	}
 
 	if dbConnection.tx != nil {
@@ -172,7 +172,7 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		ZormPrintSQL(query, args)
+		FuncPrintSQL(query, args)
 	}
 
 	if dbConnection.tx != nil {
@@ -186,7 +186,7 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		ZormPrintSQL(query, args)
+		FuncPrintSQL(query, args)
 	}
 
 	if dbConnection.tx != nil {
@@ -200,7 +200,7 @@ func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, quer
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query))
-		ZormPrintSQL(query, nil)
+		FuncPrintSQL(query, nil)
 	}
 
 	if dbConnection.tx != nil {

@@ -9,29 +9,29 @@ func init() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 }
 
-//ZormLogCalldepth 记录日志行数的文件深度,用于定位到业务层代码
-var ZormLogCalldepth = 4
+//LogCalldepth 记录日志行数的文件深度,用于定位到业务层代码
+var LogCalldepth = 4
 
-//ZormErrorLog 记录error日志
-var ZormErrorLog func(err error) = zormErrorLog
+//FuncLogError 记录error日志
+var FuncLogError func(err error) = defaultLogError
 
-//ZormPanicLog 记录panic日志,默认使用ZormErrorLog实现
-var ZormPanicLog func(err error) = zormPanicLog
+//FuncLogPanic 记录panic日志,默认使用ZormErrorLog实现
+var FuncLogPanic func(err error) = defaultLogPanic
 
-//ZormPrintSQL 打印sql语句和参数
-var ZormPrintSQL func(sqlstr string, args []interface{}) = zormPrintSQL
+//FuncPrintSQL 打印sql语句和参数
+var FuncPrintSQL func(sqlstr string, args []interface{}) = defaultPrintSQL
 
-func zormErrorLog(err error) {
-	log.Output(ZormLogCalldepth, fmt.Sprintln(err))
+func defaultLogError(err error) {
+	log.Output(LogCalldepth, fmt.Sprintln(err))
 }
-func zormPanicLog(err error) {
-	zormErrorLog(err)
+func defaultLogPanic(err error) {
+	defaultLogError(err)
 }
-func zormPrintSQL(sqlstr string, args []interface{}) {
+func defaultPrintSQL(sqlstr string, args []interface{}) {
 	if args != nil {
-		log.Output(ZormLogCalldepth, fmt.Sprintln("sql:", sqlstr, ",args:", args))
+		log.Output(LogCalldepth, fmt.Sprintln("sql:", sqlstr, ",args:", args))
 	} else {
-		log.Output(ZormLogCalldepth, fmt.Sprintln("sql:", sqlstr))
+		log.Output(LogCalldepth, fmt.Sprintln("sql:", sqlstr))
 	}
 
 }
