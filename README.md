@@ -456,8 +456,7 @@ func myReadWriteStrategy(rwType int) *zorm.BaseDao {
    指标说明
    总时间,平均每次纳秒数,平均每次分配的内存,平均每次内存分配次数
 
-   insert和update: zorm,gorm,xorm性能相当,其实都是对象反射  
-   read读取: zorm 比 gorm,xorm 快了一倍
+   更新性能zorm,gorm,xorm相当.读取性能zorm比gorm,xorm快一倍  
 
 ```
 2000 times - Insert
