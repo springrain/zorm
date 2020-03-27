@@ -228,7 +228,7 @@ func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
-		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE t_demo
+		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 
