@@ -12,8 +12,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"gitee.com/chunanyong/logger"
 )
 
 //FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
@@ -78,7 +76,7 @@ func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
 
 	if err != nil {
 		err = fmt.Errorf("创建dataSource失败:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return nil, err
 	}
 
@@ -158,7 +156,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("事务开启失败:%w ", beginerr)
-			logger.Error(beginerr)
+			ZormErrorLog(beginerr)
 			return nil, beginerr
 		}
 		//本方法开启的事务,由本方法提交
@@ -175,7 +173,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("recover异常:%w", err)
-				logger.Panic(err)
+				ZormPanicLog(err)
 			}
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
@@ -183,7 +181,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			rberr := dbConnection.rollback()
 			if rberr != nil {
 				rberr = fmt.Errorf("recover内事务回滚失败:%w", rberr)
-				logger.Error(rberr)
+				ZormErrorLog(rberr)
 			}
 
 		}
@@ -192,12 +190,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	info, err := doTransaction(ctx)
 	if err != nil {
 		err = fmt.Errorf("事务执行失败:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		//不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
 		rberr := dbConnection.rollback()
 		if rberr != nil {
 			rberr = fmt.Errorf("事务回滚失败:%w", rberr)
-			logger.Error(rberr)
+			ZormErrorLog(rberr)
 		}
 		return info, err
 	}
@@ -205,7 +203,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		commitError := dbConnection.commit()
 		if commitError != nil {
 			commitError = fmt.Errorf("事务提交失败:%w", commitError)
-			logger.Error(commitError)
+			ZormErrorLog(commitError)
 			return info, commitError
 		}
 	}
@@ -221,7 +219,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		checkerr = fmt.Errorf("类型检查错误:%w", checkerr)
-		logger.Error(checkerr)
+		ZormErrorLog(checkerr)
 		return checkerr
 	}
 	//从contxt中获取数据库连接,可能为nil
@@ -245,7 +243,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
 	if err != nil {
 		err = fmt.Errorf("获取查询SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return err
 	}
 
@@ -262,7 +260,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 
 	if e != nil {
 		e = fmt.Errorf("查询数据库错误:%w", e)
-		logger.Error(e)
+		ZormErrorLog(e)
 		return e
 	}
 
@@ -272,7 +270,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 	columns, cne := rows.Columns()
 	if cne != nil {
 		cne = fmt.Errorf("数据库返回列名错误:%w", cne)
-		logger.Error(cne)
+		ZormErrorLog(cne)
 		return cne
 	}
 
@@ -288,7 +286,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 			scanerr := rows.Scan(entity)
 			if scanerr != nil {
 				scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
-				logger.Error(scanerr)
+				ZormErrorLog(scanerr)
 				return scanerr
 			}
 		}
@@ -301,7 +299,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 	dbColumnFieldMap, dbe := getDBColumnFieldMap(typeOf)
 	if dbe != nil {
 		dbe = fmt.Errorf("获取字段缓存错误:%w", dbe)
-		logger.Error(dbe)
+		ZormErrorLog(dbe)
 		return dbe
 	}
 	//声明载体数组,用于存放struct的属性指针
@@ -331,7 +329,7 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("rows.Scan错误:%w", scanerr)
-			logger.Error(scanerr)
+			ZormErrorLog(scanerr)
 			return scanerr
 		}
 
@@ -388,7 +386,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("获取查询SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return err
 	}
 
@@ -404,14 +402,14 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows异常:%w", e)
-		logger.Error(e)
+		ZormErrorLog(e)
 		return e
 	}
 	//数据库返回的列名
 	columns, cne := rows.Columns()
 	if cne != nil {
 		cne = fmt.Errorf("数据库返回列名错误:%w", cne)
-		logger.Error(cne)
+		ZormErrorLog(cne)
 		return cne
 	}
 
@@ -426,7 +424,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 			scanerr := rows.Scan(pv.Interface())
 			if scanerr != nil {
 				scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
-				logger.Error(scanerr)
+				ZormErrorLog(scanerr)
 				return scanerr
 			}
 			//通过反射给slice添加元素.添加指针下的真实元素
@@ -438,7 +436,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 			count, counterr := selectCount(ctx, finder)
 			if counterr != nil {
 				counterr = fmt.Errorf("查询总条数错误:%w", counterr)
-				logger.Error(counterr)
+				ZormErrorLog(counterr)
 				return counterr
 			}
 			page.setTotalCount(count)
@@ -450,7 +448,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 	dbColumnFieldMap, dbe := getDBColumnFieldMap(sliceElementType)
 	if dbe != nil {
 		dbe = fmt.Errorf("获取字段缓存错误:%w", dbe)
-		logger.Error(dbe)
+		ZormErrorLog(dbe)
 		return dbe
 	}
 	//声明载体数组,用于存放struct的属性指针
@@ -478,7 +476,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
-			logger.Error(scanerr)
+			ZormErrorLog(scanerr)
 			return scanerr
 		}
 
@@ -492,7 +490,7 @@ func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("查询总条数错误:%w", counterr)
-			logger.Error(counterr)
+			ZormErrorLog(counterr)
 			return counterr
 		}
 		page.setTotalCount(count)
@@ -512,7 +510,7 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 	resultMapList, listerr := QueryMapList(ctx, finder, nil)
 	if listerr != nil {
 		listerr = fmt.Errorf("QueryMapList查询错误:%w", listerr)
-		logger.Error(listerr)
+		ZormErrorLog(listerr)
 		return nil, listerr
 	}
 	if resultMapList == nil {
@@ -554,7 +552,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("QueryMapList查询SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return nil, err
 	}
 
@@ -570,7 +568,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows错误:%w", e)
-		logger.Error(e)
+		ZormErrorLog(e)
 		return nil, e
 	}
 
@@ -580,7 +578,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 	columnTypes, cne := rows.ColumnTypes()
 	if cne != nil {
 		cne = fmt.Errorf("数据库返回列名错误:%w", cne)
-		logger.Error(cne)
+		ZormErrorLog(cne)
 		return nil, cne
 	}
 	resultMapList := make([]map[string]interface{}, 0)
@@ -598,7 +596,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
-			logger.Error(scanerr)
+			ZormErrorLog(scanerr)
 			return nil, scanerr
 		}
 		//获取每一列的值
@@ -624,7 +622,7 @@ func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("查询总条数错误:%w", counterr)
-			logger.Error(counterr)
+			ZormErrorLog(counterr)
 			return resultMapList, counterr
 		}
 		page.setTotalCount(count)
@@ -644,7 +642,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
 		err = fmt.Errorf("finder.GetSQL()错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -669,7 +667,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	sqlstr, err = wrapSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->wrapSQL获取SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -684,7 +682,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 
 	if errexec != nil {
 		errexec = fmt.Errorf("执行更新错误:%w", errexec)
-		logger.Error(errexec)
+		ZormErrorLog(errexec)
 		return affected, errexec
 	}
 	//影响的行数
@@ -707,7 +705,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("SaveStruct-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
-		logger.Error(columnAndValueErr)
+		ZormErrorLog(columnAndValueErr)
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
@@ -734,7 +732,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("SaveStruct-->wrapSaveStructSQL获取保存语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -750,7 +748,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveStruct执行保存错误:%w", errexec)
-		logger.Error(errexec)
+		ZormErrorLog(errexec)
 		return affected, errexec
 	}
 	//影响的行数
@@ -764,7 +762,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 		autoIncrementIDInt64, e := res.LastInsertId()
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给struct属性:%w", e)
-			logger.Error(e)
+			ZormErrorLog(e)
 			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
@@ -774,7 +772,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 		seterr := setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		if seterr != nil {
 			seterr = fmt.Errorf("反射赋值数据库返回的自增主键错误:%w", seterr)
-			logger.Error(seterr)
+			ZormErrorLog(seterr)
 			return affected, seterr
 		}
 	}
@@ -819,14 +817,14 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("DeleteStruct-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
-		logger.Error(pkNameErr)
+		ZormErrorLog(pkNameErr)
 		return affected, pkNameErr
 	}
 
 	value, e := structFieldValue(entity, pkName)
 	if e != nil {
 		e = fmt.Errorf("DeleteStruct-->structFieldValue获取主键值错误:%w", e)
-		logger.Error(e)
+		ZormErrorLog(e)
 		return affected, e
 	}
 	//从contxt中获取数据库连接,可能为nil
@@ -850,7 +848,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	sqlstr, err := wrapDeleteStructSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("DeleteStruct-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -865,7 +863,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	if errexec != nil {
 		errexec = fmt.Errorf("DeleteStruct执行删除错误:%w", errexec)
-		logger.Error(errexec)
+		ZormErrorLog(errexec)
 		return affected, errexec
 	}
 
@@ -912,7 +910,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	sqlstr, values, autoIncrement, err := wrapSaveMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("SaveMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -927,7 +925,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 	if errexec != nil {
 		errexec = fmt.Errorf("SaveMap执行保存错误:%w", errexec)
-		logger.Error(errexec)
+		ZormErrorLog(errexec)
 		return affected, errexec
 	}
 
@@ -943,7 +941,7 @@ func SaveEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		autoIncrementIDInt64, e := res.LastInsertId()
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
-			logger.Error(e)
+			ZormErrorLog(e)
 			return affected, nil
 		}
 		//int64 转 int
@@ -988,7 +986,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	sqlstr, values, err := wrapUpdateMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("UpdateMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
-		logger.Error(err)
+		ZormErrorLog(err)
 		return affected, err
 	}
 
@@ -1004,7 +1002,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateMap执行更新错误:%w", errexec)
-		logger.Error(errexec)
+		ZormErrorLog(errexec)
 		return affected, errexec
 	}
 	//影响的行数

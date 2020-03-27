@@ -1,10 +1,9 @@
 module gitee.com/chunanyong/zorm
 
-go 1.13
+go 1.12
 
 require (
 	gitee.com/chunanyong/gouuid v1.3.1
-	gitee.com/chunanyong/logger v1.2.5
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
 
 )
