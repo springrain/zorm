@@ -39,7 +39,7 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
 ```go 
 
-package test
+package testzorm
 
 import (
 	"time"
