@@ -455,7 +455,7 @@ func myReadWriteStrategy(rwType int) *zorm.BaseDao {
    测试代码:https://github.com/alphayan/goormbenchmark
 
    指标说明
-   总时间,平均每次纳秒数,平均每次分配的内存,平均每次内存分配次数
+   总时间,平均每次纳秒数,平均每次分配的内存,平均每次分配内存次数
 
    更新性能zorm,gorm,xorm相当.读取性能zorm比gorm,xorm快一倍  
 
