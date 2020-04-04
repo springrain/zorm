@@ -69,9 +69,9 @@ type DBDao struct {
 
 var defaultDao *DBDao = nil
 
-// NewBaseDao 创建baseDao,一个数据库要只执行一次,业务自行控制
+// NewDBDao 创建baseDao,一个数据库要只执行一次,业务自行控制
 //第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
-func NewBaseDao(config *DataSourceConfig) (*DBDao, error) {
+func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	dataSource, err := newDataSource(config)
 
 	if err != nil {
@@ -97,7 +97,7 @@ func getDefaultDao(rwType int) *DBDao {
 //如果是多库,Dao手动调用newDBConnection(),获得dbConnection,WithValue绑定到子context
 func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return nil, errors.New("请不要自己创建baseDao,使用NewBaseDao方法进行创建")
+		return nil, errors.New("请不要自己创建baseDao,使用NewDBDao方法进行创建")
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = dbDao.dataSource.DB
