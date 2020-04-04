@@ -694,17 +694,17 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	return affected, nil
 }
 
-//Save 保存Struct对象,必须是*IEntityStruct类型
+//Insert 保存Struct对象,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-func Save(ctx context.Context, entity IEntityStruct) (int, error) {
+func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	if entity == nil {
 		return affected, errors.New("对象不能为空")
 	}
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("Save-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
+		columnAndValueErr = fmt.Errorf("Insert-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
 		FuncLogError(columnAndValueErr)
 		return affected, columnAndValueErr
 	}
@@ -729,9 +729,9 @@ func Save(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//SQL语句
-	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, err := wrapInsertStructSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
-		err = fmt.Errorf("Save-->wrapSaveStructSQL获取保存语句错误:%w", err)
+		err = fmt.Errorf("Insert-->wrapInsertStructSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
@@ -747,7 +747,7 @@ func Save(ctx context.Context, entity IEntityStruct) (int, error) {
 	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
-		errexec = fmt.Errorf("Save执行保存错误:%w", errexec)
+		errexec = fmt.Errorf("Insert执行保存错误:%w", errexec)
 		FuncLogError(errexec)
 		return affected, errexec
 	}

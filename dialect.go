@@ -69,7 +69,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 
 //包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapSaveStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
