@@ -120,7 +120,7 @@ func newDemoStruct() demoStruct {
 
 ```go  
 
-// zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
+// testzorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
 // 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
@@ -139,13 +139,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//baseDao 代表一个数据库,如果有多个数据库,就对应声明多个BaseDao
-var baseDao *zorm.BaseDao
+//dbDao 代表一个数据库,如果有多个数据库,就对应声明多个DBDao
+var dbDao *zorm.DBDao
 
 // ctx默认应该有 web层传入,例如gin的c.Request.Context().这里只是模拟
 var ctx = context.Background()
 
-//01.初始化BaseDao
+//01.初始化DBDao
 func init() {
 
 	//自定义zorm日志输出
@@ -154,8 +154,8 @@ func init() {
 	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
 	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
 
-	//baseDaoConfig 数据库的配置
-	baseDaoConfig := zorm.DataSourceConfig{
+	//dbDaoConfig 数据库的配置
+	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
@@ -172,12 +172,12 @@ func init() {
 		PrintSQL: true,
 	}
 
-	// 根据baseDaoConfig创建baseDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
-	baseDao, _ = zorm.NewBaseDao(&baseDaoConfig)
+	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
+	dbDao, _ = zorm.NewDBDao(&dbDaoConfig)
 }
 
-//TestSaveStruct 02.测试保存Struct对象
-func TestSaveStruct(t *testing.T) {
+//TestInsert 02.测试保存Struct对象
+func TestInsert(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -185,7 +185,7 @@ func TestSaveStruct(t *testing.T) {
 		demo := newDemoStruct()
 
 		//保存对象,参数是对象指针.如果主键是自增,会赋值到对象的主键属性
-		_, err := zorm.SaveStruct(ctx, &demo)
+		_, err := zorm.Insert(ctx, &demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -196,8 +196,8 @@ func TestSaveStruct(t *testing.T) {
 	}
 }
 
-//TestSaveEntityMap 03.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
-func TestSaveEntityMap(t *testing.T) {
+//TestInsertEntityMap 03.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
+func TestInsertEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -217,7 +217,7 @@ func TestSaveEntityMap(t *testing.T) {
 		entityMap.Set("active", 1)
 
 		//执行
-		_, err := zorm.SaveEntityMap(ctx, entityMap)
+		_, err := zorm.InsertEntityMap(ctx, entityMap)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -228,8 +228,8 @@ func TestSaveEntityMap(t *testing.T) {
 	}
 }
 
-//TestQueryStruct 04.测试查询一个struct对象
-func TestQueryStruct(t *testing.T) {
+//TestQuery 04.测试查询一个struct对象
+func TestQuery(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
 	demo := &demoStruct{}
@@ -243,7 +243,7 @@ func TestQueryStruct(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//执行查询
-	err := zorm.QueryStruct(ctx, finder, demo)
+	err := zorm.Query(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -269,8 +269,8 @@ func TestQueryMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQueryStructList 06.测试查询对象列表
-func TestQueryStructList(t *testing.T) {
+//TestQuerySlice 06.测试查询对象列表
+func TestQuerySlice(t *testing.T) {
 	//创建用于接收结果的slice
 	list := make([]demoStruct, 0)
 
@@ -285,7 +285,7 @@ func TestQueryStructList(t *testing.T) {
 	page.PageSize = 20 //每页20条,默认是20
 
 	//执行查询
-	err := zorm.QueryStructList(ctx, finder, &list, page)
+	err := zorm.QuerySlice(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
@@ -293,8 +293,8 @@ func TestQueryStructList(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
 }
 
-//TestQueryMapList 07.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
-func TestQueryMapList(t *testing.T) {
+//TestQueryMapSlice 07.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+func TestQueryMapSlice(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//为了保证数据库迁移,分页语句必须要有order by
@@ -304,7 +304,7 @@ func TestQueryMapList(t *testing.T) {
 	page := zorm.NewPage()
 
 	//执行查询
-	listMap, err := zorm.QueryMapList(ctx, finder, page)
+	listMap, err := zorm.QueryMapSlice(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
@@ -312,18 +312,18 @@ func TestQueryMapList(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
 }
 
-//TestUpdateStructNotZeroValue 08.更新struct对象,只更新不为零值的字段.主键必须有值
-func TestUpdateStructNotZeroValue(t *testing.T) {
+//TestUpdateNotZeroValue 08.更新struct对象,只更新不为零值的字段.主键必须有值
+func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
-		demo.UserName = "UpdateStructNotZeroValue"
+		demo.UserName = "UpdateNotZeroValue"
 
-		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateStructNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
-		_, err := zorm.UpdateStructNotZeroValue(ctx, demo)
+		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		_, err := zorm.UpdateNotZeroValue(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -334,8 +334,8 @@ func TestUpdateStructNotZeroValue(t *testing.T) {
 
 }
 
-//TestUpdateStruct 09.更新struct对象,更新所有字段.主键必须有值
-func TestUpdateStruct(t *testing.T) {
+//TestUpdate 09.更新struct对象,更新所有字段.主键必须有值
+func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -343,9 +343,9 @@ func TestUpdateStruct(t *testing.T) {
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
-		demo.UserName = "TestUpdateStruct"
+		demo.UserName = "TestUpdate"
 
-		_, err := zorm.UpdateStruct(ctx, demo)
+		_, err := zorm.Update(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -399,15 +399,15 @@ func TestUpdateEntityMap(t *testing.T) {
 
 }
 
-//TestDeleteStruct 12.删除一个struct对象,主键必须有值
-func TestDeleteStruct(t *testing.T) {
+//TestDelete 12.删除一个struct对象,主键必须有值
+func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
 
 		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
-		_, err := zorm.DeleteStruct(ctx, demo)
+		_, err := zorm.Delete(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -421,15 +421,15 @@ func TestDeleteStruct(t *testing.T) {
 //TestOther 13.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
-	//场景1.多个数据库.通过对应数据库的baseDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
-	newCtx, err := baseDao.BindContextDBConnection(ctx)
+	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
+	newCtx, err := dbDao.BindContextDBConnection(ctx)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
 
 	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
 	//把新产生的newCtx传递到zorm的函数
-	list, _ := zorm.QueryMapList(newCtx, finder, nil)
+	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
 	fmt.Println(list)
 
 	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
@@ -440,10 +440,11 @@ func TestOther(t *testing.T) {
 }
 
 //单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
-func myReadWriteStrategy(rwType int) *zorm.BaseDao {
+func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
-	return baseDao
+	return dbDao
 }
+
 
 
 
