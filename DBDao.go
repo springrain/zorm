@@ -16,7 +16,7 @@ import (
 
 //FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
 //不要放到BaseDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为单数据库读写分离的处理方式,不归属到BaseDao
-var FuncReadWriteStrategy func(rwType int) *BaseDao = getDefaultDao
+var FuncReadWriteStrategy func(rwType int) *DBDao = getDefaultDao
 
 type wrapContextStringKey string
 
@@ -61,17 +61,17 @@ var allowBaseTypeMap = map[reflect.Kind]bool{
 	reflect.Float64: true,
 }
 
-//BaseDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过BaseDao进行
-type BaseDao struct {
+//DBDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过DBDao进行
+type DBDao struct {
 	config     *DataSourceConfig
 	dataSource *dataSource
 }
 
-var defaultDao *BaseDao = nil
+var defaultDao *DBDao = nil
 
 // NewBaseDao 创建baseDao,一个数据库要只执行一次,业务自行控制
 //第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
-func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
+func NewBaseDao(config *DataSourceConfig) (*DBDao, error) {
 	dataSource, err := newDataSource(config)
 
 	if err != nil {
@@ -81,39 +81,39 @@ func NewBaseDao(config *DataSourceConfig) (*BaseDao, error) {
 	}
 
 	if FuncReadWriteStrategy(1) == nil {
-		defaultDao = &BaseDao{config, dataSource}
+		defaultDao = &DBDao{config, dataSource}
 		return defaultDao, nil
 	}
-	return &BaseDao{config, dataSource}, nil
+	return &DBDao{config, dataSource}, nil
 }
 
 //获取默认的Dao,用于隔离读写的Dao
-func getDefaultDao(rwType int) *BaseDao {
+func getDefaultDao(rwType int) *DBDao {
 	return defaultDao
 }
 
 // newDBConnection 获取一个dbConnection
 //如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection
 //如果是多库,Dao手动调用newDBConnection(),获得dbConnection,WithValue绑定到子context
-func (baseDao *BaseDao) newDBConnection() (*dataBaseConnection, error) {
-	if baseDao == nil || baseDao.dataSource == nil {
+func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
+	if dbDao == nil || dbDao.dataSource == nil {
 		return nil, errors.New("请不要自己创建baseDao,使用NewBaseDao方法进行创建")
 	}
 	dbConnection := new(dataBaseConnection)
-	dbConnection.db = baseDao.dataSource.DB
-	dbConnection.dbType = baseDao.config.DBType
-	dbConnection.driverName = baseDao.config.DriverName
-	dbConnection.printSQL = baseDao.config.PrintSQL
+	dbConnection.db = dbDao.dataSource.DB
+	dbConnection.dbType = dbDao.config.DBType
+	dbConnection.driverName = dbDao.config.DriverName
+	dbConnection.printSQL = dbDao.config.PrintSQL
 	return dbConnection, nil
 }
 
-//BindContextDBConnection 多库的时候,通过baseDao创建DBConnection绑定到子context,返回的context就有了DBConnection
+//BindContextDBConnection 多库的时候,通过dbDao创建DBConnection绑定到子context,返回的context就有了DBConnection
 //parent 不能为空
-func (baseDao *BaseDao) BindContextDBConnection(parent context.Context) (context.Context, error) {
+func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("context的parent不能为nil")
 	}
-	dbConnection, errDBConnection := baseDao.newDBConnection()
+	dbConnection, errDBConnection := dbDao.newDBConnection()
 	if errDBConnection != nil {
 		return parent, errDBConnection
 	}
@@ -211,10 +211,10 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return nil, nil
 }
 
-//QueryStruct 不要偷懒调用QueryStructList返回第一条,1.需要构建一个selice,2.调用方传递的对象其他值会被抛弃或者覆盖.
+//Query 不要偷懒调用QuerySlice返回第一条,1.需要构建一个selice,2.调用方传递的对象其他值会被抛弃或者覆盖.
 //根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 //context必须传入,不能为空
-func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error {
+func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -338,10 +338,10 @@ func QueryStruct(ctx context.Context, finder *Finder, entity interface{}) error 
 	return nil
 }
 
-//QueryStructList 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
+//QuerySlice 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 //根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
 //context必须传入,不能为空
-func QueryStructList(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
+func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
 		return errors.New("数组必须是*[]struct类型或者基础类型数组的指针")
@@ -507,7 +507,7 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 	if finder == nil {
 		return nil, errors.New("QueryMap的finder参数不能为nil")
 	}
-	resultMapList, listerr := QueryMapList(ctx, finder, nil)
+	resultMapList, listerr := QueryMapSlice(ctx, finder, nil)
 	if listerr != nil {
 		listerr = fmt.Errorf("QueryMapList查询错误:%w", listerr)
 		FuncLogError(listerr)
@@ -524,10 +524,10 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 	return resultMapList[0], nil
 }
 
-//QueryMapList 根据Finder查询,封装Map数组
+//QueryMapSlice 根据Finder查询,封装Map数组
 //根据数据库字段的类型,完成从[]byte到golang类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
 //context必须传入,不能为空
-func QueryMapList(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
 		return nil, errors.New("QueryMap的finder参数不能为nil")
@@ -694,17 +694,17 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	return affected, nil
 }
 
-//SaveStruct 保存Struct对象,必须是*IEntityStruct类型
+//Save 保存Struct对象,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+func Save(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	if entity == nil {
 		return affected, errors.New("对象不能为空")
 	}
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("SaveStruct-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
+		columnAndValueErr = fmt.Errorf("Save-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
 		FuncLogError(columnAndValueErr)
 		return affected, columnAndValueErr
 	}
@@ -731,7 +731,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	//SQL语句
 	sqlstr, autoIncrement, err := wrapSaveStructSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
-		err = fmt.Errorf("SaveStruct-->wrapSaveStructSQL获取保存语句错误:%w", err)
+		err = fmt.Errorf("Save-->wrapSaveStructSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
@@ -747,7 +747,7 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
 
 	if errexec != nil {
-		errexec = fmt.Errorf("SaveStruct执行保存错误:%w", errexec)
+		errexec = fmt.Errorf("Save执行保存错误:%w", errexec)
 		FuncLogError(errexec)
 		return affected, errexec
 	}
@@ -781,32 +781,32 @@ func SaveStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 
 }
 
-//UpdateStruct 更新struct所有属性,必须是*IEntityStruct类型
+//Update 更新struct所有属性,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+func Update(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected, err := updateStructFunc(ctx, entity, false)
 	if err != nil {
-		err = fmt.Errorf("UpdateStruct-->updateStructFunc更新错误:%w", err)
+		err = fmt.Errorf("Update-->updateStructFunc更新错误:%w", err)
 		return affected, err
 	}
 	return affected, nil
 }
 
-//UpdateStructNotZeroValue 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
+//UpdateNotZeroValue 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-func UpdateStructNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
+func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected, err := updateStructFunc(ctx, entity, true)
 	if err != nil {
-		err = fmt.Errorf("UpdateStructNotNil-->updateStructFunc更新错误:%w", err)
+		err = fmt.Errorf("UpdateNotZeroValue-->updateStructFunc更新错误:%w", err)
 		return affected, err
 	}
 	return affected, nil
 }
 
-//DeleteStruct 根据主键删除一个对象.必须是*IEntityStruct类型
+//Delete 根据主键删除一个对象.必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
+func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -816,14 +816,14 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
 
 	if pkNameErr != nil {
-		pkNameErr = fmt.Errorf("DeleteStruct-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
+		pkNameErr = fmt.Errorf("Delete-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
 		FuncLogError(pkNameErr)
 		return affected, pkNameErr
 	}
 
 	value, e := structFieldValue(entity, pkName)
 	if e != nil {
-		e = fmt.Errorf("DeleteStruct-->structFieldValue获取主键值错误:%w", e)
+		e = fmt.Errorf("Delete-->structFieldValue获取主键值错误:%w", e)
 		FuncLogError(e)
 		return affected, e
 	}
@@ -847,7 +847,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	//SQL语句
 	sqlstr, err := wrapDeleteStructSQL(dbType, entity)
 	if err != nil {
-		err = fmt.Errorf("DeleteStruct-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("Delete-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
@@ -862,7 +862,7 @@ func DeleteStruct(ctx context.Context, entity IEntityStruct) (int, error) {
 	res, errexec := dbConnection.execContext(ctx, sqlstr, value)
 
 	if errexec != nil {
-		errexec = fmt.Errorf("DeleteStruct执行删除错误:%w", errexec)
+		errexec = fmt.Errorf("Delete执行删除错误:%w", errexec)
 		FuncLogError(errexec)
 		return affected, errexec
 	}
@@ -1234,7 +1234,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	//自定义的查询总条数Finder,主要是为了在group by等复杂情况下,为了性能,手动编写总条数语句
 	if finder.CountFinder != nil {
 		count := -1
-		err := QueryStruct(ctx, finder.CountFinder, &count)
+		err := Query(ctx, finder.CountFinder, &count)
 		if err != nil {
 			return -1, err
 		}
@@ -1274,7 +1274,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	countFinder.values = finder.values
 
 	count := -1
-	cerr := QueryStruct(ctx, countFinder, &count)
+	cerr := Query(ctx, countFinder, &count)
 	if cerr != nil {
 		return -1, cerr
 	}
