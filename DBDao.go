@@ -69,7 +69,7 @@ type DBDao struct {
 
 var defaultDao *DBDao = nil
 
-// NewDBDao 创建baseDao,一个数据库要只执行一次,业务自行控制
+// NewDBDao 创建dbDao,一个数据库要只执行一次,业务自行控制
 //第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
 func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	dataSource, err := newDataSource(config)
@@ -97,7 +97,7 @@ func getDefaultDao(rwType int) *DBDao {
 //如果是多库,Dao手动调用newDBConnection(),获得dbConnection,WithValue绑定到子context
 func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return nil, errors.New("请不要自己创建baseDao,使用NewDBDao方法进行创建")
+		return nil, errors.New("请不要自己创建dbDao,使用NewDBDao方法进行创建")
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = dbDao.dataSource.DB
@@ -1301,7 +1301,7 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 }
 
 //变量名建议errFoo这样的驼峰
-var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteBaseDao(rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
+var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
 
 //检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查.
 //context必须传入,不能为空.rwType=0 read,rwType=1 write
