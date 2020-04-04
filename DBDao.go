@@ -877,10 +877,10 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 
 }
 
-//SaveEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
+//InsertEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-func SaveEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
+func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	affected := -1
 	//检查是否是指针对象
 	_, checkerr := checkEntityKind(entity)
