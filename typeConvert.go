@@ -22,9 +22,9 @@ func decodeToString(b []byte) string {
 func encodeBool(b bool) []byte {
 	if b == true {
 		return []byte{1}
-	} else {
-		return []byte{0}
 	}
+	return []byte{0}
+
 }
 
 func encodeInt(i int) []byte {
@@ -169,18 +169,19 @@ func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location)
 
 func typeConvertStrToTime(str string, format string, TZLocation ...*time.Location) (time.Time, error) {
 	if len(TZLocation) > 0 {
-		if t, err := time.ParseInLocation(format, str, TZLocation[0]); err == nil {
+		t, err := time.ParseInLocation(format, str, TZLocation[0])
+		if err == nil {
 			return t, nil
-		} else {
-			return time.Time{}, err
 		}
-	} else {
-		if t, err := time.ParseInLocation(format, str, time.Local); err == nil {
-			return t, nil
-		} else {
-			return time.Time{}, err
-		}
+		return time.Time{}, err
+
 	}
+	t, err := time.ParseInLocation(format, str, time.Local)
+	if err == nil {
+		return t, nil
+	}
+	return time.Time{}, err
+
 }
 
 func typeConvertTimeDuration(i interface{}) time.Duration {
@@ -193,9 +194,9 @@ func typeConvertBytes(i interface{}) []byte {
 	}
 	if r, ok := i.([]byte); ok {
 		return r
-	} else {
-		return encode(i)
 	}
+	return encode(i)
+
 }
 
 func typeConvertString(i interface{}) string {
