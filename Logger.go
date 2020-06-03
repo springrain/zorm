@@ -10,8 +10,8 @@ func init() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 }
 
-//LogCalldepth 记录日志调用层级,用于定位到业务层代码
-var LogCalldepth = 4
+//LogCallDepth 记录日志调用层级,用于定位到业务层代码
+var LogCallDepth = 4
 
 //FuncLogError 记录error日志
 var FuncLogError func(err error) = defaultLogError
@@ -23,16 +23,16 @@ var FuncLogPanic func(err error) = defaultLogPanic
 var FuncPrintSQL func(sqlstr string, args []interface{}) = defaultPrintSQL
 
 func defaultLogError(err error) {
-	log.Output(LogCalldepth, fmt.Sprintln(err))
+	log.Output(LogCallDepth, fmt.Sprintln(err))
 }
 func defaultLogPanic(err error) {
 	defaultLogError(err)
 }
 func defaultPrintSQL(sqlstr string, args []interface{}) {
 	if args != nil {
-		log.Output(LogCalldepth, fmt.Sprintln("sql:", sqlstr, ",args:", args))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args))
 	} else {
-		log.Output(LogCalldepth, fmt.Sprintln("sql:", sqlstr))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr))
 	}
 
 }
