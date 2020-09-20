@@ -17,9 +17,9 @@ go get gitee.com/chunanyong/zorm
 
 生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
-## 博客和公众号
+## 头条号
 博客[https://www.jiagou.com](https://www.jiagou.com)  
-![架构经验公众号](https://images.gitee.com/uploads/images/2020/0913/090533_95d90d95_686.jpeg "qrcode_300x300.jpg")  
+![架构头条号](https://images.gitee.com/uploads/images/2020/0920/213826_38708bb4_686.jpeg "toutiao_300x300.jpg")  
 
 ## 测试用例
 
