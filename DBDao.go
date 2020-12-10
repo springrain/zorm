@@ -320,7 +320,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				values[i] = new(interface{})
 				continue
 			}
-			//获取struct的属性值的指针地址
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
 			value := valueOf.FieldByName(field.Name).Addr().Interface()
 			//把指针地址放到数组
 			values[i] = value
@@ -467,7 +467,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				values[i] = new(interface{})
 				continue
 			}
-			//获取struct的属性值的指针地址
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
 			value := pv.FieldByName(field.Name).Addr().Interface()
 			//把指针地址放到数组
 			values[i] = value
@@ -1048,7 +1048,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 		//}
 
 		columns = append(columns, field)
-		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值
+		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
 		value := valueOf.FieldByName(field.Name).Interface()
 
 		/*
