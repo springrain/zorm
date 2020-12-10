@@ -1,6 +1,4 @@
-# zorm
-
-#### 介绍
+## 介绍
 golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目  
 [API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
 
@@ -19,6 +17,10 @@ go get gitee.com/chunanyong/zorm
 
 生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
 
+## 头条号
+博客[https://www.jiagou.com](https://www.jiagou.com)  
+![架构头条号](https://images.gitee.com/uploads/images/2020/0920/213826_38708bb4_686.jpeg "toutiao_300x300.jpg")  
+
 ## 测试用例
 
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
@@ -33,7 +35,7 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 
 
 
-#### 数据库脚本和实体类
+## 数据库脚本和实体类
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
@@ -486,4 +488,3 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
-
