@@ -15,7 +15,7 @@ import (
 )
 
 //FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
-//不要放到BaseDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为单数据库读写分离的处理方式,不归属到BaseDao
+//不能归属到BaseDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为单数据库读写分离的处理方式
 var FuncReadWriteStrategy func(rwType int) *DBDao = getDefaultDao
 
 type wrapContextStringKey string
@@ -211,7 +211,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return nil, nil
 }
 
-//Query 不要偷懒调用QuerySlice返回第一条,1.需要构建一个selice,2.调用方传递的对象其他值会被抛弃或者覆盖.
+//Query 不要偷懒调用QuerySlice返回第一条,问题1.需要构建一个selice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
 //根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 //context必须传入,不能为空
 func Query(ctx context.Context, finder *Finder, entity interface{}) error {
@@ -314,7 +314,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		i++
 		//遍历数据库的列名
 		for i, column := range columns {
-			//从缓存中获取列名的file字段
+			//从缓存中获取列名的field字段
 			field, fok := dbColumnFieldMap[column]
 			if !fok { //如果列名不存在,就初始化一个空值
 				values[i] = new(interface{})
@@ -461,7 +461,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		pv := reflect.New(sliceElementType).Elem()
 		//遍历数据库的列名
 		for i, column := range columns {
-			//从缓存中获取列名的file字段
+			//从缓存中获取列名的field字段
 			field, fok := dbColumnFieldMap[column]
 			if !fok { //如果列名不存在,就初始化一个空值
 				values[i] = new(interface{})
