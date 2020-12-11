@@ -428,7 +428,7 @@ func TestProc(t *testing.T) {
 	fmt.Println(user)
 }
 
-//TestProc 14.测试调用自定义函数
+//TestFunc 14.测试调用自定义函数
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
