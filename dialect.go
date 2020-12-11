@@ -58,6 +58,11 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
+	} else if dbType == "dm" { //达梦数据库
+		sqlbuilder.WriteString(" LIMIT ")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
+		sqlbuilder.WriteString(",")
+		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 	} else if dbType == "db2" { //db2
 
 		//先不写啦
