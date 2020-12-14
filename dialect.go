@@ -75,6 +75,14 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 //包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+	sqlstr, autoIncrement, err := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
+	savesql, err := wrapSQL(dbType, sqlstr)
+	return savesql, autoIncrement, err
+}
+
+//包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
+//数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
+func wrapInsertStructSQLNORebuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
@@ -150,95 +158,83 @@ func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 		valuestr = valuestr[:len(valuestr)-1]
 	}
 	sqlstr = sqlstr + ")" + valuestr + ")"
-	savesql, err := wrapSQL(dbType, sqlstr)
-	return savesql, autoIncrement, err
+	//savesql, err := wrapSQL(dbType, sqlstr)
+	return sqlstr, autoIncrement, nil
 
 }
 
 //包装批量保存StructSlice语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-// for循环自己处理吧,性能最好,不调用wrapInsertStructSQL方法了
 func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
-	if entityStructSlice == nil || len(entityStructSlice) < 1 {
+	sliceLen := len(entityStructSlice)
+	if entityStructSlice == nil || sliceLen < 1 {
 		return "", false, errors.New("对象数组不能为空")
 	}
+
 	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityStructSlice[0]
-	//是否自增,默认false
-	autoIncrement := false
-	//SQL语句的构造器
-	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("INSERT INTO ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString("(")
 
-	//SQL语句中,VALUES(?,?,...)语句的构造器
-	var valueSQLBuilder strings.Builder
-	valueSQLBuilder.WriteString(" VALUES (")
+	//先生成一条语句
+	sqlstr, autoIncrement, firstErr := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
+	if firstErr != nil {
+		return sqlstr, autoIncrement, firstErr
+	}
+	//如果只有一个Struct对象
+	if sliceLen == 1 {
+		return sqlstr, autoIncrement, firstErr
+	}
 	//主键的名称
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return "", autoIncrement, e
+		return sqlstr, autoIncrement, e
 	}
-	for i := 0; i < len(*columns); i++ {
-		field := (*columns)[i]
-		if field.Name == pkFieldName { //如果是主键
-			pkKind := field.Type.Kind()
 
-			if !(pkKind == reflect.String || pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) { //只支持字符串和int类型的主键
-				return "", autoIncrement, errors.New("不支持的主键类型")
-			}
-			//主键的值
-			pkValue := (*values)[i]
-			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
-				//拼接字符串
-				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-				sqlBuilder.WriteString(",")
-				valueSQLBuilder.WriteString(entity.GetPkSequence())
-				valueSQLBuilder.WriteString(",")
-				//去掉这一列,后续不再处理
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				continue
-
-			} else if (pkKind == reflect.String) && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
-				//生成主键字符串
-				id := FuncGenerateStringID()
-				(*values)[i] = id
-				//给对象主键赋值
-				v := reflect.ValueOf(entity).Elem()
-				v.FieldByName(field.Name).Set(reflect.ValueOf(id))
-				//如果是数字类型,并且值为0,认为是数据库自增,从数组中删除掉主键的信息,让数据库自己生成
-			} else if (pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) && (pkValue.(int) == 0) {
-				//标记是自增主键
-				autoIncrement = true
-				//去掉这一列,后续不再处理
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				continue
-			}
+	//截取生成的SQL语句中 VALUES 后面的字符串值
+	valueIndex := strings.Index(sqlstr, " VALUES (")
+	if valueIndex < 1 { //生成的语句异常
+		return sqlstr, autoIncrement, errors.New("生成的语句异常")
+	}
+	//value后面的字符串 例如 (?,?,?),用于循环拼接
+	valuestr := sqlstr[valueIndex+8:]
+	//SQL语句的构造器
+	var insertSliceSQLBuilder strings.Builder
+	insertSliceSQLBuilder.WriteString(sqlstr)
+	for i := 1; i < sliceLen; i++ {
+		if (i + 1) < sliceLen { //不是最后一个
+			insertSliceSQLBuilder.WriteString(",")
 		}
 		//拼接字符串
-		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-		sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-		sqlBuilder.WriteString(",")
-		valueSQLBuilder.WriteString("?,")
+		insertSliceSQLBuilder.WriteString(valuestr)
 
+		entityStruct := entityStructSlice[i]
+		for j := 0; j < len(*columns); j++ {
+			// 获取实体类的反射,指针下的struct
+			valueOf := reflect.ValueOf(entityStruct).Elem()
+			field := (*columns)[j]
+			if field.Name == pkFieldName { //如果是主键
+				pkKind := field.Type.Kind()
+				//主键的值
+				pkValue := valueOf.FieldByName(field.Name).Interface()
+				if (pkKind == reflect.String) && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
+					//生成主键字符串
+					id := FuncGenerateStringID()
+					*values = append(*values, id)
+					//给对象主键赋值
+					valueOf.FieldByName(field.Name).Set(reflect.ValueOf(id))
+					//如果是数字类型,并且值为0,认为是数据库自增,从数组中删除掉主键的信息,让数据库自己生成
+					continue
+				}
+				continue
+			}
+
+			//给字段赋值
+			*values = append(*values, valueOf.FieldByName(field.Name).Interface())
+
+		}
 	}
-	//去掉字符串最后的 , 号
-	sqlstr := sqlBuilder.String()
-	if len(sqlstr) > 0 {
-		sqlstr = sqlstr[:len(sqlstr)-1]
-	}
-	valuestr := valueSQLBuilder.String()
-	if len(valuestr) > 0 {
-		valuestr = valuestr[:len(valuestr)-1]
-	}
-	sqlstr = sqlstr + ")" + valuestr + ")"
-	savesql, err := wrapSQL(dbType, sqlstr)
+
+	//包装sql
+	savesql, err := wrapSQL(dbType, insertSliceSQLBuilder.String())
 	return savesql, autoIncrement, err
 
 }
