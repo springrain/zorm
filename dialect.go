@@ -215,6 +215,7 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 				pkKind := field.Type.Kind()
 				//主键的值
 				pkValue := valueOf.FieldByName(field.Name).Interface()
+				//只处理字符串类型的主键,其他类型,columns中并不包含
 				if (pkKind == reflect.String) && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
 					//生成主键字符串
 					id := FuncGenerateStringID()
