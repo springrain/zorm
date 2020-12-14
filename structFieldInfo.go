@@ -9,6 +9,26 @@ import (
 	"sync"
 )
 
+//allowBaseTypeMap 允许基础类型查询,用于查询单个基础类型字段,例如 select id from t_user 查询返回的是字符串类型
+var allowBaseTypeMap = map[reflect.Kind]bool{
+	reflect.String: true,
+
+	reflect.Int:   true,
+	reflect.Int8:  true,
+	reflect.Int16: true,
+	reflect.Int32: true,
+	reflect.Int64: true,
+
+	reflect.Uint:   true,
+	reflect.Uint8:  true,
+	reflect.Uint16: true,
+	reflect.Uint32: true,
+	reflect.Uint64: true,
+
+	reflect.Float32: true,
+	reflect.Float64: true,
+}
+
 const (
 	//tag标签的名称
 	tagColumnName = "column"
@@ -270,5 +290,156 @@ func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string 
 	}
 
 	return structFieldTagMap[fieldName]
+}
+*/
+
+//根据保存的对象,返回插入的语句,需要插入的字段,字段的值.
+func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
+	typeOf, checkerr := checkEntityKind(entity)
+	if checkerr != nil {
+		return typeOf, nil, nil, checkerr
+	}
+	// 获取实体类的反射,指针下的struct
+	valueOf := reflect.ValueOf(entity).Elem()
+	//reflect.Indirect
+
+	//先从本地缓存中查找
+	//typeOf := reflect.TypeOf(entity).Elem()
+
+	dbMap, err := getDBColumnFieldMap(typeOf)
+	if err != nil {
+		return typeOf, nil, nil, err
+	}
+
+	//实体类公开字段的长度
+	fLen := len(dbMap)
+	//接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
+	columns := make([]reflect.StructField, 0, fLen)
+	//接收值的数组
+	values := make([]interface{}, 0, fLen)
+
+	//遍历所有数据库属性
+	for _, field := range dbMap {
+		//获取字段类型的Kind
+		//	fieldKind := field.Type.Kind()
+		//if !allowTypeMap[fieldKind] { //不允许的类型
+		//	continue
+		//}
+
+		columns = append(columns, field)
+		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
+		value := valueOf.FieldByName(field.Name).Interface()
+
+		/*
+			if value != nil { //如果不是nil
+				timeValue, ok := value.(time.Time)
+				if ok && timeValue.IsZero() { //如果是日期零时,需要设置一个初始值1970-01-01 00:00:01,兼容数据库
+					value = defaultZeroTime
+				}
+			}
+		*/
+
+		//添加到记录值的数组
+		values = append(values, value)
+
+	}
+
+	//缓存数据库的列
+
+	return typeOf, columns, values, nil
+
+}
+
+//获取实体类主键属性名称
+func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error) {
+
+	//检查是否是指针对象
+	//typeOf, checkerr := checkEntityKind(entity)
+	//if checkerr != nil {
+	//	return "", checkerr
+	//}
+
+	//缓存的key,TypeOf和ValueOf的String()方法,返回值不一样
+	//typeOf := reflect.TypeOf(entity).Elem()
+
+	dbMap, err := getDBColumnFieldMap(typeOf)
+	if err != nil {
+		return "", err
+	}
+	field := dbMap[entity.GetPKColumnName()]
+	return field.Name, nil
+
+}
+
+//检查entity类型必须是*struct类型或者基础类型的指针
+func checkEntityKind(entity interface{}) (reflect.Type, error) {
+	if entity == nil {
+		return nil, errors.New("参数不能为空,必须是*struct类型或者基础类型的指针")
+	}
+	typeOf := reflect.TypeOf(entity)
+	if typeOf.Kind() != reflect.Ptr { //如果不是指针
+		return nil, errors.New("必须是*struct类型或者基础类型的指针")
+	}
+	typeOf = typeOf.Elem()
+	if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
+		return nil, errors.New("必须是*struct类型或者基础类型的指针")
+	}
+	return typeOf, nil
+}
+
+//根据数据库返回的sql.Rows,查询出列名和对应的值.废弃
+/*
+func columnValueMap2Struct(resultMap map[string]interface{}, typeOf reflect.Type, valueOf reflect.Value) error {
+
+
+		dbMap, err := getDBColumnFieldMap(typeOf)
+		if err != nil {
+			return err
+		}
+
+		for column, columnValue := range resultMap {
+			field, ok := dbMap[column]
+			if !ok {
+				continue
+			}
+			fieldName := field.Name
+			if len(fieldName) < 1 {
+				continue
+			}
+			//反射获取字段的值对象
+			fieldValue := valueOf.FieldByName(fieldName)
+			//获取值类型
+			kindType := fieldValue.Kind()
+			valueType := fieldValue.Type()
+			if kindType == reflect.Ptr { //如果是指针类型的属性,查找指针下的类型
+				kindType = fieldValue.Elem().Kind()
+				valueType = fieldValue.Elem().Type()
+			}
+			kindTypeStr := kindType.String()
+			valueTypeStr := valueType.String()
+			var v interface{}
+			if kindTypeStr == "string" || valueTypeStr == "string" { //兼容string的扩展类型
+				v = columnValue.String()
+			} else if kindTypeStr == "int" || valueTypeStr == "int" { //兼容int的扩展类型
+				v = columnValue.Int()
+			}
+			//bug(springrain)这个地方还要添加其他类型的判断,参照ColumnValue.go文件
+
+			fieldValue.Set(reflect.ValueOf(v))
+
+		}
+
+	return nil
+
+}
+*/
+//根据sql查询结果,返回map.废弃
+/*
+func wrapMap(columns []string, values []columnValue) (map[string]columnValue, error) {
+	columnValueMap := make(map[string]columnValue)
+	for i, column := range columns {
+		columnValueMap[column] = values[i]
+	}
+	return columnValueMap, nil
 }
 */
