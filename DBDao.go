@@ -761,6 +761,74 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 }
 
+//InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,数组里一般是*Struct
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
+	affected := -1
+	if entityStructSlice == nil || len(entityStructSlice) < 1 {
+		return affected, errors.New("对象数组不能为空")
+	}
+	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
+	entity := entityStructSlice[0]
+	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
+	if columnAndValueErr != nil {
+		columnAndValueErr = fmt.Errorf("InsertSlice-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
+		FuncLogError(columnAndValueErr)
+		return affected, columnAndValueErr
+	}
+	if len(columns) < 1 {
+		return affected, errors.New("没有tag信息,请检查struct中 column 的tag")
+	}
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return affected, errFromContxt
+	}
+	//自己构建的dbConnection
+	if dbConnection != nil && dbConnection.db == nil {
+		return affected, errDBConnection
+	}
+
+	var dbType string = ""
+	if dbConnection == nil { //dbConnection为nil,使用defaultDao
+		dbType = FuncReadWriteStrategy(1).config.DBType
+	} else {
+		dbType = dbConnection.dbType
+	}
+
+	//SQL语句
+	sqlstr, _, err := wrapInsertSliceStructSQL(dbType, typeOf, entityStructSlice, &columns, &values)
+	if err != nil {
+		err = fmt.Errorf("InsertSlice-->wrapInsertSliceStructSQL获取保存语句错误:%w", err)
+		FuncLogError(err)
+		return affected, err
+	}
+
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
+	var dbConnectionerr error
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
+	if dbConnectionerr != nil {
+		return affected, dbConnectionerr
+	}
+
+	//流弊的...,把数组展开变成多个参数的形式
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+
+	if errexec != nil {
+		errexec = fmt.Errorf("InsertSlice执行保存错误:%w", errexec)
+		FuncLogError(errexec)
+		return affected, errexec
+	}
+	//影响的行数
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected == nil {
+		affected, _ = typeConvertInt64toInt(rowsAffected)
+	}
+	return affected, nil
+
+}
+
 //Update 更新struct所有属性,必须是*IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func Update(ctx context.Context, entity IEntityStruct) (int, error) {
