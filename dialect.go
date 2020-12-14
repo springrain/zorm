@@ -223,7 +223,6 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 					valueOf.FieldByName(field.Name).Set(reflect.ValueOf(id))
 					continue
 				}
-				continue
 			}
 
 			//给字段赋值
