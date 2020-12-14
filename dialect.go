@@ -97,7 +97,7 @@ func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 		if field.Name == pkFieldName { //如果是主键
 			pkKind := field.Type.Kind()
 
-			if !(pkKind == reflect.String || pkKind == reflect.Int) { //只支持字符串和int类型的主键
+			if !(pkKind == reflect.String || pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) { //只支持字符串和int类型的主键
 				return "", autoIncrement, errors.New("不支持的主键类型")
 			}
 			//主键的值
