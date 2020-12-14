@@ -221,7 +221,6 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 					*values = append(*values, id)
 					//给对象主键赋值
 					valueOf.FieldByName(field.Name).Set(reflect.ValueOf(id))
-					//如果是数字类型,并且值为0,认为是数据库自增,从数组中删除掉主键的信息,让数据库自己生成
 					continue
 				}
 				continue
