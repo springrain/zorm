@@ -475,7 +475,7 @@ func TestOther(t *testing.T) {
 		t.Errorf("错误:%v", err)
 	}
 
-	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
+	finder := zorm.NewSelectFinder(demoStructTableName).Append(" order by id ")
 	//把新产生的newCtx传递到zorm的函数
 	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
 	fmt.Println(list)
