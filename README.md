@@ -16,7 +16,8 @@ go get gitee.com/chunanyong/zorm
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
 达梦数据库驱动 [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
-生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
+
+zorm生产环境参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 
 ## 头条号
