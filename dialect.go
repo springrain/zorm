@@ -431,7 +431,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 //根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 func rebind(dbType string, sqlstr string) string {
-	if dbType == "mysql" || dbType == "sqlite" {
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" {
 		return sqlstr
 	}
 
