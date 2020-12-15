@@ -200,10 +200,8 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 	var insertSliceSQLBuilder strings.Builder
 	insertSliceSQLBuilder.WriteString(sqlstr)
 	for i := 1; i < sliceLen; i++ {
-		if (i + 1) < sliceLen { //不是最后一个
-			insertSliceSQLBuilder.WriteString(",")
-		}
 		//拼接字符串
+		insertSliceSQLBuilder.WriteString(",")
 		insertSliceSQLBuilder.WriteString(valuestr)
 
 		entityStruct := entityStructSlice[i]
