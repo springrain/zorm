@@ -11,7 +11,7 @@ go get gitee.com/chunanyong/zorm
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite
+* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦)
 * 支持数据库读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
 
@@ -162,7 +162,7 @@ func init() {
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
 		DriverName: "mysql",
-		//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
+		//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite,dm),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
