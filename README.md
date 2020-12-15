@@ -1,5 +1,5 @@
 ## 介绍
-golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目  
+golang轻量级ORM,支持达梦数据库,[readygo](https://gitee.com/chunanyong/readygo)子项目  
 [API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
 
 源码地址:https://gitee.com/chunanyong/zorm
