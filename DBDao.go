@@ -674,7 +674,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	return affected, nil
 }
 
-//Insert 保存Struct对象,必须是*IEntityStruct类型
+//Insert 保存Struct对象,必须是IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
 func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
@@ -761,7 +761,8 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 }
 
-//InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,数组里一般是*Struct
+//InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
+//如果是自增主键,无法对Struct对象里的主键属性赋值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
 func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {

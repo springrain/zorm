@@ -421,6 +421,7 @@ func TestDelete(t *testing.T) {
 }
 
 //TestInsertSlice 13.测试批量保存Struct对象的Slice
+//如果是自增主键,无法对Struct对象里的主键属性赋值
 func TestInsertSlice(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
