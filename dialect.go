@@ -22,11 +22,14 @@ func wrapSQL(dbType string, sqlstr string) (string, error) {
 
 //包装分页的SQL语句
 func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
-	//查询order by 的位置.为了保持各个数据库之间的分页语句兼容,要求都要有order by,不然迁移数据库时的风险就很大了.
-	locOrderBy := findOrderByIndex(sqlstr)
-	if len(locOrderBy) <= 0 { //如果没有 order by
-		return "", errors.New("分页语句必须有 order by")
-	}
+	//查询order by 的位置.为了保持各个数据库之间的分页语句兼容,要求都要有order by,不然迁移数据库时的风险就很大了
+	//新的分页方法都已经不需要order by了,不再强制检查
+	/*
+		locOrderBy := findOrderByIndex(sqlstr)
+		if len(locOrderBy) <= 0 { //如果没有 order by
+			return "", errors.New("分页语句必须有 order by")
+		}
+	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
 	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" { //MySQL,sqlite3,dm数据库

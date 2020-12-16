@@ -31,7 +31,6 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 ```go  
 // zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
 // zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 ``` 
@@ -127,7 +126,6 @@ func newDemoStruct() demoStruct {
 
 // testzorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
 // zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 package testzorm
@@ -281,9 +279,6 @@ func TestQuerySlice(t *testing.T) {
 
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//为了保证数据库迁移,分页语句必须要有order by
-	finder.Append("order by id asc")
-
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1    //查询第1页,默认是1
@@ -302,9 +297,7 @@ func TestQuerySlice(t *testing.T) {
 func TestQueryMapSlice(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//为了保证数据库迁移,分页语句必须要有order by
-	finder.Append("order by id asc")
-
+	
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
@@ -479,7 +472,7 @@ func TestOther(t *testing.T) {
 		t.Errorf("错误:%v", err)
 	}
 
-	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
+	finder := zorm.NewSelectFinder(demoStructTableName)
 	//把新产生的newCtx传递到zorm的函数
 	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
 	fmt.Println(list)
