@@ -19,7 +19,7 @@ type DataSourceConfig struct {
 	DSN string
 	//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
 	DriverName string
-	//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite,dm),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
+	//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite,dm,kingbase),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
 	DBType string
 	//PrintSQL 是否打印SQL语句.使用zorm.ZormPrintSQL记录SQL
 	PrintSQL bool
@@ -88,9 +88,9 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 type dataBaseConnection struct {
 	db *sql.DB // 原生db
 	tx *sql.Tx // 原生事务
-	//数据库驱动名称mysql,postgres,oci8,sqlserver,sqlite3,dm 和DBType对应,处理数据库有多个驱动
+	//数据库驱动名称mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
 	driverName string
-	//mysql,postgresql,oracle,mssql,sqlite,dm 和 DriverName 对应,处理数据库有多个驱动
+	//mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
 	dbType string
 
 	//是否打印sql

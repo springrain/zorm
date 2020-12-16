@@ -29,40 +29,23 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" { //MySQL数据库
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" { //MySQL,sqlite3,dm数据库
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	} else if dbType == "postgresql" { //postgresql
+	} else if dbType == "postgresql" || dbType == "kingbase" { //postgresql,kingbase
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "mssql" { //sqlserver 2012+
-		sqlbuilder.WriteString(" OFFSET ")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
-		sqlbuilder.WriteString(" ROWS ONLY ")
-
-	} else if dbType == "oracle" { //oracle 12c+
+	} else if dbType == "mssql" || dbType == "oracle" { //sqlserver 2012+,oracle 12c+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
-	} else if dbType == "sqlite" { //sqlite3
-		sqlbuilder.WriteString(" LIMIT ")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-		sqlbuilder.WriteString(",")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
-	} else if dbType == "dm" { //达梦数据库
-		sqlbuilder.WriteString(" LIMIT ")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-		sqlbuilder.WriteString(",")
-		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 	} else if dbType == "db2" { //db2
 
 		//先不写啦
@@ -442,7 +425,7 @@ func rebind(dbType string, sqlstr string) string {
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
-		if dbType == "postgresql" { //postgresql
+		if dbType == "postgresql" || dbType == "kingbase" { //postgresql,kingbase
 			sqlBuilder.WriteString("$")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else if dbType == "mssql" { //mssql
