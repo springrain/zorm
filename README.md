@@ -160,9 +160,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite,dm,kingbase),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
