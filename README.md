@@ -22,7 +22,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 
 人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
-人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试  
+人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
 
 ## 测试用例  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
