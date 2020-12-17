@@ -484,7 +484,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 
 	//如果是字节数组
 	value, ok := v.([]byte)
-	if !ok { //转化失败
+	if !ok { //转化失败,不是字节数组,例如:string,直接返回值
 		return v
 	}
 	if len(value) < 1 { //值为空,为nil
@@ -493,27 +493,33 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 
 	//获取数据库类型,自己对应golang的基础类型值,不处理sql.Nullxxx类型
 	databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-	//如果是字符串
-	if databaseTypeName == "VARCHAR" || databaseTypeName == "NVARCHAR" || databaseTypeName == "TEXT" {
+	switch databaseTypeName {
+	case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG":
 		return typeConvertString(v)
-	} else if databaseTypeName == "TINYINT" { //如果是TINYINT
+	case "TINYINT", "BIT":
 		return typeConvertInt8(v)
-	} else if databaseTypeName == "SMALLINT" { //如果是SMALLINT
+	case "SMALLINT", "SMALLSERIAL":
 		return typeConvertInt16(v)
-	} else if databaseTypeName == "INT" { //如果是INT
+	case "INT", "INT4", "INTEGER", "SERIAL":
 		return typeConvertInt(v)
-	} else if databaseTypeName == "BIGINT" { //如果是BIGINT
+	case "BIGINT", "BIGSERIAL", "INT8":
 		return typeConvertInt64(v)
-	} else if databaseTypeName == "FLOAT" { //如果是FLOAT
+	case "FLOAT", "REAL":
 		return typeConvertFloat32(v)
-	} else if databaseTypeName == "DOUBLE" { //如果是DOUBLE
+	case "DOUBLE":
 		return typeConvertFloat64(v)
-	} else if databaseTypeName == "DECIMAL" { //如果是DECIMAL
+	case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
 		return typeConvertDecimal(v)
-	} else if databaseTypeName == "DATETIME" { //如果是DATETIME
+	case "DATE":
+		return typeConvertTime(v, "2006-01-02", time.Local)
+	case "TIME":
+		return typeConvertTime(v, "15:04:05", time.Local)
+	case "DATETIME":
 		return typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
-	} else if databaseTypeName == "TIMESTAMP" { //如果是TIMESTAMP
+	case "TIMESTAMP":
 		return typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
+	case "BOOLEAN", "BOOL":
+		return typeConvertBool(v)
 	}
 	//其他类型以后再写.....
 

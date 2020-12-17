@@ -1,8 +1,9 @@
 ## 介绍
 golang轻量级ORM,支持达梦(dm),人大金仓(kingbase)数据库,[readygo](https://gitee.com/chunanyong/readygo)子项目  
-[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
 
-源码地址:https://gitee.com/chunanyong/zorm
+[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
+源码地址:https://gitee.com/chunanyong/zorm  
+作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
 ``` 
 go get gitee.com/chunanyong/zorm 
@@ -17,16 +18,14 @@ go get gitee.com/chunanyong/zorm
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
+## 支持国产数据库  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
+
 人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
+人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试  
 
-## 头条号
-博客[https://www.jiagou.com](https://www.jiagou.com)  
-![架构头条号](https://images.gitee.com/uploads/images/2020/0920/213826_38708bb4_686.jpeg "toutiao_300x300.jpg")  
-
-## 测试用例
-
-https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
+## 测试用例  
+https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
 
 ```go  
 // zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
