@@ -1,10 +1,9 @@
-# zorm
+## 介绍
+golang轻量级ORM,支持达梦(dm),人大金仓(kingbase)数据库.    
 
-#### 介绍
-golang轻量级ORM,[readygo](https://gitee.com/chunanyong/readygo)子项目  
 [API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
-
-源码地址:https://gitee.com/chunanyong/zorm
+源码地址:https://gitee.com/chunanyong/zorm  
+作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
 ``` 
 go get gitee.com/chunanyong/zorm 
@@ -13,27 +12,31 @@ go get gitee.com/chunanyong/zorm
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite
+* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(人大金仓)
 * 支持数据库读写分离
-* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
+* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
-生产使用参考 [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)
+zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
-## 测试用例
+## 支持国产数据库  
+达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 
-https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
+人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
+人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+
+## 测试用例  
+https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
 
 ```go  
 // zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
 // zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 ``` 
 
 
 
-#### 数据库脚本和实体类
+## 数据库脚本和实体类
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
@@ -122,7 +125,6 @@ func newDemoStruct() demoStruct {
 
 // testzorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// 为了保持数据库兼容性,分页语句必须有order by
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
 // zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 package testzorm
@@ -158,9 +160,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//DriverName 数据库驱动名称,和DBType对应,一个数据库可以有多个驱动(DriverName)
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//DBType 数据库类型(mysql,postgresql,oracle,mssql,sqlite),zorm判断方言的依据,一个数据库可以有多个驱动(DriverName)
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
@@ -196,7 +198,38 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-//TestInsertEntityMap 03.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
+//TestInsertSlice 03.测试批量保存Struct对象的Slice
+//如果是自增主键,无法对Struct对象里的主键属性赋值
+func TestInsertSlice(t *testing.T) {
+
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
+		demoSlice := make([]zorm.IEntityStruct, 0)
+
+		//创建对象1
+		demo1 := newDemoStruct()
+		demo1.UserName = "demo1"
+		//创建对象2
+		demo2 := newDemoStruct()
+		demo2.UserName = "demo2"
+
+		demoSlice = append(demoSlice, &demo1, &demo2)
+
+		//批量保存对象,如果主键是自增,无法保存自增的ID到对象里.
+		_, err := zorm.InsertSlice(ctx, demoSlice)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	//标记测试失败
+	if err != nil {
+		t.Errorf("错误:%v", err)
+	}
+}
+
+//TestInsertEntityMap 04.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
 func TestInsertEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
@@ -228,7 +261,7 @@ func TestInsertEntityMap(t *testing.T) {
 	}
 }
 
-//TestQuery 04.测试查询一个struct对象
+//TestQuery 05.测试查询一个struct对象
 func TestQuery(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
@@ -252,7 +285,7 @@ func TestQuery(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestQueryMap 05.测试查询map接收结果,用于不太适合struct的场景,比较灵活
+//TestQueryMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
 func TestQueryMap(t *testing.T) {
 
 	//构造查询用的finder
@@ -269,16 +302,13 @@ func TestQueryMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuerySlice 06.测试查询对象列表
+//TestQuerySlice 07.测试查询对象列表
 func TestQuerySlice(t *testing.T) {
 	//创建用于接收结果的slice
 	list := make([]demoStruct, 0)
 
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//为了保证数据库迁移,分页语句必须要有order by
-	finder.Append("order by id asc")
-
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1    //查询第1页,默认是1
@@ -293,13 +323,11 @@ func TestQuerySlice(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
 }
 
-//TestQueryMapSlice 07.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+//TestQueryMapSlice 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
 func TestQueryMapSlice(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//为了保证数据库迁移,分页语句必须要有order by
-	finder.Append("order by id asc")
-
+	
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
@@ -312,7 +340,7 @@ func TestQueryMapSlice(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
 }
 
-//TestUpdateNotZeroValue 08.更新struct对象,只更新不为零值的字段.主键必须有值
+//TestUpdateNotZeroValue 09.更新struct对象,只更新不为零值的字段.主键必须有值
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
@@ -334,7 +362,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 }
 
-//TestUpdate 09.更新struct对象,更新所有字段.主键必须有值
+//TestUpdate 10.更新struct对象,更新所有字段.主键必须有值
 func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
@@ -355,7 +383,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-//TestUpdateFinder 10.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
+//TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -376,7 +404,7 @@ func TestUpdateFinder(t *testing.T) {
 
 }
 
-//TestUpdateEntityMap 11.更新一个EntityMap,主键必须有值
+//TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -399,7 +427,7 @@ func TestUpdateEntityMap(t *testing.T) {
 
 }
 
-//TestDelete 12.删除一个struct对象,主键必须有值
+//TestDelete 13.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -418,7 +446,24 @@ func TestDelete(t *testing.T) {
 
 }
 
-//TestOther 13.其他的一些说明.非常感谢您能看到这一行
+
+//TestProc 14.测试调用存储过程
+func TestProc(t *testing.T) {
+	demo := &demoStruct{}
+	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
+	zorm.Query(ctx, finder, &demo)
+	fmt.Println(demo)
+}
+
+//TestProc 15.测试调用自定义函数
+func TestFunc(t *testing.T) {
+	userName := ""
+	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
+	zorm.Query(ctx, finder, &userName)
+	fmt.Println(userName)
+}
+
+//TestOther 16.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
 	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
@@ -427,7 +472,7 @@ func TestOther(t *testing.T) {
 		t.Errorf("错误:%v", err)
 	}
 
-	finder := zorm.NewSelectFinder(demoStructTableName).Append("order by id ")
+	finder := zorm.NewSelectFinder(demoStructTableName)
 	//把新产生的newCtx传递到zorm的函数
 	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
 	fmt.Println(list)
@@ -444,9 +489,6 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
 }
-
-
-
 
 ```  
 
@@ -486,4 +528,3 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
-
