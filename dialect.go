@@ -498,7 +498,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		return typeConvertString(v)
 	case "TINYINT", "BIT":
 		return typeConvertInt8(v)
-	case "SMALLINT", "SMALLSERIAL":
+	case "SMALLINT", "SMALLSERIAL", "INT2":
 		return typeConvertInt16(v)
 	case "INT", "INT4", "INTEGER", "SERIAL":
 		return typeConvertInt(v)
