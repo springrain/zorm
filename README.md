@@ -1,7 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase)数据库.    
-
-[API文档](https://pkg.go.dev/gitee.com/chunanyong/zorm?tab=doc)  
+go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase)数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
