@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// dataSorce对象,隔离mysql原生对象
+// dataSorce对象,隔离sql原生对象
 type dataSource struct {
 	*sql.DB
 }
