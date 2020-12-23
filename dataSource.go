@@ -45,6 +45,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if err != nil {
 		err = fmt.Errorf("数据库打开失败:%w", err)
 		FuncLogError(err)
+		db.Close()
 		return nil, err
 	}
 
