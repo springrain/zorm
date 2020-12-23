@@ -45,7 +45,6 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if err != nil {
 		err = fmt.Errorf("数据库打开失败:%w", err)
 		FuncLogError(err)
-		db.Close()
 		return nil, err
 	}
 
@@ -74,6 +73,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if pingerr := db.Ping(); pingerr != nil {
 		pingerr = fmt.Errorf("ping数据库失败:%w", pingerr)
 		FuncLogError(pingerr)
+		db.Close()
 		return nil, pingerr
 	}
 
