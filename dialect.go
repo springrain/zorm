@@ -496,11 +496,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	switch databaseTypeName {
 	case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG":
 		return typeConvertString(v)
-	case "TINYINT", "BIT":
-		return typeConvertInt8(v)
-	case "SMALLINT", "SMALLSERIAL", "INT2":
-		return typeConvertInt16(v)
-	case "INT", "INT4", "INTEGER", "SERIAL":
+	case "INT", "INT4", "INTEGER", "SERIAL", "TINYINT", "BIT", "SMALLINT", "SMALLSERIAL", "INT2":
 		return typeConvertInt(v)
 	case "BIGINT", "BIGSERIAL", "INT8":
 		return typeConvertInt64(v)
