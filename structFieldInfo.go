@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"go/ast"
 	"reflect"
 	"sync"
@@ -390,10 +391,64 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
+/*
+	// fix:converting NULL to int is unsupported
+	// 当读取数据库的值为NULL时，由于基本类型不支持为NULL，通过反射将未知driver.Value改为NullBool,基本类型会自动强转为默认值
+		newValues := make([]interface{}, 0, len(values))
+		empty := sql.NullBool{}
+		queryValue := reflect.Indirect(reflect.ValueOf(rows))
+		queryValue = queryValue.FieldByName("lastcols")
+		cnt := queryValue.Len()
+		for i := 0; i < cnt; i++ {
+			v := queryValue.Index(i)
+			if v.IsValid() {
+				if v.InterfaceData()[0] != 0 {
+					newValues = append(newValues, values[i])
+				} else {
+					newValues = append(newValues, &empty)
+				}
+			}
+		}
+*/
+func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+	//声明载体数组,用于存放struct的属性指针
+	values := make([]interface{}, len(columns))
+
+	//反射获取 []driver.Value的值
+	queryValue := reflect.Indirect(reflect.ValueOf(rows))
+	queryValue = queryValue.FieldByName("lastcols")
+	//遍历数据库的列名
+	for i, column := range columns {
+		//从缓存中获取列名的field字段
+		field, fok := dbColumnFieldMap[column]
+		if !fok { //如果列名不存在,就初始化一个空值
+			values[i] = new(interface{})
+			continue
+		}
+		dv := queryValue.Index(i)
+		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
+			values[i] = new(interface{})
+		} else {
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+			value := valueOf.FieldByName(field.Name).Addr().Interface()
+			//把指针地址放到数组
+			values[i] = value
+		}
+	}
+	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+	scanerr := rows.Scan(values...)
+	if scanerr != nil {
+		scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
+		FuncLogError(scanerr)
+		return scanerr
+	}
+	return nil
+}
+
 /* sqlRowsValues 包装接收sqlRows的Values数组
  * 基础类型使用sql.Nullxxx替换,放到sqlNullMap[field.name]*sql.Nullxxx,用于接受数据库的值,用于处理数据库为null的情况,然后再重新替换回去
  */
-func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValues2(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
 

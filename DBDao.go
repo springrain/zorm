@@ -426,25 +426,6 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//new 出来的为什么是个指针啊????
 		pv := reflect.New(sliceElementType).Elem()
 		scanerr := sqlRowsValues(rows, columns, dbColumnFieldMap, pv)
-		/*
-			// fix:converting NULL to int is unsupported
-			// 当读取数据库的值为NULL时，由于基本类型不支持为NULL，通过反射将未知driver.Value改为NullBool,基本类型会自动强转为默认值
-				newValues := make([]interface{}, 0, len(values))
-				empty := sql.NullBool{}
-				queryValue := reflect.Indirect(reflect.ValueOf(rows))
-				queryValue = queryValue.FieldByName("lastcols")
-				cnt := queryValue.Len()
-				for i := 0; i < cnt; i++ {
-					v := queryValue.Index(i)
-					if v.IsValid() {
-						if v.InterfaceData()[0] != 0 {
-							newValues = append(newValues, values[i])
-						} else {
-							newValues = append(newValues, &empty)
-						}
-					}
-				}
-		*/
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
