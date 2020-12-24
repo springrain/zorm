@@ -480,6 +480,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 /* sqlRowsValues 包装接收sqlRows的Values数组
  * 基础类型使用sql.Nullxxx替换,放到sqlNullMap[field.name]*sql.Nullxxx,用于接受数据库的值,用于处理数据库为null的情况,然后再重新替换回去
  */
+// Deprecated: 暂时不用
 func sqlRowsValues2(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
