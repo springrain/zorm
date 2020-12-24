@@ -387,6 +387,30 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
+/*
+ * 包装接收sqlRows的Values数组
+ */
+func wrapSQLRowsValues(columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) []interface{} {
+	//声明载体数组,用于存放struct的属性指针
+	values := make([]interface{}, len(columns))
+
+	//遍历数据库的列名
+	for i, column := range columns {
+		//从缓存中获取列名的field字段
+		field, fok := dbColumnFieldMap[column]
+		if !fok { //如果列名不存在,就初始化一个空值
+			values[i] = new(interface{})
+			continue
+		}
+		//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+		value := valueOf.FieldByName(field.Name).Addr().Interface()
+		//把指针地址放到数组
+		values[i] = value
+	}
+
+	return values
+}
+
 //根据数据库返回的sql.Rows,查询出列名和对应的值.废弃
 /*
 func columnValueMap2Struct(resultMap map[string]interface{}, typeOf reflect.Type, valueOf reflect.Value) error {
