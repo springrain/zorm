@@ -393,6 +393,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 
 /* sqlRowsValuesFast 包装接收sqlRows的Values数组,快速模式,数据库表不能有null值
  */
+// Deprecated: 暂时不用
 func sqlRowsValuesFast(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
