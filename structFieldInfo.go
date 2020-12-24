@@ -2,11 +2,14 @@ package zorm
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/gob"
 	"errors"
 	"go/ast"
 	"reflect"
 	"sync"
+
+	"github.com/shopspring/decimal"
 )
 
 //allowBaseTypeMap 允许基础类型查询,用于查询单个基础类型字段,例如 select id from t_user 查询返回的是字符串类型
@@ -387,12 +390,15 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-/*
- * 包装接收sqlRows的Values数组
+/* sqlRowsValues 包装接收sqlRows的Values数组
+ * 基础类型使用sql.Nullxxx替换,放到sqlNullMap[field.name]*sql.Nullxxx,用于接受数据库的值,用于处理数据库为null的情况,然后再重新替换回去
  */
-func wrapSQLRowsValues(columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) []interface{} {
+func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
+
+	//基础类型使用sql.Nullxxx替换,放到sqlNullMap[field.name]*sql.Nullxxx,用于接受数据库的值,用于处理数据库为null的情况,然后再重新替换回去
+	sqlNullMap := make(map[string]interface{})
 
 	//遍历数据库的列名
 	for i, column := range columns {
@@ -402,13 +408,118 @@ func wrapSQLRowsValues(columns []string, dbColumnFieldMap map[string]reflect.Str
 			values[i] = new(interface{})
 			continue
 		}
-		//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
-		value := valueOf.FieldByName(field.Name).Addr().Interface()
+		//values 中的值
+		var value interface{}
+		//struct中的字段属性名称
+		//fieldName := field.Name
+
+		//fmt.Println(fieldName, "----", field.Type, "--------", field.Type.Kind(), "++++", field.Type.String())
+		ftypeString := field.Type.String()
+		fkind := field.Type.Kind()
+		//判断字段类型
+		switch fkind {
+		case reflect.String:
+			value = &sql.NullString{}
+			sqlNullMap[column] = value
+		case reflect.Int8, reflect.Int16, reflect.Int, reflect.Int32:
+			value = &sql.NullInt32{}
+			sqlNullMap[column] = value
+		case reflect.Int64:
+			value = &sql.NullInt64{}
+			sqlNullMap[column] = value
+		case reflect.Float32, reflect.Float64:
+			value = &sql.NullFloat64{}
+			sqlNullMap[column] = value
+		case reflect.Bool:
+			value = &sql.NullBool{}
+			sqlNullMap[column] = value
+		case reflect.Struct:
+			if ftypeString == "time.Time" {
+				value = &sql.NullTime{}
+				sqlNullMap[column] = value
+			} else if ftypeString == "decimal.Decimal" {
+				value = &decimal.NullDecimal{}
+				sqlNullMap[column] = value
+			} else {
+				//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+				value = valueOf.FieldByName(field.Name).Addr().Interface()
+			}
+			sqlNullMap[column] = value
+		default:
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+			value = valueOf.FieldByName(field.Name).Addr().Interface()
+		}
+
 		//把指针地址放到数组
 		values[i] = value
 	}
+	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+	scanerr := rows.Scan(values...)
+	if scanerr != nil {
+		return scanerr
+	}
 
-	return values
+	//循环需要处理的字段
+	for column, value := range sqlNullMap {
+		//从缓存中获取列名的field字段
+		field, fok := dbColumnFieldMap[column]
+		if !fok { //如果列名不存在,就初始化一个空值
+			continue
+		}
+		ftypeString := field.Type.String()
+		fkind := field.Type.Kind()
+		fieldName := field.Name
+		//判断字段类型
+		switch fkind {
+		case reflect.String:
+			vptr, ok := value.(*sql.NullString)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).SetString(vptr.String)
+			}
+		case reflect.Int8, reflect.Int16, reflect.Int, reflect.Int32:
+			vptr, ok := value.(*sql.NullInt32)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).Set(reflect.ValueOf((int)(vptr.Int32)))
+			}
+		case reflect.Int64:
+			vptr, ok := value.(*sql.NullInt64)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).SetInt(vptr.Int64)
+			}
+		case reflect.Float32:
+			vptr, ok := value.(*sql.NullFloat64)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).Set(reflect.ValueOf((float32)(vptr.Float64)))
+			}
+		case reflect.Float64:
+			vptr, ok := value.(*sql.NullFloat64)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).SetFloat(vptr.Float64)
+			}
+		case reflect.Bool:
+			vptr, ok := value.(*sql.NullBool)
+			if vptr.Valid && ok {
+				valueOf.FieldByName(fieldName).SetBool(vptr.Bool)
+			}
+		case reflect.Struct:
+			if ftypeString == "time.Time" {
+				vptr, ok := value.(*sql.NullTime)
+				if vptr.Valid && ok {
+					valueOf.FieldByName(fieldName).Set(reflect.ValueOf(vptr.Time))
+				}
+			} else if ftypeString == "decimal.Decimal" {
+				vptr, ok := value.(*decimal.NullDecimal)
+				if vptr.Valid && ok {
+					valueOf.FieldByName(fieldName).Set(reflect.ValueOf(vptr.Decimal))
+				}
+
+			}
+
+		}
+
+	}
+
+	return scanerr
 }
 
 //根据数据库返回的sql.Rows,查询出列名和对应的值.废弃

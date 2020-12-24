@@ -291,15 +291,14 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		}
 		i++
 
-		//声明载体数组,用于存放struct的属性指针
-		values := wrapSQLRowsValues(columns, dbColumnFieldMap, valueOf)
-		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-		scanerr := rows.Scan(values...)
+		scanerr := sqlRowsValues(rows, columns, dbColumnFieldMap, valueOf)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("rows.Scan错误:%w", scanerr)
 			FuncLogError(scanerr)
 			return scanerr
 		}
+
+		//重新把values赋值到struct,如果数据是null,就使用默认值
 
 	}
 
@@ -426,8 +425,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//反射初始化一个数组内的元素
 		//new 出来的为什么是个指针啊????
 		pv := reflect.New(sliceElementType).Elem()
-		//声明载体数组,用于存放struct的属性指针
-		values := wrapSQLRowsValues(columns, dbColumnFieldMap, pv)
+		scanerr := sqlRowsValues(rows, columns, dbColumnFieldMap, pv)
 		/*
 			// fix:converting NULL to int is unsupported
 			// 当读取数据库的值为NULL时，由于基本类型不支持为NULL，通过反射将未知driver.Value改为NullBool,基本类型会自动强转为默认值
@@ -448,7 +446,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				}
 		*/
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-		scanerr := rows.Scan(values...)
+		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
 			FuncLogError(scanerr)
