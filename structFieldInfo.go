@@ -391,20 +391,6 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-// DBTableHasNULL 数据库表是否有NULL值,如果数据库里有NULL值,会使用反射屏蔽null值
-var DBTableHasNULL = true
-
-/* sqlRowsValues 包装接收sqlRows的Values数组
- */
-func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
-
-	if DBTableHasNULL {
-		return sqlRowsValuesReflect(rows, columns, dbColumnFieldMap, valueOf)
-	}
-	return sqlRowsValuesFast(rows, columns, dbColumnFieldMap, valueOf)
-
-}
-
 /* sqlRowsValuesFast 包装接收sqlRows的Values数组,快速模式,数据库表不能有null值
  */
 func sqlRowsValuesFast(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
@@ -454,7 +440,9 @@ func sqlRowsValuesFast(rows *sql.Rows, columns []string, dbColumnFieldMap map[st
 			}
 		}
 */
-func sqlRowsValuesReflect(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+/* sqlRowsValues 包装接收sqlRows的Values数组,反射rows,避免数据库null值
+ */
+func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
 
