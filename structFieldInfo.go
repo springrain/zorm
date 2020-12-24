@@ -479,7 +479,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 		case reflect.Int8, reflect.Int16, reflect.Int, reflect.Int32:
 			vptr, ok := value.(*sql.NullInt32)
 			if vptr.Valid && ok {
-				valueOf.FieldByName(fieldName).Set(reflect.ValueOf((int)(vptr.Int32)))
+				valueOf.FieldByName(fieldName).Set(reflect.ValueOf(int(vptr.Int32)))
 			}
 		case reflect.Int64:
 			vptr, ok := value.(*sql.NullInt64)
@@ -489,7 +489,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 		case reflect.Float32:
 			vptr, ok := value.(*sql.NullFloat64)
 			if vptr.Valid && ok {
-				valueOf.FieldByName(fieldName).Set(reflect.ValueOf((float32)(vptr.Float64)))
+				valueOf.FieldByName(fieldName).Set(reflect.ValueOf(float32(vptr.Float64)))
 			}
 		case reflect.Float64:
 			vptr, ok := value.(*sql.NullFloat64)
