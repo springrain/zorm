@@ -391,6 +391,50 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
+// DBTableHasNULL 数据库表是否有NULL值,如果数据库里有NULL值,会使用反射屏蔽null值
+var DBTableHasNULL = true
+
+/* sqlRowsValues 包装接收sqlRows的Values数组
+ */
+func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+
+	if DBTableHasNULL {
+		return sqlRowsValuesReflect(rows, columns, dbColumnFieldMap, valueOf)
+	}
+	return sqlRowsValuesFast(rows, columns, dbColumnFieldMap, valueOf)
+
+}
+
+/* sqlRowsValuesFast 包装接收sqlRows的Values数组,快速模式,数据库表不能有null值
+ */
+func sqlRowsValuesFast(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+	//声明载体数组,用于存放struct的属性指针
+	values := make([]interface{}, len(columns))
+
+	//遍历数据库的列名
+	for i, column := range columns {
+		//从缓存中获取列名的field字段
+		field, fok := dbColumnFieldMap[column]
+		if !fok { //如果列名不存在,就初始化一个空值
+			values[i] = new(interface{})
+			continue
+		}
+
+		//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+		value := valueOf.FieldByName(field.Name).Addr().Interface()
+		//把指针地址放到数组
+		values[i] = value
+	}
+	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+	scanerr := rows.Scan(values...)
+	if scanerr != nil {
+		scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
+		FuncLogError(scanerr)
+		return scanerr
+	}
+	return nil
+}
+
 /*
 	// fix:converting NULL to int is unsupported
 	// 当读取数据库的值为NULL时，由于基本类型不支持为NULL，通过反射将未知driver.Value改为NullBool,基本类型会自动强转为默认值
@@ -410,7 +454,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 			}
 		}
 */
-func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValuesReflect(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))
 
