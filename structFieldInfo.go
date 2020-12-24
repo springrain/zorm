@@ -408,7 +408,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 			}
 		}
 */
-/* sqlRowsValues 包装接收sqlRows的Values数组,反射rows,避免数据库null值
+/* sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
  */
 func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
