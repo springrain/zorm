@@ -619,9 +619,9 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		dbType = dbConnection.dbType
 	}
 
-	sqlstr, err = wrapSQL(dbType, sqlstr)
+	sqlstr, err = reBindSQL(dbType, sqlstr)
 	if err != nil {
-		err = fmt.Errorf("UpdateFinder-->wrapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
@@ -875,9 +875,9 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 
 	//SQL语句
-	sqlstr, values, autoIncrement, err := wrapSaveMapSQL(dbType, entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(dbType, entity)
 	if err != nil {
-		err = fmt.Errorf("InsertEntityMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
@@ -937,9 +937,9 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 
 	//SQL语句
-	sqlstr, values, err := wrapUpdateMapSQL(dbType, entity)
+	sqlstr, values, err := wrapUpdateEntityMapSQL(dbType, entity)
 	if err != nil {
-		err = fmt.Errorf("UpdateEntityMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}

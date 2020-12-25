@@ -12,14 +12,6 @@ import (
 	"gitee.com/chunanyong/gouuid"
 )
 
-//包装基础的SQL语句
-func wrapSQL(dbType string, sqlstr string) (string, error) {
-
-	//根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-	sqlstr = rebind(dbType, sqlstr)
-	return sqlstr, nil
-}
-
 //包装分页的SQL语句
 func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	//查询order by 的位置.为了保持各个数据库之间的分页语句兼容,要求都要有order by,不然迁移数据库时的风险就很大了
@@ -55,14 +47,14 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		//bug(springrain) 还需要其他的数据库分页语句
 	}
 	sqlstr = sqlbuilder.String()
-	return wrapSQL(dbType, sqlstr)
+	return reBindSQL(dbType, sqlstr)
 }
 
 //包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 	sqlstr, autoIncrement, err := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
-	savesql, err := wrapSQL(dbType, sqlstr)
+	savesql, err := reBindSQL(dbType, sqlstr)
 	return savesql, autoIncrement, err
 }
 
@@ -163,22 +155,23 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 	//先生成一条语句
 	sqlstr, autoIncrement, firstErr := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
 	if firstErr != nil {
-		return sqlstr, autoIncrement, firstErr
+		return "", autoIncrement, firstErr
 	}
 	//如果只有一个Struct对象
 	if sliceLen == 1 {
+		sqlstr, _ = reBindSQL(dbType, sqlstr)
 		return sqlstr, autoIncrement, firstErr
 	}
 	//主键的名称
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return sqlstr, autoIncrement, e
+		return "", autoIncrement, e
 	}
 
 	//截取生成的SQL语句中 VALUES 后面的字符串值
 	valueIndex := strings.Index(sqlstr, " VALUES (")
 	if valueIndex < 1 { //生成的语句异常
-		return sqlstr, autoIncrement, errors.New("生成的语句异常")
+		return "", autoIncrement, errors.New("生成的语句异常")
 	}
 	//value后面的字符串 例如 (?,?,?),用于循环拼接
 	valuestr := sqlstr[valueIndex+8:]
@@ -217,7 +210,7 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 	}
 
 	//包装sql
-	savesql, err := wrapSQL(dbType, insertSliceSQLBuilder.String())
+	savesql, err := reBindSQL(dbType, insertSliceSQLBuilder.String())
 	return savesql, autoIncrement, err
 
 }
@@ -273,7 +266,7 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 
 	sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 
-	return wrapSQL(dbType, sqlstr)
+	return reBindSQL(dbType, sqlstr)
 }
 
 //包装删除Struct语句
@@ -288,12 +281,12 @@ func wrapDeleteStructSQL(dbType string, entity IEntityStruct) (string, error) {
 	sqlBuilder.WriteString("=?")
 	sqlstr := sqlBuilder.String()
 
-	return wrapSQL(dbType, sqlstr)
+	return reBindSQL(dbType, sqlstr)
 
 }
 
-//包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bool, error) {
+//wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
+func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bool, error) {
 	//是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
@@ -343,7 +336,7 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bo
 	sqlstr = sqlstr + ")" + valuestr + ")"
 
 	var e error
-	sqlstr, e = wrapSQL(dbType, sqlstr)
+	sqlstr, e = reBindSQL(dbType, sqlstr)
 	if e != nil {
 		return "", nil, autoIncrement, e
 	}
@@ -351,7 +344,7 @@ func wrapSaveMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bo
 }
 
 //包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-func wrapUpdateMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
+func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
 		return "", nil, errors.New("GetDBFieldMap()返回值不能为空")
@@ -388,7 +381,7 @@ func wrapUpdateMapSQL(dbType string, entity IEntityMap) (string, []interface{}, 
 	sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 
 	var e error
-	sqlstr, e = wrapSQL(dbType, sqlstr)
+	sqlstr, e = reBindSQL(dbType, sqlstr)
 	if e != nil {
 		return "", nil, e
 	}
@@ -404,7 +397,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 		return "", err
 	}
 	if page == nil {
-		sqlstr, err = wrapSQL(dbType, sqlstr)
+		sqlstr, err = reBindSQL(dbType, sqlstr)
 	} else {
 		sqlstr, err = wrapPageSQL(dbType, sqlstr, page)
 	}
@@ -415,15 +408,15 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 	return sqlstr, err
 }
 
-//根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-func rebind(dbType string, sqlstr string) string {
+//reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
+func reBindSQL(dbType string, sqlstr string) (string, error) {
 	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" {
-		return sqlstr
+		return sqlstr, nil
 	}
 
 	strs := strings.Split(sqlstr, "?")
 	if len(strs) < 1 {
-		return sqlstr
+		return sqlstr, nil
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
@@ -442,7 +435,7 @@ func rebind(dbType string, sqlstr string) string {
 		}
 		sqlBuilder.WriteString(strs[i])
 	}
-	return sqlBuilder.String()
+	return sqlBuilder.String(), nil
 }
 
 //查询order by在sql中出现的开始位置和结束位置
