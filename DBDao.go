@@ -670,7 +670,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//SQL语句
-	sqlstr, autoIncrement, err := wrapInsertStructSQL(dbType, typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, err := wrapInsertSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("Insert-->wrapInsertStructSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
@@ -747,7 +747,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	}
 
 	//SQL语句
-	sqlstr, _, err := wrapInsertSliceStructSQL(dbType, typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(dbType, typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("InsertSlice-->wrapInsertSliceStructSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
@@ -828,7 +828,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//SQL语句
-	sqlstr, err := wrapDeleteStructSQL(dbType, entity)
+	sqlstr, err := wrapDeleteSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("Delete-->wrapDeleteStructSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
@@ -985,7 +985,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	}
 
 	//SQL语句
-	sqlstr, err := wrapUpdateStructSQL(dbType, typeOf, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateSQL(dbType, typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return affected, err
 	}

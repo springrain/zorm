@@ -12,7 +12,7 @@ import (
 	"gitee.com/chunanyong/gouuid"
 )
 
-//包装分页的SQL语句
+//wrapPageSQL 包装分页的SQL语句
 func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	//查询order by 的位置.为了保持各个数据库之间的分页语句兼容,要求都要有order by,不然迁移数据库时的风险就很大了
 	//新的分页方法都已经不需要order by了,不再强制检查
@@ -50,17 +50,17 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	return reBindSQL(dbType, sqlstr)
 }
 
-//包装保存Struct语句.返回语句,是否自增,错误信息
+//wrapInsertSQL 包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
-	sqlstr, autoIncrement, err := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
+func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+	sqlstr, autoIncrement, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	savesql, err := reBindSQL(dbType, sqlstr)
 	return savesql, autoIncrement, err
 }
 
-//包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
+//wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertStructSQLNORebuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
@@ -141,9 +141,9 @@ func wrapInsertStructSQLNORebuild(dbType string, typeOf reflect.Type, entity IEn
 
 }
 
-//包装批量保存StructSlice语句.返回语句,是否自增,错误信息
+//wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
 		return "", false, errors.New("对象数组不能为空")
@@ -153,7 +153,7 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 	entity := entityStructSlice[0]
 
 	//先生成一条语句
-	sqlstr, autoIncrement, firstErr := wrapInsertStructSQLNORebuild(dbType, typeOf, entity, columns, values)
+	sqlstr, autoIncrement, firstErr := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	if firstErr != nil {
 		return "", autoIncrement, firstErr
 	}
@@ -215,9 +215,9 @@ func wrapInsertSliceStructSQL(dbType string, typeOf reflect.Type, entityStructSl
 
 }
 
-//包装更新Struct语句
+//wrapUpdateSQL 包装更新Struct语句
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -269,8 +269,8 @@ func wrapUpdateStructSQL(dbType string, typeOf reflect.Type, entity IEntityStruc
 	return reBindSQL(dbType, sqlstr)
 }
 
-//包装删除Struct语句
-func wrapDeleteStructSQL(dbType string, entity IEntityStruct) (string, error) {
+//wrapDeleteSQL 包装删除Struct语句
+func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
@@ -343,7 +343,7 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	return sqlstr, values, autoIncrement, nil
 }
 
-//包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
+//wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
 func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
@@ -388,7 +388,7 @@ func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	return sqlstr, values, nil
 }
 
-//封装查询语句
+//wrapQuerySQL 封装查询语句
 func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 	//获取到没有page的sql的语句
@@ -442,7 +442,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 var orderByExpr = "\\s+(order)\\s+(by)+\\s"
 var orderByRegexp, _ = regexp.Compile(orderByExpr)
 
-//查询order by在sql中出现的开始位置和结束位置
+//findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
 func findOrderByIndex(strsql string) []int {
 	loc := orderByRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
@@ -452,7 +452,7 @@ func findOrderByIndex(strsql string) []int {
 var groupByExpr = "\\s+(group)\\s+(by)+\\s"
 var groupByRegexp, _ = regexp.Compile(groupByExpr)
 
-//查询group by在sql中出现的开始位置和结束位置
+//findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
 func findGroupByIndex(strsql string) []int {
 	loc := groupByRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
@@ -462,13 +462,13 @@ func findGroupByIndex(strsql string) []int {
 var fromExpr = "\\s+(from)+\\s"
 var fromRegexp, _ = regexp.Compile(fromExpr)
 
-//查询from在sql中出现的开始位置和结束位置
+//findFromIndex 查询from在sql中出现的开始位置和结束位置
 func findFromIndex(strsql string) []int {
 	loc := fromRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
 }
 
-//根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
+//converValueColumnType 根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
 
 	if v == nil {
