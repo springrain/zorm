@@ -437,12 +437,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 	}
 	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 	scanerr := rows.Scan(values...)
-	if scanerr != nil {
-		scanerr = fmt.Errorf("rows.Scan异常:%w", scanerr)
-		FuncLogError(scanerr)
-		return scanerr
-	}
-	return nil
+	return scanerr
 }
 
 /*
