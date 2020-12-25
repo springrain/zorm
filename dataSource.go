@@ -21,7 +21,7 @@ type DataSourceConfig struct {
 	DriverName string
 	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
 	DBType string
-	//PrintSQL 是否打印SQL语句.使用zorm.ZormPrintSQL记录SQL
+	//PrintSQL 是否打印SQL语句.使用zorm.PrintSQL记录SQL
 	PrintSQL bool
 	//MaxOpenConns 数据库最大连接数 默认50
 	MaxOpenConns int
@@ -154,59 +154,61 @@ func (dbConnection *dataBaseConnection) commit() error {
 }
 
 // execContext 执行sql语句，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql string, args ...interface{}) (sql.Result, error) {
+func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args ...interface{}) (*sql.Result, error) {
 
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
-		FuncPrintSQL(execsql, args)
+		FuncPrintSQL(*execsql, args)
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.ExecContext(ctx, execsql, args...)
+		res, reserr := dbConnection.tx.ExecContext(ctx, *execsql, args...)
+		return &res, reserr
 	}
-	return dbConnection.db.ExecContext(ctx, execsql, args...)
+	res, reserr := dbConnection.db.ExecContext(ctx, *execsql, args...)
+	return &res, reserr
 }
 
 // queryRowContext 如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args ...interface{}) *sql.Row {
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		FuncPrintSQL(query, args)
+		FuncPrintSQL(*query, args)
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryRowContext(ctx, query, args...)
+		return dbConnection.tx.QueryRowContext(ctx, *query, args...)
 	}
-	return dbConnection.db.QueryRowContext(ctx, query, args...)
+	return dbConnection.db.QueryRowContext(ctx, *query, args...)
 }
 
 // queryContext 查询数据，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args ...interface{}) (*sql.Rows, error) {
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		FuncPrintSQL(query, args)
+		FuncPrintSQL(*query, args)
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryContext(ctx, query, args...)
+		return dbConnection.tx.QueryContext(ctx, *query, args...)
 	}
-	return dbConnection.db.QueryContext(ctx, query, args...)
+	return dbConnection.db.QueryContext(ctx, *query, args...)
 }
 
 // prepareContext 预执行，如果已经开启事务，就以事务方式执行，如果没有开启事务，就以非事务方式执行
-func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query *string) (*sql.Stmt, error) {
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query))
-		FuncPrintSQL(query, nil)
+		FuncPrintSQL(*query, nil)
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.PrepareContext(ctx, query)
+		return dbConnection.tx.PrepareContext(ctx, *query)
 	}
 
-	return dbConnection.db.PrepareContext(ctx, query)
+	return dbConnection.db.PrepareContext(ctx, *query)
 }

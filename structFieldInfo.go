@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"go/ast"
 	"reflect"
 	"sync"
@@ -389,27 +388,10 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-/*
-	// fix:converting NULL to int is unsupported
-	// 当读取数据库的值为NULL时，由于基本类型不支持为NULL，通过反射将未知driver.Value改为NullBool,基本类型会自动强转为默认值
-		newValues := make([]interface{}, 0, len(values))
-		empty := sql.NullBool{}
-		queryValue := reflect.Indirect(reflect.ValueOf(rows))
-		queryValue = queryValue.FieldByName("lastcols")
-		cnt := queryValue.Len()
-		for i := 0; i < cnt; i++ {
-			v := queryValue.Index(i)
-			if v.IsValid() {
-				if v.InterfaceData()[0] != 0 {
-					newValues = append(newValues, values[i])
-				} else {
-					newValues = append(newValues, &empty)
-				}
-			}
-		}
-*/
-/* sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
- */
+// sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
+// fix:converting NULL to int is unsupported
+// 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
+// 感谢@fastabler提交的pr
 func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	values := make([]interface{}, len(columns))

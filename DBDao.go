@@ -6,6 +6,7 @@ package zorm
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -234,7 +235,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values...)
 	defer rows.Close()
 
 	if e != nil {
@@ -365,7 +366,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values...)
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows异常:%w", e)
@@ -459,11 +460,11 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryMap的finder参数不能为nil")
+		return nil, errors.New("QueryMap -->finder参数不能为nil")
 	}
 	resultMapList, listerr := QueryMapSlice(ctx, finder, nil)
 	if listerr != nil {
-		listerr = fmt.Errorf("QueryMapList查询错误:%w", listerr)
+		listerr = fmt.Errorf("QueryMapSlice -->查询错误:%w", listerr)
 		FuncLogError(listerr)
 		return nil, listerr
 	}
@@ -484,7 +485,7 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryMap的finder参数不能为nil")
+		return nil, errors.New("QueryMapSlice-->finder参数不能为nil")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -505,7 +506,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
-		err = fmt.Errorf("QueryMapList查询SQL语句错误:%w", err)
+		err = fmt.Errorf("QueryMapSlice -->查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return nil, err
 	}
@@ -518,7 +519,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	}
 
 	//根据语句和参数查询
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values...)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values...)
 	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("查询rows错误:%w", e)
@@ -624,28 +625,14 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	res, errexec := dbConnection.execContext(ctx, sqlstr, finder.values...)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, finder.values)
 	if errexec != nil {
-		errexec = fmt.Errorf("执行更新错误:%w", errexec)
+		errexec = fmt.Errorf("UpdateFinder-->执行更新错误:%w", errexec)
 		FuncLogError(errexec)
-		return affected, errexec
-	}
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
 	}
 
-	return affected, nil
+	return affected, errexec
 }
 
 //Insert 保存Struct对象,必须是IEntityStruct类型
@@ -689,31 +676,18 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	//流弊的...,把数组展开变成多个参数的形式
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values...)
 	if errexec != nil {
-		errexec = fmt.Errorf("Insert执行保存错误:%w", errexec)
+		errexec = fmt.Errorf("Insert-->执行保存错误:%w", errexec)
 		FuncLogError(errexec)
 		return affected, errexec
 	}
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
-	}
+
 	//如果是自增主键
 	if autoIncrement {
 		//需要数据库支持,获取自增主键
-		autoIncrementIDInt64, e := res.LastInsertId()
+		autoIncrementIDInt64, e := (*res).LastInsertId()
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给struct属性:%w", e)
 			FuncLogError(e)
@@ -779,28 +753,14 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	//流弊的...,把数组展开变成多个参数的形式
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values...)
 	if errexec != nil {
-		errexec = fmt.Errorf("InsertSlice执行保存错误:%w", errexec)
+		errexec = fmt.Errorf("InsertSlice-->执行保存错误:%w", errexec)
 		FuncLogError(errexec)
-		return affected, errexec
 	}
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
-	}
-	return affected, nil
+
+	return affected, errexec
 
 }
 
@@ -874,29 +834,14 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	res, errexec := dbConnection.execContext(ctx, sqlstr, value)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, value)
 	if errexec != nil {
-		errexec = fmt.Errorf("Delete执行删除错误:%w", errexec)
+		errexec = fmt.Errorf("Delete-->执行删除错误:%w", errexec)
 		FuncLogError(errexec)
-		return affected, errexec
 	}
 
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
-	}
-
-	return affected, nil
+	return affected, errexec
 
 }
 
@@ -932,36 +877,22 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	//SQL语句
 	sqlstr, values, autoIncrement, err := wrapSaveMapSQL(dbType, entity)
 	if err != nil {
-		err = fmt.Errorf("SaveMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("InsertEntityMap-->wrapSaveMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	//流弊的...,把数组展开变成多个参数的形式
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values...)
 	if errexec != nil {
-		errexec = fmt.Errorf("SaveMap执行保存错误:%w", errexec)
+		errexec = fmt.Errorf("InsertEntityMap-->执行保存错误:%w", errexec)
 		FuncLogError(errexec)
 		return affected, errexec
-	}
-
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
 	}
 
 	//如果是自增主键
 	if autoIncrement {
 		//需要数据库支持,获取自增主键
-		autoIncrementIDInt64, e := res.LastInsertId()
+		autoIncrementIDInt64, e := (*res).LastInsertId()
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
 			FuncLogError(e)
@@ -1008,32 +939,18 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	//SQL语句
 	sqlstr, values, err := wrapUpdateMapSQL(dbType, entity)
 	if err != nil {
-		err = fmt.Errorf("UpdateMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("UpdateEntityMap-->wrapUpdateMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
-
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	//流弊的...,把数组展开变成多个参数的形式
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values...)
 	if errexec != nil {
-		errexec = fmt.Errorf("UpdateMap执行更新错误:%w", errexec)
+		errexec = fmt.Errorf("UpdateEntityMap-->执行更新错误:%w", errexec)
 		FuncLogError(errexec)
-		return affected, errexec
 	}
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
-	}
-	return affected, nil
+
+	return affected, errexec
 
 }
 
@@ -1073,26 +990,14 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 		return affected, err
 	}
 
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
-	if dbConnectionerr != nil {
-		return affected, dbConnectionerr
-	}
-
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
-
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values...)
 	if errexec != nil {
-		return affected, errexec
+		errexec = fmt.Errorf("updateStruct-->执行更新错误:%w", errexec)
+		FuncLogError(errexec)
 	}
 
-	//影响的行数
-	rowsAffected, errAffected := res.RowsAffected()
-	if errAffected == nil {
-		affected, _ = typeConvertInt64toInt(rowsAffected)
-	}
-
-	return affected, nil
+	return affected, errexec
 
 }
 
@@ -1209,7 +1114,28 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 			return ctx, dbConnection, errDBConnection
 		}
 	}
-
 	return ctx, dbConnection, nil
+}
 
+// wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values ...interface{}) (*sql.Result, error) {
+	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
+	var dbConnectionerr error
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
+	if dbConnectionerr != nil {
+		return nil, dbConnectionerr
+	}
+
+	//流弊的...,把数组展开变成多个参数的形式
+	res, errexec := dbConnection.execContext(ctx, sqlstr, values...)
+
+	if errexec != nil {
+		return res, errexec
+	}
+	//影响的行数
+	rowsAffected, errAffected := (*res).RowsAffected()
+	if errAffected == nil {
+		*affected, errAffected = typeConvertInt64toInt(rowsAffected)
+	}
+	return res, errAffected
 }
