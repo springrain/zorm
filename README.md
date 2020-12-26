@@ -155,7 +155,7 @@ func init() {
 	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
 
 	//自定义日志输出格式,把FuncPrintSQL函数重新赋值
-	//log.SetFlags(log.Llongfile | log.LstdFlags)
+	//log.SetFlags(log.LstdFlags)
 	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
 	//dbDaoConfig 数据库的配置
