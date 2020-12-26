@@ -1040,7 +1040,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	} else {
 		locFrom := findFromIndex(countsql)
 		//没有找到FROM关键字,认为是异常语句
-		if len(locFrom) <= 0 {
+		if len(locFrom) == 0 {
 			return -1, errors.New("没有FROM关键字,语句错误")
 		}
 		countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
