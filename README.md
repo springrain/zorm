@@ -154,6 +154,10 @@ func init() {
 	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
 	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
 
+	//自定义日志输出格式,把FuncPrintSQL函数重新赋值
+	//log.SetFlags(log.Llongfile | log.LstdFlags)
+	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
+
 	//dbDaoConfig 数据库的配置
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
@@ -453,7 +457,7 @@ func TestProc(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestProc 15.测试调用自定义函数
+//TestFunc 15.测试调用自定义函数
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
