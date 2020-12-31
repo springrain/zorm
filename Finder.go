@@ -102,12 +102,12 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 //AppendFinder 添加另一个Finder finder.AppendFinder(f)
 func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 	if f == nil {
-		return nil, errors.New("参数是nil")
+		return nil, errors.New("finder-->AppendFinder参数是nil")
 	}
 
 	//不要自己构建finder,使用Newxxx方法
 	if finder.values == nil {
-		return nil, errors.New("不要自己构建finder,使用Newxxx方法")
+		return nil, errors.New("finder-->AppendFinder不要自己构建finder,使用Newxxx方法")
 	}
 
 	//添加f的SQL
@@ -126,7 +126,7 @@ func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 func (finder *Finder) GetSQL() (string, error) {
 	//不要自己构建finder,使用Newxxx方法
 	if finder.values == nil {
-		return "", errors.New("不要自己构建finder,使用Newxxx方法")
+		return "", errors.New("finder-->GetSQL不要自己构建finder,使用Newxxx方法")
 	}
 	if len(finder.sqlstr) > 0 {
 		return finder.sqlstr, nil
@@ -135,7 +135,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	finder.sqlstr = sqlstr
 	//包含单引号,属于非法字符串
 	if finder.InjectionCheck && (strings.Index(sqlstr, "'") >= 0) {
-		return "", errors.New("SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
+		return "", errors.New("finder-->GetSQL SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
 	}
 
 	//处理sql语句中的in,实际就是把数组变量展开,例如 id in(?) ["1","2","3"] 语句变更为 id in (?,?,?) 参数也展开到参数数组里
@@ -196,7 +196,7 @@ func (finder *Finder) GetSQL() (string, error) {
 		sliceLen := valueOf.Len()
 		//数组类型的参数长度小于1,认为是有异常的参数
 		if sliceLen < 1 {
-			return sqlstr, errors.New("语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+			return sqlstr, errors.New("finder-->GetSQL语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
 		}
 
 		for j := 0; j < sliceLen; j++ {

@@ -84,7 +84,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 			pkKind := field.Type.Kind()
 
 			if !(pkKind == reflect.String || pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) { //只支持字符串和int类型的主键
-				return "", autoIncrement, errors.New("不支持的主键类型")
+				return "", autoIncrement, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
 			}
 			//主键的值
 			pkValue := (*values)[i]
@@ -146,7 +146,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
-		return "", false, errors.New("对象数组不能为空")
+		return "", false, errors.New("wrapInsertSliceSQL对象数组不能为空")
 	}
 
 	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
@@ -171,7 +171,7 @@ func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []
 	//截取生成的SQL语句中 VALUES 后面的字符串值
 	valueIndex := strings.Index(sqlstr, " VALUES (")
 	if valueIndex < 1 { //生成的语句异常
-		return "", autoIncrement, errors.New("生成的语句异常")
+		return "", autoIncrement, errors.New("wrapInsertSliceSQL生成的语句异常")
 	}
 	//value后面的字符串 例如 (?,?,?),用于循环拼接
 	valuestr := sqlstr[valueIndex+8:]
@@ -291,7 +291,7 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", nil, autoIncrement, errors.New("GetDBFieldMap()返回值不能为空")
+		return "", nil, autoIncrement, errors.New("wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL对应的参数
 	values := []interface{}{}
@@ -347,7 +347,7 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", nil, errors.New("GetDBFieldMap()返回值不能为空")
+		return "", nil, errors.New("wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder

@@ -453,7 +453,7 @@ func TestDelete(t *testing.T) {
 func TestProc(t *testing.T) {
 	demo := &demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.Query(ctx, finder, &demo)
+	zorm.Query(ctx, finder, demo)
 	fmt.Println(demo)
 }
 

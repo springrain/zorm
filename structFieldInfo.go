@@ -59,7 +59,7 @@ var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 func structFieldInfo(typeOf reflect.Type) error {
 
 	if typeOf == nil {
-		return errors.New("数据为空")
+		return errors.New("structFieldInfo数据为空")
 	}
 
 	entityName := typeOf.String()
@@ -81,7 +81,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	fieldNum := typeOf.NumField()
 	//如果没有字段
 	if fieldNum < 1 {
-		return errors.New("entity没有属性")
+		return errors.New("structFieldInfo-->NumField entity没有属性")
 	}
 
 	// 声明所有字段的载体
@@ -108,7 +108,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	structFieldTagMap := make(map[string]string)
 
 	//遍历sync.Map,要求输入一个func作为参数
-	//这个函数的入参、出参的类型都已经固定，不能修改
+	//这个函数的入参、出参的类型都已经固定,不能修改
 	//可以在函数体内编写自己的代码,调用map中的k,v
 	f := func(k, v interface{}) bool {
 		// fmt.Println(k, ":", v)
@@ -217,21 +217,21 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 	if s == nil || len(fieldName) < 1 {
-		return nil, errors.New("数据为空")
+		return nil, errors.New("structFieldValue数据为空")
 	}
 	//entity的s类型
 	valueOf := reflect.ValueOf(s)
 
 	kind := valueOf.Kind()
 	if !(kind == reflect.Ptr || kind == reflect.Struct) {
-		return nil, errors.New("必须是Struct或者*Struct类型")
+		return nil, errors.New("structFieldValue必须是Struct或者*Struct类型")
 	}
 
 	if kind == reflect.Ptr {
 		//获取指针下的Struct类型
 		valueOf = valueOf.Elem()
 		if valueOf.Kind() != reflect.Struct {
-			return nil, errors.New("必须是Struct或者*Struct类型")
+			return nil, errors.New("structFieldValue必须是Struct或者*Struct类型")
 		}
 	}
 
@@ -375,15 +375,15 @@ func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error
 //检查entity类型必须是*struct类型或者基础类型的指针
 func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	if entity == nil {
-		return nil, errors.New("参数不能为空,必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
 	}
 	typeOf := reflect.TypeOf(entity)
 	if typeOf.Kind() != reflect.Ptr { //如果不是指针
-		return nil, errors.New("必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
 	if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
-		return nil, errors.New("必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	return typeOf, nil
 }
