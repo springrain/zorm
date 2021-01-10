@@ -765,7 +765,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 
 }
 
-//Update 更新struct所有属性,必须是*IEntityStruct类型
+//Update 更新struct所有属性,必须是IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func Update(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected, err := updateStructFunc(ctx, entity, false)
@@ -776,7 +776,7 @@ func Update(ctx context.Context, entity IEntityStruct) (int, error) {
 	return affected, nil
 }
 
-//UpdateNotZeroValue 更新struct不为默认零值的属性,必须是*IEntityStruct类型,主键必须有值
+//UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected, err := updateStructFunc(ctx, entity, true)
@@ -787,7 +787,7 @@ func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) 
 	return affected, nil
 }
 
-//Delete 根据主键删除一个对象.必须是*IEntityStruct类型
+//Delete 根据主键删除一个对象.必须是IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
 func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
