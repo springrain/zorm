@@ -394,16 +394,21 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // 感谢@fastabler提交的pr
 func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
+	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columns))
 
 	//反射获取 []driver.Value的值
 	queryValue := reflect.Indirect(reflect.ValueOf(rows))
 	queryValue = queryValue.FieldByName("lastcols")
 	//遍历数据库的列名
+	//Traverse the database column names
 	for i, column := range columns {
 		//从缓存中获取列名的field字段
+		//Get the field field of the column name from the cache
 		field, fok := dbColumnFieldMap[column]
-		if !fok { //如果列名不存在,就初始化一个空值
+		//如果列名不存在,就初始化一个空值
+		//If the column name does not exist, initialize a null value
+		if !fok {
 			values[i] = new(interface{})
 			continue
 		}
@@ -412,12 +417,15 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 			values[i] = new(interface{})
 		} else {
 			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
 			value := valueOf.FieldByName(field.Name).Addr().Interface()
 			//把指针地址放到数组
+			//Put the pointer address into the array
 			values[i] = value
 		}
 	}
 	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+	//Scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct.The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 	scanerr := rows.Scan(values...)
 	return scanerr
 }
