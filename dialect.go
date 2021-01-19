@@ -52,18 +52,20 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 
 //wrapInsertSQL 包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
-	sqlstr, autoIncrement, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
+func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, string, error) {
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	savesql, err := reBindSQL(dbType, sqlstr)
-	return savesql, autoIncrement, err
+	return savesql, autoIncrement, pktype, err
 }
 
 //wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, string, error) {
 
 	//是否自增,默认false
 	autoIncrement := false
+	//主键类型
+	pktype := ""
 	//SQL语句的构造器
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString("INSERT INTO ")
@@ -76,16 +78,23 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 	//主键的名称
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return "", autoIncrement, e
+		return "", autoIncrement, pktype, e
 	}
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 		if field.Name == pkFieldName { //如果是主键
 			pkKind := field.Type.Kind()
 
-			if !(pkKind == reflect.String || pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) { //只支持字符串和int类型的主键
-				return "", autoIncrement, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
+			if pkKind == reflect.String {
+				pktype = "string"
+			} else if pkKind == reflect.Int || pkKind == reflect.Int32 || pkKind == reflect.Int16 || pkKind == reflect.Int8 {
+				pktype = "int"
+			} else if pkKind == reflect.Int64 {
+				pktype = "int64"
+			} else {
+				return "", autoIncrement, pktype, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
 			}
+
 			//主键的值
 			pkValue := (*values)[i]
 			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
@@ -137,7 +146,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 	}
 	sqlstr = sqlstr + ")" + valuestr + ")"
 	//savesql, err := wrapSQL(dbType, sqlstr)
-	return sqlstr, autoIncrement, nil
+	return sqlstr, autoIncrement, pktype, nil
 
 }
 
@@ -153,7 +162,7 @@ func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []
 	entity := entityStructSlice[0]
 
 	//先生成一条语句
-	sqlstr, autoIncrement, firstErr := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
+	sqlstr, autoIncrement, _, firstErr := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	if firstErr != nil {
 		return "", autoIncrement, firstErr
 	}

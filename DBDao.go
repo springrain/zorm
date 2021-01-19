@@ -781,7 +781,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//SQL语句
 	//SQL statement
-	sqlstr, autoIncrement, err := wrapInsertSQL(dbType, typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(dbType, typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
@@ -809,12 +809,22 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
-		//int64 转 int
-		//int64 to int
-		autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
-		//设置自增主键的值
-		//Set the value of the auto-incrementing primary key
-		seterr := setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
+
+		var seterr error
+
+		if pktype == "int" {
+			//int64 转 int
+			//int64 to int
+			autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
+			//设置自增主键的值
+			//Set the value of the auto-incrementing primary key
+			seterr = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
+		} else if pktype == "int64" {
+			//设置自增主键的值
+			//Set the value of the auto-incrementing primary key
+			seterr = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
+		}
+
 		if seterr != nil {
 			seterr = fmt.Errorf("Insert-->setFieldValueByColumnName反射赋值数据库返回的自增主键错误:%w", seterr)
 			FuncLogError(seterr)
