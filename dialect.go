@@ -110,7 +110,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 				i = i - 1
 				continue
 
-			} else if (pkKind == reflect.String) && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
+			} else if (pktype == "string") && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
 				//生成主键字符串
 				id := FuncGenerateStringID()
 				(*values)[i] = id
@@ -118,7 +118,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 				v := reflect.ValueOf(entity).Elem()
 				v.FieldByName(field.Name).Set(reflect.ValueOf(id))
 				//如果是数字类型,并且值为0,认为是数据库自增,从数组中删除掉主键的信息,让数据库自己生成
-			} else if (pkKind == reflect.Int || pkKind == reflect.Int8 || pkKind == reflect.Int16 || pkKind == reflect.Int32 || pkKind == reflect.Int64) && (pkValue.(int) == 0) {
+			} else if (pktype == "int" && pkValue.(int) == 0) || (pktype == "int64" && pkValue.(int64) == 0) {
 				//标记是自增主键
 				autoIncrement = true
 				//去掉这一列,后续不再处理
