@@ -11,6 +11,7 @@ import (
 )
 
 //allowBaseTypeMap 允许基础类型查询,用于查询单个基础类型字段,例如 select id from t_user 查询返回的是字符串类型
+/*
 var allowBaseTypeMap = map[reflect.Kind]bool{
 	reflect.String: true,
 
@@ -29,6 +30,7 @@ var allowBaseTypeMap = map[reflect.Kind]bool{
 	reflect.Float32: true,
 	reflect.Float64: true,
 }
+*/
 
 const (
 	//tag标签的名称
@@ -382,9 +384,9 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 		return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
-	if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
-		return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
-	}
+	//if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
+	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
+	//}
 	return typeOf, nil
 }
 

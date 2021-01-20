@@ -301,9 +301,10 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return cne
 	}
 
-	//如果是基础类型,就查询一个字段
+	//就查询一个字段
 	//If it is a basic type, query a field
-	if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
+	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
+	if len(columns) == 1 {
 		i := 0
 		//循环遍历结果集
 		for rows.Next() {
@@ -387,9 +388,9 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	sliceElementType := sliceValue.Type().Elem()
 
 	//如果不是struct
-	if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
-		return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
-	}
+	//if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
+	//	return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
+	//}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -444,7 +445,8 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
-	if allowBaseTypeMap[sliceElementType.Kind()] {
+	//if allowBaseTypeMap[sliceElementType.Kind()] {
+	if len(columns) == 1 {
 
 		//循环遍历结果集
 		//Loop through the result set
