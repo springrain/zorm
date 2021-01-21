@@ -451,9 +451,20 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//循环遍历结果集
 		//Loop through the result set
 		for rows.Next() {
+
 			//初始化一个基本类型,new出来的是指针
 			//Initialize a basic type, and new is a pointer
 			pv := reflect.New(sliceElementType)
+			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
+			//反射获取 []driver.Value的值
+			queryValue := reflect.Indirect(reflect.ValueOf(rows))
+			queryValue = queryValue.FieldByName("lastcols")
+			dv := queryValue.Index(0)
+			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
+				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+				continue
+			}
+
 			//把数据库值赋给指针
 			//Assign database value to pointer
 			scanerr := rows.Scan(pv.Interface())
