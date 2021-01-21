@@ -469,7 +469,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			queryValue = queryValue.FieldByName("lastcols")
 			dv := queryValue.Index(0)
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
-				if sliceElementTypePtr { //如果数组里指针地址
+				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 					sliceValue.Set(reflect.Append(sliceValue, pv))
 				} else {
 					sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
@@ -487,7 +487,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			}
 			//通过反射给slice添加元素.添加指针下的真实元素
 			//Add elements to slice through reflection. Add real elements under the pointer
-			if sliceElementTypePtr { //如果数组里指针地址
+			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 				sliceValue.Set(reflect.Append(sliceValue, pv))
 			} else {
 				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
@@ -539,7 +539,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//values[i] = f.Addr().Interface()
 		//通过反射给slice添加元素
 		//Add elements to slice through reflection
-		if sliceElementTypePtr { //如果数组里指针地址
+		if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 			sliceValue.Set(reflect.Append(sliceValue, pv.Addr()))
 		} else {
 			sliceValue.Set(reflect.Append(sliceValue, pv))
