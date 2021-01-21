@@ -387,7 +387,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//获取数组内的元素类型
 	//Get the element type in the array
 	sliceElementType := sliceValue.Type().Elem()
-	//slice数组里是否是指针,实际参数类似 *[]*Struct了,兼容这种类型
+	//slice数组里是否是指针,实际参数类似 *[]*struct,兼容这种类型
 	sliceElementTypePtr := false
 	//如果数组里还是指针类型
 	if sliceElementType.Kind() == reflect.Ptr {
