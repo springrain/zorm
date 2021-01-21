@@ -367,12 +367,12 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
-		return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
+		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	pv1 := reflect.ValueOf(rowsSlicePtr)
 	if pv1.Kind() != reflect.Ptr { //如果不是指针
-		return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
+		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	//获取数组元素
@@ -382,15 +382,22 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//如果不是数组
 	//If it is not an array.
 	if sliceValue.Kind() != reflect.Slice {
-		return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
+		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 	//获取数组内的元素类型
 	//Get the element type in the array
 	sliceElementType := sliceValue.Type().Elem()
+	//slice数组里是否是指针,实际参数类似 *[]*Struct了,兼容这种类型
+	sliceElementTypePtr := false
+	//如果数组里还是指针类型
+	if sliceElementType.Kind() == reflect.Ptr {
+		sliceElementTypePtr = true
+		sliceElementType = sliceElementType.Elem()
+	}
 
 	//如果不是struct
 	//if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
-	//	return errors.New("QuerySlice数组必须是*[]struct类型或者基础类型数组的指针")
+	//	return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	//}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -462,7 +469,11 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			queryValue = queryValue.FieldByName("lastcols")
 			dv := queryValue.Index(0)
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
-				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+				if sliceElementTypePtr { //如果数组里指针地址
+					sliceValue.Set(reflect.Append(sliceValue, pv))
+				} else {
+					sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+				}
 				continue
 			}
 
@@ -476,7 +487,12 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			}
 			//通过反射给slice添加元素.添加指针下的真实元素
 			//Add elements to slice through reflection. Add real elements under the pointer
-			sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+			if sliceElementTypePtr { //如果数组里指针地址
+				sliceValue.Set(reflect.Append(sliceValue, pv))
+			} else {
+				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+			}
+
 		}
 
 		//查询总条数
@@ -523,7 +539,12 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//values[i] = f.Addr().Interface()
 		//通过反射给slice添加元素
 		//Add elements to slice through reflection
-		sliceValue.Set(reflect.Append(sliceValue, pv))
+		if sliceElementTypePtr { //如果数组里指针地址
+			sliceValue.Set(reflect.Append(sliceValue, pv.Addr()))
+		} else {
+			sliceValue.Set(reflect.Append(sliceValue, pv))
+		}
+
 	}
 
 	//查询总条数
