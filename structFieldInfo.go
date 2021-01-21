@@ -108,7 +108,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	exportStructFieldMap := make(map[string]reflect.StructField)
 	privateStructFieldMap := make(map[string]reflect.StructField)
 	dbColumnFieldMap := make(map[string]reflect.StructField)
-	structFieldTagMap := make(map[string]string)
+	//structFieldTagMap := make(map[string]string)
 
 	//遍历sync.Map,要求输入一个func作为参数
 	//这个函数的入参、出参的类型都已经固定,不能修改
@@ -125,7 +125,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 				//dbColumnFieldMap[tagColumnValue] = field
 				//使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
 				dbColumnFieldMap[strings.ToLower(tagColumnValue)] = field
-				structFieldTagMap[fieldName] = tagColumnValue
+				//structFieldTagMap[fieldName] = tagColumnValue
 			}
 
 		} else { //私有属性
