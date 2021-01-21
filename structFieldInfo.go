@@ -7,6 +7,7 @@ import (
 	"errors"
 	"go/ast"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -121,7 +122,9 @@ func structFieldInfo(typeOf reflect.Type) error {
 			//如果是数据库字段
 			tagColumnValue := field.Tag.Get(tagColumnName)
 			if len(tagColumnValue) > 0 {
-				dbColumnFieldMap[tagColumnValue] = field
+				//dbColumnFieldMap[tagColumnValue] = field
+				//使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
+				dbColumnFieldMap[strings.ToLower(tagColumnValue)] = field
 				structFieldTagMap[fieldName] = tagColumnValue
 			}
 
@@ -207,7 +210,7 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 	if err != nil {
 		return err
 	}
-	f, ok := dbMap[columnName]
+	f, ok := dbMap[strings.ToLower(columnName)]
 	if ok { //给主键赋值
 		valueOf.FieldByName(f.Name).Set(reflect.ValueOf(value))
 	}
@@ -369,7 +372,7 @@ func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error
 	if err != nil {
 		return "", err
 	}
-	field := dbMap[entity.GetPKColumnName()]
+	field := dbMap[strings.ToLower(entity.GetPKColumnName())]
 	return field.Name, nil
 
 }
@@ -407,7 +410,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 	for i, column := range columns {
 		//从缓存中获取列名的field字段
 		//Get the field field of the column name from the cache
-		field, fok := dbColumnFieldMap[column]
+		field, fok := dbColumnFieldMap[strings.ToLower(column)]
 		//如果列名不存在,就初始化一个空值
 		//If the column name does not exist, initialize a null value
 		if !fok {
