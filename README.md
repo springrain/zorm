@@ -1,43 +1,46 @@
-## 介绍
-go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase)数据库.  
-源码地址:https://gitee.com/chunanyong/zorm  
-作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
+## Introduction
+This is a lightweight ORM that supports DM and Kingbase databases.
+
+Source address:https://gitee.com/chunanyong/zorm  
+Author blog:[https://www.jiagou.com](https://www.jiagou.com)  
 
 ``` 
 go get gitee.com/chunanyong/zorm 
 ```  
-* 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
-* [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* 代码精简,总计2000行左右,注释详细,方便定制修改.  
-* <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(人大金仓)
-* 支持数据库读写分离
-* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
+* Written based on native SQL statements,It is the streamlining and optimization of [springrain](https://gitee.com/chunanyong/springrain).
+* [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
+* The code is streamlined, with a total of about 2000 lines, detailed comments, convenient for customization and modification. 
+* <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
+* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
+* Support database read and write separation.
+* The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
-## 支持国产数据库  
-达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
+## Support domestic database  
+DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 
-人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
-人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+kingbase(Ren Da Jincang)Driver Instructions: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
+The core of Kingbase(Ren Da Jincang) 8 is based on postgresql 9.6. You can use [https://github.com/lib/pq](https://github.com/lib/pq) for testing. The official driver is recommended for the production environment.    
 
-## 测试用例  
+## Test case  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
 
 ```go  
-// zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
-// 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
-// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
+// Zorm uses native SQL statements and does not impose restrictions on SQL syntax. Statements use Finder as the carrier.
+// Use "?" as a placeholder. , Zorm automatically replaces placeholders based on the database type, 
+// such as "?" in a PostgreSQL database, Replaced with $1, $2...
+// Zorm uses the ctx context. context parameter to propagate the transaction, and ctx is passed in from the web layer, such as gin's c.retest.context ().
+// The transaction operation of zorm needs to be displayed using zorm.Transaction(ctx, func(ctx context.Context) (interface(), error) ()) to open
 ``` 
 
 
 
-## 数据库脚本和实体类
+## Database scripts and entity classes
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
-生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
+Generate entity classes or write manually, it is recommended to use a code generator ： 
+https://gitee.com/chunanyong/readygo/tree/master/codegenerator
 ```go 
 
 package testzorm
@@ -48,63 +51,64 @@ import (
 	"gitee.com/chunanyong/zorm"
 )
 
-//建表语句
+//Table building statement
 
 /*
 
 DROP TABLE IF EXISTS `t_demo`;
 CREATE TABLE `t_demo`  (
-  `id` varchar(50)  NOT NULL COMMENT '主键',
-  `userName` varchar(30)  NOT NULL COMMENT '姓名',
-  `password` varchar(50)  NOT NULL COMMENT '密码',
+  `id` varchar(50)  NOT NULL COMMENT 'Primary key',
+  `userName` varchar(30)  NOT NULL COMMENT 'Name',
+  `password` varchar(50)  NOT NULL COMMENT 'password',
   `createTime` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-  `active` int(0) NOT NULL DEFAULT 1 COMMENT '是否有效(0否,1是)',
+  `active` int(0) NOT NULL DEFAULT 1 COMMENT 'Is it valid (0 no, 1 yes)',
   PRIMARY KEY (`id`)
-) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = '例子' ;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = 'example' ;
 
 */
 
-//demoStructTableName 表名常量,方便直接调用
+//demoStructTableName  Table name constant, easy to call directly
 const demoStructTableName = "t_demo"
 
-// demoStruct 例子
+// demoStruct example
 type demoStruct struct {
-	//引入默认的struct,隔离IEntityStruct的方法改动
+	//Default structs are introduced to insulate IEntityStructs from method changes
 	zorm.EntityStruct
 
-	//Id 主键
+	//Id: Primary key
 	Id string `column:"id"`
 
-	//UserName 姓名
+	//UserName: Name 
 	UserName string `column:"userName"`
 
-	//Password 密码
+	//Password: password
 	Password string `column:"password"`
 
 	//CreateTime <no value>
 	CreateTime time.Time `column:"createTime"`
 
-	//Active 是否有效(0否,1是)
+	//Active: Is it valid (0 no, 1 yes)
 	Active int `column:"active"`
 
-	//------------------数据库字段结束,自定义字段写在下面---------------//
+	//------------------The end of the database field, the custom field is written below---------------//
 
 }
 
-//GetTableName 获取表名称
+//GetTableName: Get the table name
 func (entity *demoStruct) GetTableName() string {
 	return demoStructTableName
 }
 
-//GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
+//GetPKColumnName: Get the primary key field name of the database table. Because it is compatible with Map, it can only be the field name of the database.
 func (entity *demoStruct) GetPKColumnName() string {
 	return "id"
 }
 
-//newDemoStruct 创建一个默认对象
+//newDemoStruct: Create a default object
 func newDemoStruct() demoStruct {
 	demo := demoStruct{
-		//如果Id=="",保存时zorm会调用zorm.FuncGenerateStringID(),默认UUID字符串,也可以自己定义实现方式,例如 zorm.FuncGenerateStringID=funcmyId
+		// If Id=="",When saving, zorm will call zorm.Func Generate String ID(),
+        // the default UUID string, or you can define your own implementation,E.g: zorm.FuncGenerateStringID=funcmyId
 		Id:         zorm.FuncGenerateStringID(),
 		UserName:   "defaultUserName",
 		Password:   "defaultPassword",
@@ -117,14 +121,15 @@ func newDemoStruct() demoStruct {
 
 ```
 
-## 测试用例即文档
+## Test cases are documents
 
 ```go  
 
-// testzorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
-// 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
-// zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
-// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
+// testzorm: Use native SQL statements, no restrictions on SQL syntax. Statements use Finder as a carrier
+// Use "?" as a placeholder. , Zorm automatically replaces placeholders based on the database type, 
+// such as "?" in a PostgreSQL database, Replaced with $1, $2...
+// Zorm uses the ctx context. context parameter to propagate the transaction, and ctx is passed in from the web layer, such as gin's c.retest.context ().
+// The transaction operation of zorm needs to be displayed using zorm.Transaction(ctx, func(ctx context.Context) (interface(), error) ()) to open
 package testzorm
 
 import (
@@ -135,325 +140,347 @@ import (
 
 	"gitee.com/chunanyong/zorm"
 
-	//00.引入数据库驱动
+	//00.Introduce database driver
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//dbDao 代表一个数据库,如果有多个数据库,就对应声明多个DBDao
+//dbDao: Represents a database. If there are multiple databases, declare multiple DB Dao accordingly
 var dbDao *zorm.DBDao
 
-// ctx默认应该有 web层传入,例如gin的c.Request.Context().这里只是模拟
+// ctx should be passed in by the web layer by default, such as gin's c.Request.Context(). This is just a simulation.
 var ctx = context.Background()
 
-//01.初始化DBDao
+//01.Initialize DB Dao
 func init() {
 
-	//自定义zorm日志输出
-	//zorm.LogCalldepth = 4 //日志调用的层级
-	//zorm.FuncLogError = myFuncLogError //记录异常日志的函数
-	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
-	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
+	//Custom zorm log output
+	//zorm.LogCalldepth = 4 //Level of log call
+	//zorm.FuncLogError = myFuncLogError //Function to record exception log.
+	//zorm.FuncLogPanic = myFuncLogPanic //Record panic log, use Zorm Error Log by default
+	//zorm.FuncPrintSQL = myFuncPrintSQL //A function that prints SQL
 
-	//dbDaoConfig 数据库的配置
+	//Customize the log output format and re-assign the Func Print SQL functio.
+	//log.SetFlags(log.LstdFlags)
+	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
+
+	//dbDaoConfig: Database configuration
 	dbDaoConfig := zorm.DataSourceConfig{
-		//DSN 数据库的连接字符串
-		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
+		// DSN: Database connection string
+		// DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
+		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3, 
+        // dm, kingbase and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
+		// Database type (based on dialect judgment): mysql, postgresql, 
+        // oracle, mssql, sqlite, dm, kingbase and DriverName correspond to multiple drivers for processing databases
 		DBType: "mysql",
-		//MaxOpenConns 数据库最大连接数 默认50
+		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,
-		//MaxIdleConns 数据库最大空闲连接数 默认50
+		//MaxIdleConns: The maximum number of free connections to the database default 50
 		MaxIdleConns: 50,
-		//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+		//ConnMaxLifetimeSecond: The connection survival time in seconds. The connection is destroyed and rebuilt after the default 600 (10 minutes). 
+        //To prevent the database from actively disconnecting and causing dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
-		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
+		//PrintSQL: Print SQL. Func Print SQL will be used to record SQL
 		PrintSQL: true,
 	}
 
-	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
+	// Create dbDao according to dbDaoConfig, a database is executed only once,
+    // the first executed database is defaultDao, and subsequent zorm.xxx methods, defaultDao is used by default.
 	dbDao, _ = zorm.NewDBDao(&dbDaoConfig)
 }
 
-//TestInsert 02.测试保存Struct对象
+//TestInsert: 02.Test save Struct object
 func TestInsert(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//You need to manually start the transaction. 
+    //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//创建一个demo对象
+		//Create a demo object
 		demo := newDemoStruct()
 
-		//保存对象,参数是对象指针.如果主键是自增,会赋值到对象的主键属性
+		// Save the object, the parameter is the object pointer. 
+        // If the primary key is incremented, it will be assigned to the primary key attribute of the object
 		_, err := zorm.Insert(ctx, &demo)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	//标记测试失败
+	//Mark test failed.
 	if err != nil {
-		t.Errorf("错误:%v", err)
+		t.Errorf("err:%v", err)
 	}
 }
 
-//TestInsertSlice 03.测试批量保存Struct对象的Slice
-//如果是自增主键,无法对Struct对象里的主键属性赋值
+//TestInsertSlice 03.Test the Slice that saves Struct objects in batches.
+//If it is an auto-increasing primary key, you cannot assign a value to the primary key attribute in the Struct object.
 func TestInsertSlice(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	// You need to manually start the transaction. 
+    // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
+		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
+        //uses the I Entity Struct interface, and is compatible with the Struct entity class.
 		demoSlice := make([]zorm.IEntityStruct, 0)
 
-		//创建对象1
+		//Create object 1
 		demo1 := newDemoStruct()
 		demo1.UserName = "demo1"
-		//创建对象2
+		//Create object 2
 		demo2 := newDemoStruct()
 		demo2.UserName = "demo2"
 
 		demoSlice = append(demoSlice, &demo1, &demo2)
 
-		//批量保存对象,如果主键是自增,无法保存自增的ID到对象里.
+		//To save objects in batches, if the primary key is auto-increment, the auto-increment ID cannot be saved in the object.
 		_, err := zorm.InsertSlice(ctx, demoSlice)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	//标记测试失败
+	//Mark test failed.
 	if err != nil {
 		t.Errorf("错误:%v", err)
 	}
 }
 
-//TestInsertEntityMap 04.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
+//TestInsertEntityMap 04.Test to save the Entity Map object for scenarios where it is not convenient to use struct, using Map as a carrier
 func TestInsertEntityMap(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	// You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//创建一个EntityMap,需要传入表名
+		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
-		//设置主键名称
+		//Set the primary key name.
 		entityMap.PkColumnName = "id"
-		//如果是自增序列,设置序列的值
+		//If it is an auto-increasing sequence, set the value of the sequence.
 		//entityMap.PkSequence = "mySequence"
 
-		//Set 设置数据库的字段值
-		//如果主键是自增或者序列,不要entityMap.Set主键的值
+		//Set Set the field value of the database
+		//If the primary key is auto-increment or sequence, don't entity Map.Set the value of the primary key.
 		entityMap.Set("id", zorm.FuncGenerateStringID())
 		entityMap.Set("userName", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
 		entityMap.Set("createTime", time.Now())
 		entityMap.Set("active", 1)
 
-		//执行
+		//carried out
 		_, err := zorm.InsertEntityMap(ctx, entityMap)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back
 		return nil, err
 	})
-	//标记测试失败
+	//Mark test failed
 	if err != nil {
-		t.Errorf("错误:%v", err)
+		t.Errorf("error:%v", err)
 	}
 }
 
-//TestQuery 05.测试查询一个struct对象
+//TestQuery 05.Test query a struct object
 func TestQuery(t *testing.T) {
 
-	//声明一个对象的指针,用于承载返回的数据
+	//Declare a pointer to an object to carry the returned data.
 	demo := &demoStruct{}
 
-	//构造查询用的finder
+	//Finder for constructing query.
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
 	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 
-	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	// finder.Append： The first parameter is the statement, and the following parameters are the corresponding values.
+    // The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
-	//执行查询
+	//Execute query
 	err := zorm.Query(ctx, finder, demo)
 
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { //Mark test failed
+		t.Errorf("error:%v", err)
 	}
-	//打印结果
+	//Print result
 	fmt.Println(demo)
 }
 
-//TestQueryMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
+//TestQueryMap 06.Test query map receiving results, used in scenarios that are not suitable for struct, more flexible
 func TestQueryMap(t *testing.T) {
 
-	//构造查询用的finder
+	//Finder for constructing query.
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	//finder.Append: The first parameter is the statement, and the following parameters are the corresponding values. 
+    //The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
-	//执行查询
+	//Execute query
 	resultMap, err := zorm.QueryMap(ctx, finder)
 
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { //Mark test failed
+		t.Errorf("error:%v", err)
 	}
-	//打印结果
+	//Print result
 	fmt.Println(resultMap)
 }
 
-//TestQuerySlice 07.测试查询对象列表
+//TestQuerySlice 07.Test query object list
 func TestQuerySlice(t *testing.T) {
-	//创建用于接收结果的slice
-	list := make([]demoStruct, 0)
+	//Create a slice to receive the result
+	list := make([]*demoStruct, 0)
 
-	//构造查询用的finder
+	//Finder for constructing query
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
+	//Create a paging object. After the query is completed, the page object can be directly used by the front-end paging component.
 	page := zorm.NewPage()
-	page.PageNo = 1    //查询第1页,默认是1
-	page.PageSize = 20 //每页20条,默认是20
+	page.PageNo = 1    //Query page 1, default is 1
+	page.PageSize = 20 //20 items per page, the default is 20
 
-	//执行查询
+	//Execute query
 	err := zorm.QuerySlice(ctx, finder, &list, page)
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { //Mark test failed
+		t.Errorf("error:%v", err)
 	}
-	//打印结果
-	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
+	//Print result
+	fmt.Println("Total number:", page.TotalCount, "  List:", list)
 }
 
-//TestQueryMapSlice 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+//TestQueryMapSlice 08.Test query map list, used in scenarios where struct is not convenient, a record is a map object.
 func TestQueryMapSlice(t *testing.T) {
-	//构造查询用的finder
+	//Finder for constructing query.
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	
-	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
+	//Create a paging object. After the query is completed, the page object can be directly used by the front-end paging component。
 	page := zorm.NewPage()
 
-	//执行查询
+	//Execute query
 	listMap, err := zorm.QueryMapSlice(ctx, finder, page)
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { //Mark test failed
+		t.Errorf("error:%v", err)
 	}
-	//打印结果
-	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
+	//Print result
+	fmt.Println("Total number:", page.TotalCount, "  List:", listMap)
 }
 
-//TestUpdateNotZeroValue 09.更新struct对象,只更新不为零值的字段.主键必须有值
+//TestUpdateNotZeroValue 09.Update the struct object, only update fields that are not zero. The primary key must have a value.
 func TestUpdateNotZeroValue(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	// You need to manually start the transaction. If the error returned by the anonymous function is not nil,
+    // the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//声明一个对象的指针,用于更新数据
+		//Declare a pointer to an object to update data
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "UpdateNotZeroValue"
 
-		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateNotZeroValue(ctx, demo)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { 
+        //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 
 }
 
-//TestUpdate 10.更新struct对象,更新所有字段.主键必须有值
+//TestUpdate 10.Update the struct object, update all fields. The primary key must have a value.
 func TestUpdate(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	// You need to manually start the transaction. 
+    // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//声明一个对象的指针,用于更新数据
+		//Declare a pointer to an object to update data.
 		demo := &demoStruct{}
 		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
 		demo.UserName = "TestUpdate"
 
 		_, err := zorm.Update(ctx, demo)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { 
+        //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 }
 
-//TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
+//TestUpdateFinder 11.Through finder update, zorm is the most flexible way, you can write any update statement, 
+// or even manually write insert statement
 func TestUpdateFinder(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 
-		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateFinder(ctx, finder)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 
 }
 
-//TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
+//TestUpdateEntityMap 12.Update an Entity Map, the primary key must have a value
 func TestUpdateEntityMap(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//You need to manually start the transaction. 
+    //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//创建一个EntityMap,需要传入表名
+		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
-		//设置主键名称
+		//Set the primary key name.
 		entityMap.PkColumnName = "id"
-		//Set 设置数据库的字段值,主键必须有值
+		//Set： Set the field value of the database, the primary key must have a value.
 		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
 		entityMap.Set("userName", "TestUpdateEntityMap")
-		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { 
+        //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 
 }
 
-//TestDelete 13.删除一个struct对象,主键必须有值
+//TestDelete 13.To delete a struct object, the primary key must have a value.
 func TestDelete(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
 
-		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
+		//delete： "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
 		_, err := zorm.Delete(ctx, demo)
 
-		//如果返回的err不是nil,事务就会回滚
+		//If the returned err is not nil, the transaction will be rolled back.
 		return nil, err
 	})
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil { 
+        //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 
 }
 
 
-//TestProc 14.测试调用存储过程
+//TestProc 14.Test call stored procedure
 func TestProc(t *testing.T) {
 	demo := &demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.Query(ctx, finder, &demo)
+	zorm.Query(ctx, finder, demo)
 	fmt.Println(demo)
 }
 
-//TestProc 15.测试调用自定义函数
+//TestFunc 15.Test call custom function.
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
@@ -461,28 +488,32 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
-//TestOther 16.其他的一些说明.非常感谢您能看到这一行
+//TestOther 16.Some other instructions. Thank you very much for seeing this line.
 func TestOther(t *testing.T) {
 
-	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
+	//Scenario 1. Multiple databases. Through the db Dao of the corresponding database, call the Bind Context DB Connection function, 
+    //bind the connection of this database to the returned ctx, and then pass the ctx to the zorm function.
 	newCtx, err := dbDao.BindContextDBConnection(ctx)
-	if err != nil { //标记测试失败
-		t.Errorf("错误:%v", err)
+	if err != nil {
+         //Mark test failed
+		t.Errorf("error:%v", err)
 	}
 
 	finder := zorm.NewSelectFinder(demoStructTableName)
-	//把新产生的newCtx传递到zorm的函数
+	//Pass the newly generated new Ctx to the function of zorm.
 	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
 	fmt.Println(list)
 
-	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
+	//Scenario 2. Read-write separation of a single database. 
+    //Set the strategy function for read-write separation.
 	zorm.FuncReadWriteStrategy = myReadWriteStrategy
 
-	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理
+	//Scenario 3. If there are multiple databases, 
+    //each database is also separated from reading and writing, and processed according to scenario 1.
 
 }
 
-//单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
+//Strategies for the separation of read and write of a single database rwType=0 read,rwType=1 write
 func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
@@ -491,14 +522,14 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 ```  
 
 
-##  性能压测
+##  Performance stress test
 
-   测试代码:https://github.com/alphayan/goormbenchmark
+   Test code:https://github.com/alphayan/goormbenchmark
 
-   指标说明
-   总时间,平均每次纳秒数,平均每次分配的内存,平均每次分配内存次数
+   Index description
+   Total time, average number of nanoseconds per time, average memory allocated per time, average number of memory allocated per time.
 
-   更新性能zorm,gorm,xorm相当.读取性能zorm比gorm,xorm快一倍  
+   The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.  
 
 ```
 2000 times - Insert
