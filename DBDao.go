@@ -353,8 +353,6 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			return scanerr
 		}
 
-		//重新把values赋值到struct,如果数据是null,就使用默认值
-
 	}
 
 	return nil
