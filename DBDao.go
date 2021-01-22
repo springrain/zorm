@@ -306,13 +306,12 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columns) == 1 {
-		i := 0
+
 		//循环遍历结果集
-		for rows.Next() {
-			if i > 1 {
+		for i := 0; rows.Next(); i++ {
+			if i > 0 {
 				return errors.New("Query查询出多条数据")
 			}
-			i++
 			scanerr := rows.Scan(entity)
 			if scanerr != nil {
 				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
@@ -342,7 +341,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//Loop through the result set
 	for i := 0; rows.Next(); i++ {
 
-		if i > 1 {
+		if i > 0 {
 			return errors.New("Query查询出多条数据")
 		}
 
