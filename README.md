@@ -1,4 +1,4 @@
-## Introduction
+## Introduction [中文](./README_zh.md)
 This is a lightweight ORM that supports DM and Kingbase databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
