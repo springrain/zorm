@@ -334,17 +334,19 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return dbe
 	}
 
-	i := 0
+	//反射获取 []driver.Value的值
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
+
 	//循环遍历结果集
 	//Loop through the result set
-	for rows.Next() {
+	for i := 0; rows.Next(); i++ {
 
 		if i > 1 {
 			return errors.New("Query查询出多条数据")
 		}
-		i++
 
-		scanerr := sqlRowsValues(rows, columns, dbColumnFieldMap, valueOf)
+		scanerr := sqlRowsValues(rows, driverValue, columns, dbColumnFieldMap, valueOf)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("Query-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -451,6 +453,10 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		return cne
 	}
 
+	//反射获取 []driver.Value的值
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
+
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[sliceElementType.Kind()] {
@@ -464,10 +470,8 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			//Initialize a basic type, and new is a pointer
 			pv := reflect.New(sliceElementType)
 			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
-			//反射获取 []driver.Value的值
-			queryValue := reflect.Indirect(reflect.ValueOf(rows))
-			queryValue = queryValue.FieldByName("lastcols")
-			dv := queryValue.Index(0)
+
+			dv := driverValue.Index(0)
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 					sliceValue.Set(reflect.Append(sliceValue, pv))
@@ -526,7 +530,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//new 出来的为什么是个指针啊????
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
-		scanerr := sqlRowsValues(rows, columns, dbColumnFieldMap, pv)
+		scanerr := sqlRowsValues(rows, driverValue, columns, dbColumnFieldMap, pv)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)

@@ -322,7 +322,7 @@ func TestQueryMap(t *testing.T) {
 //TestQuerySlice 07.Test query object list
 func TestQuerySlice(t *testing.T) {
 	//Create a slice to receive the result
-	list := make([]demoStruct, 0)
+	list := make([]*demoStruct, 0)
 
 	//Finder for constructing query
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo

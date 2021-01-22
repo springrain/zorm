@@ -397,14 +397,14 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
-func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columns))
 
 	//反射获取 []driver.Value的值
-	queryValue := reflect.Indirect(reflect.ValueOf(rows))
-	queryValue = queryValue.FieldByName("lastcols")
+	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	//driverValue = driverValue.FieldByName("lastcols")
 	//遍历数据库的列名
 	//Traverse the database column names
 	for i, column := range columns {
@@ -417,7 +417,7 @@ func sqlRowsValues(rows *sql.Rows, columns []string, dbColumnFieldMap map[string
 			values[i] = new(interface{})
 			continue
 		}
-		dv := queryValue.Index(i)
+		dv := driverValue.Index(i)
 		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 			values[i] = new(interface{})
 		} else {

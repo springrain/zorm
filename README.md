@@ -307,7 +307,7 @@ func TestQueryMap(t *testing.T) {
 //TestQuerySlice 07.测试查询对象列表
 func TestQuerySlice(t *testing.T) {
 	//创建用于接收结果的slice
-	list := make([]demoStruct, 0)
+	list := make([]*demoStruct, 0)
 
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
