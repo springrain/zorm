@@ -3,6 +3,7 @@ package zorm
 import (
 	"bytes"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/gob"
 	"errors"
 	"go/ast"
@@ -599,3 +600,36 @@ func sqlRowsValues2(rows *sql.Rows, columns []string, dbColumnFieldMap map[strin
 	return scanerr
 }
 */
+
+//CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
+var CustomDriverValueMap = make(map[string]CustomDriverValueConver)
+
+//CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
+type CustomDriverValueConver interface {
+	//GetDriverValue 根据需要构造的类型,返回driver.Value的实例
+	GetDriverValue(columnName string, elementType reflect.Type) (driver.Value, error)
+
+	//ConverDriverValue 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+	ConverDriverValue(columnName string, elementType reflect.Type, newValue driver.Value) (interface{}, error)
+}
+
+/**
+type CustomDMText struct{}
+
+func (dmtext CustomDMText) GetDriverValue(columnName string, structType reflect.Type) (driver.Value, error) {
+
+	return &dm.DmClob{}, nil
+}
+
+func (dmtext CustomDMText) ConverDriverValue(columnName string, structType reflect.Type, newValue driver.Value) (interface{}, error) {
+
+	dm, _ := newValue.(*dm.DmClob)
+
+	l, _ := dm.GetLength()
+	l2, _ := typeConvertInt64toInt(l)
+	str, _ := dm.ReadString(1, l2)
+	return &str, nil
+}
+
+CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
+**/

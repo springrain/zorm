@@ -11,6 +11,7 @@ package zorm
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -469,6 +470,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
 
 			dv := driverValue.Index(0)
+
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 					sliceValue.Set(reflect.Append(sliceValue, pv))
@@ -478,14 +480,40 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				continue
 			}
 
+			//根据接收的类型,获取到设置的转换函数
+			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			var newValue driver.Value
+			var errGetDriverValue error
+			if converOK {
+				newValue, errGetDriverValue = converFunc.GetDriverValue(columns[0], sliceElementType)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return errGetDriverValue
+				}
+				pv = reflect.ValueOf(newValue)
+			}
+
 			//把数据库值赋给指针
 			//Assign database value to pointer
 			scanerr := rows.Scan(pv.Interface())
+
 			if scanerr != nil {
 				scanerr = fmt.Errorf("QuerySlice-->rows.Scan异常:%w", scanerr)
 				FuncLogError(scanerr)
 				return scanerr
 			}
+			if converOK {
+				//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columns[0], sliceElementType, newValue)
+				if errConverDriverValue != nil {
+					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+					FuncLogError(errConverDriverValue)
+					return errConverDriverValue
+				}
+				pv = reflect.ValueOf(rightValue)
+			}
+
 			//通过反射给slice添加元素.添加指针下的真实元素
 			//Add elements to slice through reflection. Add real elements under the pointer
 			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
