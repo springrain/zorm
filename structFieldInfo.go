@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"go/ast"
 	"reflect"
 	"strings"
@@ -403,6 +404,10 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columns))
 
+	fieldNewValueMap := make(map[reflect.Value]*driverValueInfo)
+
+	converStructOk := false
+
 	//反射获取 []driver.Value的值
 	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	//driverValue = driverValue.FieldByName("lastcols")
@@ -422,9 +427,33 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 			values[i] = new(interface{})
 		} else {
+
+			fieldValue := valueOf.FieldByName(field.Name)
+
+			//根据接收的类型,获取到设置的转换函数
+			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			var newValue driver.Value
+			var errGetDriverValue error
+			if converOK {
+				converStructOk = true
+				newValue, errGetDriverValue = converFunc.GetDriverValue(column, fieldValue.Type())
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return errGetDriverValue
+				}
+				values[i] = newValue
+				dvinfo := driverValueInfo{}
+				dvinfo.converFunc = converFunc
+				dvinfo.columnName = column
+				dvinfo.newValue = newValue
+				fieldNewValueMap[fieldValue] = &dvinfo
+				continue
+			}
+
 			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
 			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
-			value := valueOf.FieldByName(field.Name).Addr().Interface()
+			value := fieldValue.Addr().Interface()
 			//把指针地址放到数组
 			//Put the pointer address into the array
 			values[i] = value
@@ -433,6 +462,25 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 	//Scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct.The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 	scanerr := rows.Scan(values...)
+	if scanerr != nil {
+		return scanerr
+	}
+
+	if converStructOk {
+		for fieldValue, driverValueInfoPtr := range fieldNewValueMap {
+			driverValueInfo := *driverValueInfoPtr
+
+			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnName, fieldValue.Type(), driverValueInfo.newValue)
+			if errConverDriverValue != nil {
+				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+				FuncLogError(errConverDriverValue)
+				return errConverDriverValue
+			}
+			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
+		}
+	}
+
 	return scanerr
 }
 
@@ -611,6 +659,12 @@ type CustomDriverValueConver interface {
 
 	//ConverDriverValue 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 	ConverDriverValue(columnName string, elementType reflect.Type, newValue driver.Value) (interface{}, error)
+}
+type driverValueInfo struct {
+	converFunc CustomDriverValueConver
+	columnName string
+	filedName  reflect.Value
+	newValue   interface{}
 }
 
 /**
