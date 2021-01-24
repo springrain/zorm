@@ -663,8 +663,8 @@ type CustomDriverValueConver interface {
 type driverValueInfo struct {
 	converFunc CustomDriverValueConver
 	columnName string
-	filedName  reflect.Value
-	newValue   interface{}
+	//filedName  reflect.Value
+	newValue interface{}
 }
 
 /**
