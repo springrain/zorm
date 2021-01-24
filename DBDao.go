@@ -303,17 +303,41 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return cne
 	}
 
+	//反射获取 []driver.Value的值
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
+
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columns) == 1 {
-
+		var converFunc CustomDriverValueConver
+		var converOK bool = false
+		var newValue driver.Value
 		//循环遍历结果集
 		for i := 0; rows.Next(); i++ {
 			if i > 0 {
 				return errors.New("Query查询出多条数据")
 			}
-			scanerr := rows.Scan(entity)
+			var scanerr error
+			dv := driverValue.Index(0)
+			//根据接收的类型,获取到设置的转换函数
+			converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+
+			var errGetDriverValue error
+			if converOK {
+				newValue, errGetDriverValue = converFunc.GetDriverValue(columns[0], typeOf)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return errGetDriverValue
+				}
+				scanerr = rows.Scan(newValue)
+
+			} else {
+				scanerr = rows.Scan(entity)
+			}
+
 			if scanerr != nil {
 				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
 				FuncLogError(scanerr)
@@ -321,6 +345,20 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 		}
 
+		if converOK {
+
+			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columns[0], typeOf, newValue)
+			if errConverDriverValue != nil {
+				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
+				FuncLogError(errConverDriverValue)
+				return errConverDriverValue
+			}
+
+			//不做类型判断了,直接反射吧
+			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
+
+		}
 		return nil
 	}
 
@@ -333,10 +371,6 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		FuncLogError(dbe)
 		return dbe
 	}
-
-	//反射获取 []driver.Value的值
-	driverValue := reflect.Indirect(reflect.ValueOf(rows))
-	driverValue = driverValue.FieldByName("lastcols")
 
 	//循环遍历结果集
 	//Loop through the result set
