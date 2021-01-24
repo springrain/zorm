@@ -304,8 +304,11 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	}
 
 	//反射获取 []driver.Value的值
-	driverValue := reflect.Indirect(reflect.ValueOf(rows))
-	driverValue = driverValue.FieldByName("lastcols")
+	var driverValue reflect.Value
+	if len(CustomDriverValueMap) > 0 {
+		driverValue = reflect.Indirect(reflect.ValueOf(rows))
+		driverValue = driverValue.FieldByName("lastcols")
+	}
 
 	//就查询一个字段
 	//If it is a basic type, query a field
@@ -320,9 +323,11 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				return errors.New("Query查询出多条数据")
 			}
 			var scanerr error
-			dv := driverValue.Index(0)
-			//根据接收的类型,获取到设置的转换函数
-			converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			if len(CustomDriverValueMap) > 0 {
+				dv := driverValue.Index(0)
+				//根据接收的类型,获取到设置的转换函数
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
 
 			var errGetDriverValue error
 			if converOK {
@@ -371,6 +376,9 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		FuncLogError(dbe)
 		return dbe
 	}
+
+	driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
 
 	//循环遍历结果集
 	//Loop through the result set
