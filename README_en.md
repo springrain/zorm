@@ -1,5 +1,5 @@
 ## Introduction
-This is a lightweight ORM that supports DM and Kingbase databases.
+This is a lightweight ORM that supports DM,Kingbase,mysql,postgresql,oracle,mssql,sqlite databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
 Author blog:[https://www.jiagou.com](https://www.jiagou.com)  
