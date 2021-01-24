@@ -512,6 +512,7 @@ func (dmtext CustomDMText) ConverDriverValue(columnName string, structType refle
 	return &str, nil
 }
 //CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
+//一般是放到init方法里进行添加
 CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
