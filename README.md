@@ -499,12 +499,12 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 
 //实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structType reflect.Type) (driver.Value, error) {
+//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例.如果返回值为nil,则不做类型替换,使用默认方式
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
 //ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的新值, 返回符合接收类型值的指针,返回是值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structType reflect.Type, newValue driver.Value) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error) {
 	dm, _ := newValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)

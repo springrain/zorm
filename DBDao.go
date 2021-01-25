@@ -345,7 +345,14 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-				scanerr = rows.Scan(newValue)
+
+				//返回值为nil,不做任何处理
+				if newValue == nil {
+					converOK = false
+					scanerr = rows.Scan(entity)
+				} else {
+					scanerr = rows.Scan(newValue)
+				}
 
 			} else {
 				scanerr = rows.Scan(entity)
@@ -539,7 +546,12 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-				pv = reflect.ValueOf(newValue)
+				if newValue == nil { //为nil,不做处理
+					converOK = false
+				} else {
+					pv = reflect.ValueOf(newValue)
+				}
+
 			}
 
 			//把数据库值赋给指针

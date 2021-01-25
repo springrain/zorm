@@ -443,13 +443,16 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-				values[i] = newValue
-				dvinfo := driverValueInfo{}
-				dvinfo.converFunc = converFunc
-				dvinfo.columnType = columnType
-				dvinfo.newValue = newValue
-				fieldNewValueMap[fieldValue] = &dvinfo
-				continue
+
+				if newValue != nil { //返回值不为nil
+					values[i] = newValue
+					dvinfo := driverValueInfo{}
+					dvinfo.converFunc = converFunc
+					dvinfo.columnType = columnType
+					dvinfo.newValue = newValue
+					fieldNewValueMap[fieldValue] = &dvinfo
+					continue
+				}
 			}
 
 			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
@@ -656,7 +659,7 @@ var CustomDriverValueMap = make(map[string]CustomDriverValueConver)
 
 //CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type CustomDriverValueConver interface {
-	//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例
+	//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例.如果返回值为nil,则不做类型替换,使用默认方式
 	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error)
 
 	//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的新值, 返回符合接收类型值的指针,返回是值的指针,指针,指针!!!!
@@ -670,14 +673,15 @@ type driverValueInfo struct {
 }
 
 /**
+
 //实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structType reflect.Type) (driver.Value, error) {
+//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例.如果返回值为nil,则不做类型替换,使用默认方式
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
 //ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的新值, 返回符合接收类型值的指针,返回是值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structType reflect.Type, newValue driver.Value) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error) {
 	dm, _ := newValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
@@ -688,4 +692,5 @@ func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structT
 //CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
 //一般是放到init方法里进行添加
 zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
+
 **/
