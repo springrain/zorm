@@ -607,7 +607,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	for rows.Next() {
 		//deepCopy(a, entity)
 		//反射初始化一个数组内的元素
-		//new 出来的为什么是个指针啊????
+		//new出来的是指针
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, pv)
