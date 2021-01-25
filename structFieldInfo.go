@@ -681,11 +681,11 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 }
 //ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error) {
-	dm, _ := tempValue.(*dm.DmClob)
-	dmlen, _ := dm.GetLength()
+	dmClob, _ := tempValue.(*dm.DmClob)
+	dmlen, _ := dmClob.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
 	dmlenInt, _ := strconv.Atoi(strInt64)
-	str, _ := dm.ReadString(1, dmlenInt)
+	str, _ := dmClob.ReadString(1, dmlenInt)
 	return &str, nil
 }
 //CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
