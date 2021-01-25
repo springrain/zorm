@@ -18,7 +18,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ## 支持国产数据库  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
-达梦的text类型会映射层DMClob,string类型接受不了,需要使用 to_char 函数转成字符串  
+达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.CustomDriverValueConver接口,自定义扩展处理  
 
 人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
@@ -466,6 +466,7 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
+
 //TestOther 16.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
@@ -492,6 +493,32 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
 }
+
+
+//---------------------------------//
+
+//实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+type CustomDMText struct{}
+//GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
+//如果无法获取到structFieldType,例如Map查询,会传入nil
+//如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
+	return &dm.DmClob{}, nil
+}
+//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
+//如果无法获取到structFieldType,例如Map查询,会传入nil
+//返回符合接收类型值的指针,指针,指针!!!!
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
+	dmClob, _ := tempDriverValue.(*dm.DmClob)
+	dmlen, _ := dmClob.GetLength()
+	strInt64 := strconv.FormatInt(dmlen, 10)
+	dmlenInt, _ := strconv.Atoi(strInt64)
+	str, _ := dmClob.ReadString(1, dmlenInt)
+	return &str, nil
+}
+//CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
+//一般是放到init方法里进行添加
+zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 
