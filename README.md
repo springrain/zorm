@@ -501,7 +501,7 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 type CustomDMText struct{}
 //GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
-//如果返回值为nil,则不做类型替换,使用默认方式
+//如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
 func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
