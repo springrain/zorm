@@ -348,7 +348,6 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 				//返回值为nil,不做任何处理
 				if newValue == nil {
-					converOK = false
 					scanerr = rows.Scan(entity)
 				} else {
 					scanerr = rows.Scan(newValue)
@@ -365,9 +364,8 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 		}
 
-		if converOK {
+		if converOK && newValue != nil {
 
-			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, newValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
@@ -546,9 +544,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-				if newValue == nil { //为nil,不做处理
-					converOK = false
-				} else {
+				if newValue != nil { //为nil,不做处理
 					pv = reflect.ValueOf(newValue)
 				}
 
@@ -563,8 +559,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				FuncLogError(scanerr)
 				return scanerr
 			}
-			if converOK {
-				//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			if converOK && newValue != nil {
 				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, newValue)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
