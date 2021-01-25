@@ -399,10 +399,10 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
-func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
-	values := make([]interface{}, len(columns))
+	values := make([]interface{}, len(columnTypes))
 
 	fieldNewValueMap := make(map[reflect.Value]*driverValueInfo)
 
@@ -413,7 +413,8 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 	//driverValue = driverValue.FieldByName("lastcols")
 	//遍历数据库的列名
 	//Traverse the database column names
-	for i, column := range columns {
+	for i, columnType := range columnTypes {
+		column := columnType.Name()
 		//从缓存中获取列名的field字段
 		//Get the field field of the column name from the cache
 		field, fok := dbColumnFieldMap[strings.ToLower(column)]
@@ -436,7 +437,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 			var errGetDriverValue error
 			if converOK {
 				converStructOk = true
-				newValue, errGetDriverValue = converFunc.GetDriverValue(column, fieldValue.Type())
+				newValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -445,7 +446,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 				values[i] = newValue
 				dvinfo := driverValueInfo{}
 				dvinfo.converFunc = converFunc
-				dvinfo.columnName = column
+				dvinfo.columnType = columnType
 				dvinfo.newValue = newValue
 				fieldNewValueMap[fieldValue] = &dvinfo
 				continue
@@ -471,7 +472,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columns []string, 
 			//driverValueInfo := *driverValueInfoPtr
 
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnName, fieldValue.Type(), driverValueInfo.newValue)
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.newValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -656,14 +657,14 @@ var CustomDriverValueMap = make(map[string]CustomDriverValueConver)
 //CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type CustomDriverValueConver interface {
 	//GetDriverValue 根据需要构造的类型,返回driver.Value的实例
-	GetDriverValue(columnName string, elementType reflect.Type) (driver.Value, error)
+	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error)
 
-	//ConverDriverValue 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-	ConverDriverValue(columnName string, elementType reflect.Type, newValue driver.Value) (interface{}, error)
+	//ConverDriverValue 根据列类型,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error)
 }
 type driverValueInfo struct {
 	converFunc CustomDriverValueConver
-	columnName string
+	columnType *sql.ColumnType
 	//filedName  reflect.Value
 	newValue interface{}
 }

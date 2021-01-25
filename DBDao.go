@@ -296,11 +296,19 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	//数据库返回的列名
 	//Column name returned by the database
-	columns, cne := rows.Columns()
-	if cne != nil {
-		cne = fmt.Errorf("Query-->rows.Columns数据库返回列名错误:%w", cne)
-		FuncLogError(cne)
-		return cne
+	/*
+		columns, cne := rows.Columns()
+		if cne != nil {
+			cne = fmt.Errorf("Query-->rows.Columns数据库返回列名错误:%w", cne)
+			FuncLogError(cne)
+			return cne
+		}
+	*/
+	columnTypes, cte := rows.ColumnTypes()
+	if cte != nil {
+		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
+		FuncLogError(cte)
+		return cte
 	}
 
 	//反射获取 []driver.Value的值
@@ -313,7 +321,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
-	if len(columns) == 1 {
+	if len(columnTypes) == 1 {
 		var converFunc CustomDriverValueConver
 		var converOK bool = false
 		var newValue driver.Value
@@ -331,7 +339,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 			var errGetDriverValue error
 			if converOK {
-				newValue, errGetDriverValue = converFunc.GetDriverValue(columns[0], typeOf)
+				newValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -353,7 +361,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		if converOK {
 
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columns[0], typeOf, newValue)
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, newValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -388,7 +396,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			return errors.New("Query查询出多条数据")
 		}
 
-		scanerr := sqlRowsValues(rows, driverValue, columns, dbColumnFieldMap, valueOf)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, valueOf)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("Query-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -485,14 +493,12 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		return e
 	}
 	//数据库返回的列名
-	//Column name returned by the database
-	columns, cne := rows.Columns()
-	if cne != nil {
-		cne = fmt.Errorf("QuerySlice-->rows.Columns数据库返回列名错误:%w", cne)
-		FuncLogError(cne)
-		return cne
+	columnTypes, cte := rows.ColumnTypes()
+	if cte != nil {
+		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
+		FuncLogError(cte)
+		return cte
 	}
-
 	//反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
@@ -500,7 +506,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[sliceElementType.Kind()] {
-	if len(columns) == 1 {
+	if len(columnTypes) == 1 {
 
 		//循环遍历结果集
 		//Loop through the result set
@@ -527,7 +533,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			var newValue driver.Value
 			var errGetDriverValue error
 			if converOK {
-				newValue, errGetDriverValue = converFunc.GetDriverValue(columns[0], sliceElementType)
+				newValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -547,7 +553,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			}
 			if converOK {
 				//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columns[0], sliceElementType, newValue)
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, newValue)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)
@@ -597,7 +603,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//new 出来的为什么是个指针啊????
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
-		scanerr := sqlRowsValues(rows, driverValue, columns, dbColumnFieldMap, pv)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, pv)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
