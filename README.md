@@ -504,8 +504,8 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 	return &dm.DmClob{}, nil
 }
 //ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error) {
-	dm, _ := newValue.(*dm.DmClob)
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error) {
+	dm, _ := tempValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
 	dmlenInt, _ := strconv.Atoi(strInt64)

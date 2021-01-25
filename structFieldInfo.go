@@ -433,23 +433,23 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 
 			//根据接收的类型,获取到设置的转换函数
 			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
-			var newValue driver.Value
+			var tempValue driver.Value
 			var errGetDriverValue error
 			if converOK {
 				converStructOk = true
-				newValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
+				tempValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
 
-				if newValue != nil { //返回值不为nil
-					values[i] = newValue
+				if tempValue != nil { //返回值不为nil
+					values[i] = tempValue
 					dvinfo := driverValueInfo{}
 					dvinfo.converFunc = converFunc
 					dvinfo.columnType = columnType
-					dvinfo.newValue = newValue
+					dvinfo.tempValue = tempValue
 					fieldNewValueMap[fieldValue] = &dvinfo
 					continue
 				}
@@ -475,7 +475,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 			//driverValueInfo := *driverValueInfoPtr
 
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.newValue)
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -663,13 +663,13 @@ type CustomDriverValueConver interface {
 	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error)
 
 	//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
-	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error)
+	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error)
 }
 type driverValueInfo struct {
 	converFunc CustomDriverValueConver
 	columnType *sql.ColumnType
 	//filedName  reflect.Value
-	newValue interface{}
+	tempValue interface{}
 }
 
 /**
@@ -681,8 +681,8 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 	return &dm.DmClob{}, nil
 }
 //ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error) {
-	dm, _ := newValue.(*dm.DmClob)
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error) {
+	dm, _ := tempValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
 	dmlenInt, _ := strconv.Atoi(strInt64)
