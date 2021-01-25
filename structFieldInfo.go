@@ -404,7 +404,8 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columnTypes))
 
-	fieldTempValueMap := make(map[reflect.Value]*driverValueInfo)
+	//记录需要类型转换的字段信息
+	fieldTempDriverValueMap := make(map[reflect.Value]*driverValueInfo)
 
 	//反射获取 []driver.Value的值
 	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
@@ -427,31 +428,35 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 			values[i] = new(interface{})
 		} else {
 
+			//字段的反射值
 			fieldValue := valueOf.FieldByName(field.Name)
-
-			//根据接收的类型,获取到设置的转换函数
+			//根据接收的类型,获取到类型转换的接口实现
 			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			//类型转换的临时值
 			var tempDriverValue driver.Value
 			var errGetDriverValue error
+			//如果需要类型转换
 			if converOK {
+				//获取需要转换的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-
-				if tempDriverValue != nil { //返回值不为nil
+				//如果需要类型转换
+				if tempDriverValue != nil {
 					values[i] = tempDriverValue
 					dvinfo := driverValueInfo{}
 					dvinfo.converFunc = converFunc
 					dvinfo.columnType = columnType
 					dvinfo.tempDriverValue = tempDriverValue
-					fieldTempValueMap[fieldValue] = &dvinfo
+					fieldTempDriverValueMap[fieldValue] = &dvinfo
 					continue
 				}
 			}
 
+			//不需要类型转换,正常逻辑
 			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
 			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
 			value := fieldValue.Addr().Interface()
@@ -468,13 +473,15 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	}
 
 	//循环需要替换的值
-	for fieldValue, driverValueInfo := range fieldTempValueMap {
+	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
+		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(errConverDriverValue)
 			return errConverDriverValue
 		}
+		//给字段赋值
 		fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 	}
 

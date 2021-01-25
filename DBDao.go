@@ -304,6 +304,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			return cne
 		}
 	*/
+	//数据库字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
 		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
@@ -313,6 +314,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
+	//判断是否有自定义扩展,避免无意义的反射
 	if len(CustomDriverValueMap) > 0 {
 		driverValue = reflect.Indirect(reflect.ValueOf(rows))
 		driverValue = driverValue.FieldByName("lastcols")
@@ -322,8 +324,11 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columnTypes) == 1 {
+		//类型转换的接口实现
 		var converFunc CustomDriverValueConver
+		//是否有需要的类型转换
 		var converOK bool = false
+		//类型转换的临时值
 		var tempDriverValue driver.Value
 		//循环遍历结果集
 		for i := 0; rows.Next(); i++ {
@@ -331,14 +336,16 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				return errors.New("Query查询出多条数据")
 			}
 			var scanerr error
+			//判断是否有自定义扩展,避免无意义的反射
 			if len(CustomDriverValueMap) > 0 {
 				dv := driverValue.Index(0)
-				//根据接收的类型,获取到设置的转换函数
+				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
 			}
 
 			var errGetDriverValue error
-			if converOK {
+			if converOK { //如果有类型需要转换
+				//获取需要转换的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
@@ -349,11 +356,11 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				//返回值为nil,不做任何处理
 				if tempDriverValue == nil {
 					scanerr = rows.Scan(entity)
-				} else {
+				} else { //如果有值,需要类型转换
 					scanerr = rows.Scan(tempDriverValue)
 				}
 
-			} else {
+			} else { //如果不需要类型转换
 				scanerr = rows.Scan(entity)
 			}
 
@@ -364,8 +371,9 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 		}
 
+		//如果需要类型转换,需要把临时值转换成需要接收的类型值
 		if converOK && tempDriverValue != nil {
-
+			//根据接收的临时值,返回需要接收值的指针
 			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
@@ -373,13 +381,17 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				return errConverDriverValue
 			}
 
-			//不做类型判断了,直接反射吧
+			//把返回的值复制给接收的对象,
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 
 		}
 		return nil
+		//只查询一个字段的逻辑结束
 	}
 
+	//查询多个字段的逻辑开始
+
+	//获取接收值的对象
 	valueOf := reflect.ValueOf(entity).Elem()
 	//获取到类型的字段缓存
 	//Get the type field cache
@@ -390,6 +402,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return dbe
 	}
 
+	//反射获取 []driver.Value的值
 	driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
@@ -401,6 +414,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			return errors.New("Query查询出多条数据")
 		}
 
+		//接收对象设置值
 		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, valueOf)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("Query-->sqlRowsValues错误:%w", scanerr)
@@ -497,7 +511,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		FuncLogError(e)
 		return e
 	}
-	//数据库返回的列名
+	//数据库返回的字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
 		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
@@ -521,9 +535,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			//Initialize a basic type, and new is a pointer
 			pv := reflect.New(sliceElementType)
 			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
-
 			dv := driverValue.Index(0)
-
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 					sliceValue.Set(reflect.Append(sliceValue, pv))
@@ -533,11 +545,14 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				continue
 			}
 
-			//根据接收的类型,获取到设置的转换函数
+			//根据接收的类型,获取到类型转换的接口实现
 			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			//类型转换的临时值
 			var tempDriverValue driver.Value
 			var errGetDriverValue error
+			//如果需要转换
 			if converOK {
+				//获取需要转的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
@@ -559,13 +574,16 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				FuncLogError(scanerr)
 				return scanerr
 			}
+			//如果需要类型转换,需要把临时值转换成需要接收的类型值
 			if converOK && tempDriverValue != nil {
+				//根据接收的临时值,返回需要接收值的指针
 				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)
 					return errConverDriverValue
 				}
+				//把正确的值赋值给pv
 				pv = reflect.ValueOf(rightValue)
 			}
 
@@ -591,6 +609,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			page.setTotalCount(count)
 		}
 		return nil
+		//只查询一个字段的逻辑结束
 	}
 
 	//获取到类型的字段缓存
@@ -610,6 +629,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
+		//设置接收值
 		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, pv)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
@@ -731,9 +751,6 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	}
 
 	//数据库返回的列类型
-	//columns, cne := rows.Columns()
-	//columnType.scanType返回的类型都是[]byte,使用columnType.databaseType挨个判断
-	//Column type returned by the database
 	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
 	columnTypes, cne := rows.ColumnTypes()
 	if cne != nil {
@@ -743,6 +760,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	}
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
+	//判断是否有自定义扩展,避免无意义的反射
 	if len(CustomDriverValueMap) > 0 {
 		driverValue = reflect.Indirect(reflect.ValueOf(rows))
 		driverValue = driverValue.FieldByName("lastcols")
@@ -758,43 +776,51 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		//To use the pointer type to receive the field value, you need to use interface() to wrap it
 		result := make(map[string]interface{})
 
-		fieldTempValueMap := make(map[int]*driverValueInfo)
+		//记录需要类型转换的字段信息
+		fieldTempDriverValueMap := make(map[int]*driverValueInfo)
 
 		//给数据赋值初始化变量
 		//Initialize variables by assigning values ​​to data
 		for i, columnType := range columnTypes {
 
+			//类型转换的接口实现
 			var converFunc CustomDriverValueConver
+			//是否需要类型转换
 			var converOK bool = false
+			//类型转换的临时值
 			var tempDriverValue driver.Value
+			//判断是否有自定义扩展,避免无意义的反射
 			if len(CustomDriverValueMap) > 0 {
 				dv := driverValue.Index(i)
-				//根据接收的类型,获取到设置的转换函数
+				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
 			}
 			var errGetDriverValue error
+			//如果需要类型转换
 			if converOK {
+				//获取需要转的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryMapSlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return nil, errGetDriverValue
 				}
-				//返回值为nil,不做任何处理
+				//返回值为nil,不做任何处理,使用原始逻辑
 				if tempDriverValue == nil {
 					values[i] = new(interface{})
-				} else {
+				} else { //如果需要类型转换
 					values[i] = tempDriverValue
 					dvinfo := driverValueInfo{}
 					dvinfo.converFunc = converFunc
 					dvinfo.columnType = columnType
 					dvinfo.tempDriverValue = tempDriverValue
-					fieldTempValueMap[i] = &dvinfo
+					fieldTempDriverValueMap[i] = &dvinfo
 				}
 
 				continue
 			}
 
+			//不需要类型转换,正常赋值
 			values[i] = new(interface{})
 		}
 		//scan赋值
@@ -806,7 +832,8 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 			return nil, scanerr
 		}
 
-		for i, driverValueInfo := range fieldTempValueMap {
+		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
+		for i, driverValueInfo := range fieldTempDriverValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
