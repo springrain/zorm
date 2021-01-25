@@ -652,10 +652,14 @@ var CustomDriverValueMap = make(map[string]CustomDriverValueConver)
 
 //CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type CustomDriverValueConver interface {
-	//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例.如果返回值为nil,则不做类型替换,使用默认方式
+	//GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
+	//如果无法获取到structFieldType,例如Map查询,会传入nil
+	//如果返回值为nil,则不做类型替换,使用默认方式
 	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error)
 
-	//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
+	//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
+	//如果无法获取到structFieldType,例如Map查询,会传入nil
+	//返回符合接收类型值的指针,指针,指针!!!!
 	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error)
 }
 type driverValueInfo struct {
@@ -668,11 +672,15 @@ type driverValueInfo struct {
 
 //实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型和实体类字段类型,返回driver.Value的实例.如果返回值为nil,则不做类型替换,使用默认方式
+//GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
+//如果无法获取到structFieldType,例如Map查询,会传入nil
+//如果返回值为nil,则不做类型替换,使用默认方式
 func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
+//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
+//如果无法获取到structFieldType,例如Map查询,会传入nil
+//返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
 	dmClob, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dmClob.GetLength()
