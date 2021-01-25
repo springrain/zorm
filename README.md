@@ -503,7 +503,7 @@ type CustomDMText struct{}
 func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的新值, 返回符合接收类型值的指针,返回是值的指针,指针,指针!!!!
+//ConverDriverValue 数据库列类型,实体类字段类型,GetDriverValue返回的driver.Value新值, 返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, newValue driver.Value) (interface{}, error) {
 	dm, _ := newValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
