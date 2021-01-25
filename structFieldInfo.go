@@ -668,8 +668,7 @@ type CustomDriverValueConver interface {
 type driverValueInfo struct {
 	converFunc CustomDriverValueConver
 	columnType *sql.ColumnType
-	//filedName  reflect.Value
-	tempValue interface{}
+	tempValue  interface{}
 }
 
 /**
