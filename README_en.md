@@ -515,28 +515,31 @@ func TestOther(t *testing.T) {
 
 //Strategies for the separation of read and write of a single database rwType=0 read,rwType=1 write
 func myReadWriteStrategy(rwType int) *zorm.DBDao {
-	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
+	//According to your own business scenario, return the required read and write dao, and call this function every time you need a database connection
 	return dbDao
 }
 
 //---------------------------------//
 
-//实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+//To implement the interface of CustomDriverValueConver,extend the custom type, such as text type of dm database, the mapped type is dm.DmClob type , cannot use string type to receive directly.
 type CustomDMText struct{}
-//CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
-func (dmtext CustomDMText) GetDriverValue(columnName string, structType reflect.Type) (driver.Value, error) {
+//GetDriverValue according to the database column type and entity class field type, return driver.Value Instance. If the return value is nil, no type replacement is performed and the default method is used.
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnName string, structType reflect.Type, newValue driver.Value) (interface{}, error) {
-	dm, _ := newValue.(*dm.DmClob)
+
+//ConverDriverValue database column type, entity class field type, GetDriverValue returned driver.Value New value, return the pointer according to the receiving type value, pointer, pointer!!!!
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error) {
+	dm, _ := tempValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
-	dmlenInt, _ := typeConvertInt64toInt(dmlen)
+	strInt64 := strconv.FormatInt(dmlen, 10)
+	dmlenInt, _ := strconv.Atoi(strInt64)
 	str, _ := dm.ReadString(1, dmlenInt)
 	return &str, nil
 }
-//CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
-CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
+//zorm.CustomDriverValueMap for configuration driver.Value and the corresponding processing relationship, key is the string of drier.Value. For example *dm.DmClob
+//It is usually added in the init method
+zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 
 ```  
