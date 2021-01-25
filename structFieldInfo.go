@@ -404,7 +404,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columnTypes))
 
-	fieldNewValueMap := make(map[reflect.Value]*driverValueInfo)
+	fieldTempValueMap := make(map[reflect.Value]*driverValueInfo)
 
 	converStructOk := false
 
@@ -450,7 +450,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 					dvinfo.converFunc = converFunc
 					dvinfo.columnType = columnType
 					dvinfo.tempValue = tempValue
-					fieldNewValueMap[fieldValue] = &dvinfo
+					fieldTempValueMap[fieldValue] = &dvinfo
 					continue
 				}
 			}
@@ -471,7 +471,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	}
 
 	if converStructOk {
-		for fieldValue, driverValueInfo := range fieldNewValueMap {
+		for fieldValue, driverValueInfo := range fieldTempValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
