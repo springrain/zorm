@@ -406,8 +406,6 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 
 	fieldTempValueMap := make(map[reflect.Value]*driverValueInfo)
 
-	converStructOk := false
-
 	//反射获取 []driver.Value的值
 	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	//driverValue = driverValue.FieldByName("lastcols")
@@ -436,7 +434,6 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 			var tempDriverValue driver.Value
 			var errGetDriverValue error
 			if converOK {
-				converStructOk = true
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
@@ -470,19 +467,15 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 		return scanerr
 	}
 
-	if converStructOk {
-		for fieldValue, driverValueInfo := range fieldTempValueMap {
-			//driverValueInfo := *driverValueInfoPtr
-
-			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue)
-			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
-				FuncLogError(errConverDriverValue)
-				return errConverDriverValue
-			}
-			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
+	//循环需要替换的值
+	for fieldValue, driverValueInfo := range fieldTempValueMap {
+		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue)
+		if errConverDriverValue != nil {
+			errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+			FuncLogError(errConverDriverValue)
+			return errConverDriverValue
 		}
+		fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 	}
 
 	return scanerr

@@ -741,6 +741,12 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		FuncLogError(cne)
 		return nil, cne
 	}
+	//反射获取 []driver.Value的值
+	var driverValue reflect.Value
+	if len(CustomDriverValueMap) > 0 {
+		driverValue = reflect.Indirect(reflect.ValueOf(rows))
+		driverValue = driverValue.FieldByName("lastcols")
+	}
 	resultMapList := make([]map[string]interface{}, 0)
 	//循环遍历结果集
 	//Loop through the result set
@@ -751,9 +757,44 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		//使用指针类型接收字段值,需要使用interface{}包装一下
 		//To use the pointer type to receive the field value, you need to use interface() to wrap it
 		result := make(map[string]interface{})
+
+		fieldTempValueMap := make(map[int]*driverValueInfo)
+
 		//给数据赋值初始化变量
 		//Initialize variables by assigning values ​​to data
-		for i := range values {
+		for i, columnType := range columnTypes {
+
+			var converFunc CustomDriverValueConver
+			var converOK bool = false
+			var tempDriverValue driver.Value
+			if len(CustomDriverValueMap) > 0 {
+				dv := driverValue.Index(i)
+				//根据接收的类型,获取到设置的转换函数
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
+			var errGetDriverValue error
+			if converOK {
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QueryMapSlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return nil, errGetDriverValue
+				}
+				//返回值为nil,不做任何处理
+				if tempDriverValue == nil {
+					values[i] = new(interface{})
+				} else {
+					values[i] = tempDriverValue
+					dvinfo := driverValueInfo{}
+					dvinfo.converFunc = converFunc
+					dvinfo.columnType = columnType
+					dvinfo.tempDriverValue = tempDriverValue
+					fieldTempValueMap[i] = &dvinfo
+				}
+
+				continue
+			}
+
 			values[i] = new(interface{})
 		}
 		//scan赋值
@@ -764,13 +805,28 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 			FuncLogError(scanerr)
 			return nil, scanerr
 		}
+
+		for i, driverValueInfo := range fieldTempValueMap {
+			//driverValueInfo := *driverValueInfoPtr
+			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
+			if errConverDriverValue != nil {
+				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+				FuncLogError(errConverDriverValue)
+				return nil, errConverDriverValue
+			}
+			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
+			values[i] = rightValue
+		}
+
 		//获取每一列的值
 		//Get the value of each column
 		for i, columnType := range columnTypes {
 
 			//取到指针下的值,[]byte格式
 			//Get the value under the pointer, []byte format
-			v := *(values[i].(*interface{}))
+			//v := *(values[i].(*interface{}))
+			v := reflect.ValueOf(values[i]).Elem().Interface()
 			//从[]byte转化成实际的类型值,例如string,int
 			//Convert from []byte to actual type value, such as string, int
 			v = converValueColumnType(v, columnType)
