@@ -324,7 +324,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	if len(columnTypes) == 1 {
 		var converFunc CustomDriverValueConver
 		var converOK bool = false
-		var tempValue driver.Value
+		var tempDriverValue driver.Value
 		//循环遍历结果集
 		for i := 0; rows.Next(); i++ {
 			if i > 0 {
@@ -339,7 +339,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 
 			var errGetDriverValue error
 			if converOK {
-				tempValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -347,10 +347,10 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				}
 
 				//返回值为nil,不做任何处理
-				if tempValue == nil {
+				if tempDriverValue == nil {
 					scanerr = rows.Scan(entity)
 				} else {
-					scanerr = rows.Scan(tempValue)
+					scanerr = rows.Scan(tempDriverValue)
 				}
 
 			} else {
@@ -364,9 +364,9 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 		}
 
-		if converOK && tempValue != nil {
+		if converOK && tempDriverValue != nil {
 
-			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempValue)
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -535,17 +535,17 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 
 			//根据接收的类型,获取到设置的转换函数
 			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
-			var tempValue driver.Value
+			var tempDriverValue driver.Value
 			var errGetDriverValue error
 			if converOK {
-				tempValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
-				if tempValue != nil { //为nil,不做处理
-					pv = reflect.ValueOf(tempValue)
+				if tempDriverValue != nil { //为nil,不做处理
+					pv = reflect.ValueOf(tempDriverValue)
 				}
 
 			}
@@ -559,8 +559,8 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				FuncLogError(scanerr)
 				return scanerr
 			}
-			if converOK && tempValue != nil {
-				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempValue)
+			if converOK && tempDriverValue != nil {
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)

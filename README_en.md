@@ -529,8 +529,8 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 }
 
 //ConverDriverValue database column type, entity class field type, GetDriverValue returned driver.Value New value, return the pointer according to the receiving type value, pointer, pointer!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempValue driver.Value) (interface{}, error) {
-	dm, _ := tempValue.(*dm.DmClob)
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
+	dm, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
 	dmlenInt, _ := strconv.Atoi(strInt64)
