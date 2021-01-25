@@ -1409,7 +1409,6 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 		return nil, dbConnectionerr
 	}
 
-	//流弊的...,把数组展开变成多个参数的形式
 	res, errexec := dbConnection.execContext(ctx, sqlstr, values)
 
 	if errexec != nil {
