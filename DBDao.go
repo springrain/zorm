@@ -1380,8 +1380,16 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 				fieldType = oneType
 			}
 
-			var value interface{}
+			dv := driverValue.Index(j)
 
+			//如果为字段为null
+			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null
+				values[j] = new(interface{})
+				nullMap[i] = j
+				continue
+			}
+
+			var value interface{}
 			//不需要类型转换,正常逻辑
 			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
 			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
@@ -1394,13 +1402,6 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 			//把指针地址放到数组
 			//Put the pointer address into the array
 			values[j] = value
-			dv := driverValue.Index(j)
-
-			//如果为字段为null
-			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null
-				nullMap[i] = j
-				continue
-			}
 
 			//根据接收的类型,获取到类型转换的接口实现
 			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
