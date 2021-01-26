@@ -316,7 +316,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columnTypes) == 1 {
 		//typeOf := reflect.TypeOf(entity).Elem()
-		_, allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, nil, typeOf)
+		allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, typeOf)
 		if errWrapQueryRowsValues != nil {
 			errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
 			FuncLogError(errWrapQueryRowsValues)
@@ -353,7 +353,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return dbe
 	}
 
-	_, allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, dbColumnFieldMap, nil)
+	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, dbColumnFieldMap, nil)
 	if errWrapQueryRowsValues != nil {
 		errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
 		FuncLogError(errWrapQueryRowsValues)
@@ -484,7 +484,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[sliceElementType.Kind()] {
 	if len(columnTypes) == 1 {
-		_, allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, nil, sliceElementType)
+		allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, sliceElementType)
 		if errWrapQueryRowsValues != nil {
 			errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
 			FuncLogError(errWrapQueryRowsValues)
@@ -537,7 +537,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		return dbe
 	}
 
-	_, allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, dbColumnFieldMap, nil)
+	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, dbColumnFieldMap, nil)
 	if errWrapQueryRowsValues != nil {
 		errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
 		FuncLogError(errWrapQueryRowsValues)
@@ -672,10 +672,17 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		FuncLogError(e)
 		return nil, e
 	}
+	//数据库返回的字段类型
+	columnTypes, cte := rows.ColumnTypes()
+	if cte != nil {
+		cte = fmt.Errorf("QueryMapSlice-->rows.ColumnTypes数据库类型错误:%w", cte)
+		FuncLogError(cte)
+		return nil, cte
+	}
 
 	resultMapList := make([]map[string]interface{}, 0)
 
-	columnTypes, allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, nil, nil)
+	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, nil)
 	if errWrapQueryRowsValues != nil {
 		errWrapQueryRowsValues = fmt.Errorf("QueryMapSlice-->queryContext查询rows错误:%w", errWrapQueryRowsValues)
 		FuncLogError(errWrapQueryRowsValues)
@@ -1331,14 +1338,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 //wrapQueryRowsValues 包装查询方法的值数组,返回列信息和所有结果的二维数组
 //如果是struct对象,dbColumnFieldMap不能为nil
 //如果是查询单字段,oneType不能为nil
-func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.StructField, oneType reflect.Type) ([]*sql.ColumnType, [][]interface{}, error) {
-
-	columnTypes, cte := rows.ColumnTypes()
-	if cte != nil {
-		cte = fmt.Errorf("wrapQueryRowsValues-->数据库类型错误:%w", cte)
-		FuncLogError(cte)
-		return columnTypes, nil, cte
-	}
+func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, oneType reflect.Type) ([][]interface{}, error) {
 
 	allValues := make([][]interface{}, 0)
 	//记录需要类型转换的字段信息
@@ -1415,7 +1415,7 @@ func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.Str
 		if scanerr != nil {
 			scanerr = fmt.Errorf("wrapQueryRowsValues-->rows.Scan异常:%w", scanerr)
 			FuncLogError(scanerr)
-			return columnTypes, allValues, scanerr
+			return allValues, scanerr
 		}
 
 		allValues = append(allValues, values)
@@ -1423,7 +1423,7 @@ func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.Str
 	}
 	//需要类型转换的字段
 	if len(fieldTempDriverValueMap) < 1 {
-		return columnTypes, allValues, nil
+		return allValues, nil
 	}
 
 	//达梦的bug,需要再scan完成之后才能操作自定义的driver.Value
@@ -1436,13 +1436,13 @@ func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.Str
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("wrapQueryRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
-				return columnTypes, allValues, errConverDriverValue
+				return allValues, errConverDriverValue
 			}
 			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
 			values[k] = rightValue
 		}
 	}
 
-	return columnTypes, allValues, nil
+	return allValues, nil
 
 }
