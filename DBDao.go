@@ -495,15 +495,14 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		}
 		for _, values := range allValues {
 			var pv reflect.Value
-			for _, value := range values {
 
-				if value == nil {
-					pv = reflect.New(sliceElementType)
-				} else {
-					pv = reflect.ValueOf(value)
-				}
-
+			value := values[0]
+			if value == nil {
+				pv = reflect.New(sliceElementType)
+			} else {
+				pv = reflect.ValueOf(value)
 			}
+
 			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 				sliceValue.Set(reflect.Append(sliceValue, pv))
 			} else {
