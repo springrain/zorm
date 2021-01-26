@@ -374,9 +374,8 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 			//值
 			value := values[k]
-			if value == nil {
-				reflect.ValueOf(entity).Elem().FieldByName(structField.Name).Set(reflect.New(structField.Type).Elem())
-			} else {
+			if value != nil {
+
 				//设置值
 				reflect.ValueOf(entity).Elem().FieldByName(structField.Name).Set(reflect.ValueOf(value).Elem())
 			}
@@ -1340,9 +1339,12 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 //如果是查询单字段,oneType不能为nil
 func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, oneType reflect.Type) ([][]interface{}, error) {
 
+	//字段信息二维数组
 	allValues := make([][]interface{}, 0)
 	//记录需要类型转换的字段信息
 	fieldTempDriverValueMap := make(map[int]*driverValueInfo)
+	//为null的字段,key是一维的i, v 是二维的j
+	nullMap := make(map[int]int)
 
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
@@ -1357,7 +1359,7 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 		values := make([]interface{}, len(columnTypes))
 		for j, columnType := range columnTypes {
 			//默认值
-			values[j] = new(interface{})
+			//values[j] = new(interface{})
 			//实体类的字段
 			var structField reflect.StructField
 			sfok := false
@@ -1372,11 +1374,19 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 			} else if oneType != nil { //如果是查询单个字段
 				fieldType = oneType
 			}
+			//不需要类型转换,正常逻辑
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
+			value := reflect.New(fieldType).Interface()
+			//把指针地址放到数组
+			//Put the pointer address into the array
+			values[j] = value
 			dv := driverValue.Index(j)
 
 			//如果为字段为null
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null
-				values[j] = nil
+				values[j] = new(interface{})
+				nullMap[i] = j
 				continue
 			}
 
@@ -1395,14 +1405,6 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 					}
 				}
 
-			} else if fieldType != nil { //如果是实体类
-				//不需要类型转换,正常逻辑
-				//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
-				//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
-				value := reflect.New(fieldType).Interface()
-				//把指针地址放到数组
-				//Put the pointer address into the array
-				values[j] = value
 			}
 
 		}
@@ -1421,6 +1423,11 @@ func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumn
 		allValues = append(allValues, values)
 
 	}
+	//数据库为null的值
+	for i, j := range nullMap {
+		allValues[i][j] = nil
+	}
+
 	//需要类型转换的字段
 	if len(fieldTempDriverValueMap) < 1 {
 		return allValues, nil
