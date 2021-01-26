@@ -554,9 +554,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			}
 			//值
 			value := values[k]
-			if value == nil {
-				pv.Elem().FieldByName(structField.Name).Set(reflect.New(structField.Type).Elem())
-			} else {
+			if value != nil {
 				//设置值
 				pv.Elem().FieldByName(structField.Name).Set(reflect.ValueOf(value).Elem())
 			}
