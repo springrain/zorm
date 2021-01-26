@@ -494,20 +494,20 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			return nil
 		}
 		for _, values := range allValues {
+			var pv reflect.Value
 			for _, value := range values {
-				var pv reflect.Value
+
 				if value == nil {
 					pv = reflect.New(sliceElementType)
 				} else {
 					pv = reflect.ValueOf(value)
 				}
 
-				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
-					sliceValue.Set(reflect.Append(sliceValue, pv))
-				} else {
-					sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
-				}
-
+			}
+			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
+				sliceValue.Set(reflect.Append(sliceValue, pv))
+			} else {
+				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
 			}
 
 		}
