@@ -1356,17 +1356,20 @@ func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.Str
 	for i := 0; rows.Next(); i++ {
 		values := make([]interface{}, len(columnTypes))
 		for j, columnType := range columnTypes {
+			//默认值
 			values[j] = new(interface{})
+			//实体类的字段
 			var structField reflect.StructField
 			sfok := false
+			//字段类型
 			var fieldType reflect.Type
 
-			if dbColumnFieldMap != nil {
+			if dbColumnFieldMap != nil { //如果是实体类
 				structField, sfok = dbColumnFieldMap[strings.ToLower(columnType.Name())]
 				if sfok {
 					fieldType = structField.Type
 				}
-			} else if oneType != nil {
+			} else if oneType != nil { //如果是查询单个字段
 				fieldType = oneType
 			}
 			dv := driverValue.Index(j)
@@ -1418,11 +1421,12 @@ func wrapQueryRowsValues(rows *sql.Rows, dbColumnFieldMap map[string]reflect.Str
 		allValues = append(allValues, values)
 
 	}
-
+	//需要类型转换的字段
 	if len(fieldTempDriverValueMap) < 1 {
 		return columnTypes, allValues, nil
 	}
 
+	//达梦的bug,需要再scan完成之后才能操作自定义的driver.Value
 	for _, values := range allValues {
 		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
 		for k, driverValueInfo := range fieldTempDriverValueMap {
