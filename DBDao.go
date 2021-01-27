@@ -325,13 +325,13 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		if len(allValues) > 1 {
 			return errors.New("Query查询出多条数据")
 		} else if len(allValues) < 1 {
-			entity = nil
+			//entity = nil
 			return nil
 		}
 		for _, values := range allValues {
 			value := values[0]
 			if value == nil {
-				entity = nil
+				//entity = nil
 				return nil
 			}
 			//赋值
@@ -362,7 +362,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	if len(allValues) > 1 {
 		return errors.New("Query查询出多条数据")
 	} else if len(allValues) < 1 {
-		entity = nil
+		//entity = nil
 		return nil
 	}
 	for _, values := range allValues {
