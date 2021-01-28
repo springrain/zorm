@@ -24,7 +24,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "nt" { //MySQL,sqlite3,dm数据库,南大通用
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" { //MySQL,sqlite3,dm数据库,南大通用
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
@@ -419,7 +419,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 func reBindSQL(dbType string, sqlstr string) (string, error) {
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "nt" {
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" {
 		return sqlstr, nil
 	}
 
