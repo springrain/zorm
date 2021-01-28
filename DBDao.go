@@ -11,6 +11,7 @@ package zorm
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -311,39 +312,87 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return cte
 	}
 
+	//反射获取 []driver.Value的值
+	var driverValue reflect.Value
+	//判断是否有自定义扩展,避免无意义的反射
+	if len(CustomDriverValueMap) > 0 {
+		driverValue = reflect.Indirect(reflect.ValueOf(rows))
+		driverValue = driverValue.FieldByName("lastcols")
+	}
+
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columnTypes) == 1 {
-		//typeOf := reflect.TypeOf(entity).Elem()
-		allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, typeOf)
-		if errWrapQueryRowsValues != nil {
-			errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
-			FuncLogError(errWrapQueryRowsValues)
-			return errWrapQueryRowsValues
-		}
-		if len(allValues) > 1 {
-			return errors.New("Query查询出多条数据")
-		} else if len(allValues) < 1 {
-			//entity = nil
-			return nil
-		}
-		for _, values := range allValues {
-			value := values[0]
-			if value == nil {
-				//entity = nil
-				return nil
+		//类型转换的接口实现
+		var converFunc CustomDriverValueConver
+		//是否有需要的类型转换
+		var converOK bool = false
+		//类型转换的临时值
+		var tempDriverValue driver.Value
+		//循环遍历结果集
+		for i := 0; rows.Next(); i++ {
+			if i > 0 {
+				return errors.New("Query查询出多条数据")
 			}
-			//赋值
-			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(value).Elem())
+			var scanerr error
+			//判断是否有自定义扩展,避免无意义的反射
+			if len(CustomDriverValueMap) > 0 {
+				dv := driverValue.Index(0)
+				//根据接收的类型,获取到类型转换的接口实现
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
+
+			var errGetDriverValue error
+			if converOK { //如果有类型需要转换
+				//获取需要转换的临时值
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return errGetDriverValue
+				}
+
+				//返回值为nil,不做任何处理
+				if tempDriverValue == nil {
+					scanerr = rows.Scan(entity)
+				} else { //如果有值,需要类型转换
+					scanerr = rows.Scan(tempDriverValue)
+				}
+
+			} else { //如果不需要类型转换
+				scanerr = rows.Scan(entity)
+			}
+
+			if scanerr != nil {
+				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
+				FuncLogError(scanerr)
+				return scanerr
+			}
 		}
 
+		//如果需要类型转换,需要把临时值转换成需要接收的类型值
+		if converOK && tempDriverValue != nil {
+			//根据接收的临时值,返回需要接收值的指针
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue)
+			if errConverDriverValue != nil {
+				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
+				FuncLogError(errConverDriverValue)
+				return errConverDriverValue
+			}
+
+			//把返回的值复制给接收的对象,
+			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
+
+		}
 		return nil
 		//只查询一个字段的逻辑结束
 	}
 
 	//查询多个字段的逻辑开始
 
+	//获取接收值的对象
+	valueOf := reflect.ValueOf(entity).Elem()
 	//获取到类型的字段缓存
 	//Get the type field cache
 	dbColumnFieldMap, dbe := getDBColumnFieldMap(typeOf)
@@ -353,33 +402,24 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 		return dbe
 	}
 
-	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, dbColumnFieldMap, nil)
-	if errWrapQueryRowsValues != nil {
-		errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
-		FuncLogError(errWrapQueryRowsValues)
-		return errWrapQueryRowsValues
-	}
-	if len(allValues) > 1 {
-		return errors.New("Query查询出多条数据")
-	} else if len(allValues) < 1 {
-		//entity = nil
-		return nil
-	}
-	for _, values := range allValues {
-		for k, columnType := range columnTypes {
+	//反射获取 []driver.Value的值
+	driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
 
-			structField, sfok := dbColumnFieldMap[strings.ToLower(columnType.Name())]
-			if !sfok {
-				continue
-			}
-			//值
-			value := values[k]
-			if value != nil {
+	//循环遍历结果集
+	//Loop through the result set
+	for i := 0; rows.Next(); i++ {
 
-				//设置值
-				reflect.ValueOf(entity).Elem().FieldByName(structField.Name).Set(reflect.ValueOf(value).Elem())
-			}
+		if i > 0 {
+			return errors.New("Query查询出多条数据")
+		}
 
+		//接收对象设置值
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, valueOf)
+		if scanerr != nil {
+			scanerr = fmt.Errorf("Query-->sqlRowsValues错误:%w", scanerr)
+			FuncLogError(scanerr)
+			return scanerr
 		}
 
 	}
@@ -478,31 +518,77 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		FuncLogError(cte)
 		return cte
 	}
+	//反射获取 []driver.Value的值
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
 
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[sliceElementType.Kind()] {
 	if len(columnTypes) == 1 {
-		allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, sliceElementType)
-		if errWrapQueryRowsValues != nil {
-			errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
-			FuncLogError(errWrapQueryRowsValues)
-			return errWrapQueryRowsValues
-		}
-		if len(allValues) < 1 {
-			rowsSlicePtr = nil
-			return nil
-		}
-		for _, values := range allValues {
-			var pv reflect.Value
 
-			value := values[0]
-			if value == nil {
-				pv = reflect.New(sliceElementType)
-			} else {
-				pv = reflect.ValueOf(value)
+		//循环遍历结果集
+		//Loop through the result set
+		for rows.Next() {
+
+			//初始化一个基本类型,new出来的是指针
+			//Initialize a basic type, and new is a pointer
+			pv := reflect.New(sliceElementType)
+			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
+			dv := driverValue.Index(0)
+			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
+				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
+					sliceValue.Set(reflect.Append(sliceValue, pv))
+				} else {
+					sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+				}
+				continue
 			}
 
+			//根据接收的类型,获取到类型转换的接口实现
+			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			//类型转换的临时值
+			var tempDriverValue driver.Value
+			var errGetDriverValue error
+			//如果需要转换
+			if converOK {
+				//获取需要转的临时值
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return errGetDriverValue
+				}
+				if tempDriverValue != nil { //为nil,不做处理
+					pv = reflect.ValueOf(tempDriverValue)
+				}
+
+			}
+
+			//把数据库值赋给指针
+			//Assign database value to pointer
+			scanerr := rows.Scan(pv.Interface())
+
+			if scanerr != nil {
+				scanerr = fmt.Errorf("QuerySlice-->rows.Scan异常:%w", scanerr)
+				FuncLogError(scanerr)
+				return scanerr
+			}
+			//如果需要类型转换,需要把临时值转换成需要接收的类型值
+			if converOK && tempDriverValue != nil {
+				//根据接收的临时值,返回需要接收值的指针
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue)
+				if errConverDriverValue != nil {
+					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+					FuncLogError(errConverDriverValue)
+					return errConverDriverValue
+				}
+				//把正确的值赋值给pv
+				pv = reflect.ValueOf(rightValue)
+			}
+
+			//通过反射给slice添加元素.添加指针下的真实元素
+			//Add elements to slice through reflection. Add real elements under the pointer
 			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
 				sliceValue.Set(reflect.Append(sliceValue, pv))
 			} else {
@@ -535,37 +621,32 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		return dbe
 	}
 
-	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, dbColumnFieldMap, nil)
-	if errWrapQueryRowsValues != nil {
-		errWrapQueryRowsValues = fmt.Errorf("Query-->wrapQueryRowsValues错误:%w", errWrapQueryRowsValues)
-		FuncLogError(errWrapQueryRowsValues)
-		return errWrapQueryRowsValues
-	}
-	for _, values := range allValues {
+	//循环遍历结果集
+	//Loop through the result set
+	for rows.Next() {
 		//deepCopy(a, entity)
 		//反射初始化一个数组内的元素
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
-		pv := reflect.New(sliceElementType)
-		for k, columnType := range columnTypes {
-			structField, sfok := dbColumnFieldMap[strings.ToLower(columnType.Name())]
-			if !sfok {
-				continue
-			}
-			//值
-			value := values[k]
-			if value != nil {
-				//设置值
-				pv.Elem().FieldByName(structField.Name).Set(reflect.ValueOf(value).Elem())
-			}
-
+		pv := reflect.New(sliceElementType).Elem()
+		//设置接收值
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, pv)
+		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
+		//scanerr := rows.Scan(values...)
+		if scanerr != nil {
+			scanerr = fmt.Errorf("QuerySlice-->sqlRowsValues异常:%w", scanerr)
+			FuncLogError(scanerr)
+			return scanerr
 		}
-		//通过反射给slice添加元素.添加指针下的真实元素
-		//Add elements to slice through reflection. Add real elements under the pointer
+
+		//values[i] = f.Addr().Interface()
+		//通过反射给slice添加元素
+		//Add elements to slice through reflection
 		if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
-			sliceValue.Set(reflect.Append(sliceValue, pv))
+			sliceValue.Set(reflect.Append(sliceValue, pv.Addr()))
 		} else {
-			sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
+			sliceValue.Set(reflect.Append(sliceValue, pv))
 		}
 
 	}
@@ -668,34 +749,123 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		FuncLogError(e)
 		return nil, e
 	}
-	//数据库返回的字段类型
-	columnTypes, cte := rows.ColumnTypes()
-	if cte != nil {
-		cte = fmt.Errorf("QueryMapSlice-->rows.ColumnTypes数据库类型错误:%w", cte)
-		FuncLogError(cte)
-		return nil, cte
-	}
 
+	//数据库返回的列类型
+	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
+	columnTypes, cne := rows.ColumnTypes()
+	if cne != nil {
+		cne = fmt.Errorf("QueryMapSlice-->rows.ColumnTypes数据库返回列名错误:%w", cne)
+		FuncLogError(cne)
+		return nil, cne
+	}
+	//反射获取 []driver.Value的值
+	var driverValue reflect.Value
+	//判断是否有自定义扩展,避免无意义的反射
+	if len(CustomDriverValueMap) > 0 {
+		driverValue = reflect.Indirect(reflect.ValueOf(rows))
+		driverValue = driverValue.FieldByName("lastcols")
+	}
 	resultMapList := make([]map[string]interface{}, 0)
+	//循环遍历结果集
+	//Loop through the result set
+	for rows.Next() {
+		//接收数据库返回的数据,需要使用指针接收
+		//To receive the data returned by the database, you need to use the pointer to receive
+		values := make([]interface{}, len(columnTypes))
+		//使用指针类型接收字段值,需要使用interface{}包装一下
+		//To use the pointer type to receive the field value, you need to use interface() to wrap it
+		result := make(map[string]interface{})
 
-	allValues, errWrapQueryRowsValues := wrapQueryRowsValues(rows, columnTypes, nil, nil)
-	if errWrapQueryRowsValues != nil {
-		errWrapQueryRowsValues = fmt.Errorf("QueryMapSlice-->queryContext查询rows错误:%w", errWrapQueryRowsValues)
-		FuncLogError(errWrapQueryRowsValues)
-		return nil, errWrapQueryRowsValues
-	}
-	for _, values := range allValues {
-		resultMap := make(map[string]interface{})
-		for j, value := range values {
-			key := columnTypes[j].Name()
-			if value != nil {
-				resultMap[key] = reflect.ValueOf(value).Elem().Interface()
-			} else {
-				resultMap[key] = nil
+		//记录需要类型转换的字段信息
+		fieldTempDriverValueMap := make(map[int]*driverValueInfo)
+
+		//给数据赋值初始化变量
+		//Initialize variables by assigning values ​​to data
+		for i, columnType := range columnTypes {
+
+			//类型转换的接口实现
+			var converFunc CustomDriverValueConver
+			//是否需要类型转换
+			var converOK bool = false
+			//类型转换的临时值
+			var tempDriverValue driver.Value
+			//判断是否有自定义扩展,避免无意义的反射
+			if len(CustomDriverValueMap) > 0 {
+				dv := driverValue.Index(i)
+				//根据接收的类型,获取到类型转换的接口实现
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
+			var errGetDriverValue error
+			//如果需要类型转换
+			if converOK {
+				//获取需要转的临时值
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("QueryMapSlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					FuncLogError(errGetDriverValue)
+					return nil, errGetDriverValue
+				}
+				//返回值为nil,不做任何处理,使用原始逻辑
+				if tempDriverValue == nil {
+					values[i] = new(interface{})
+				} else { //如果需要类型转换
+					values[i] = tempDriverValue
+					dvinfo := driverValueInfo{}
+					dvinfo.converFunc = converFunc
+					dvinfo.columnType = columnType
+					dvinfo.tempDriverValue = tempDriverValue
+					fieldTempDriverValueMap[i] = &dvinfo
+				}
+
+				continue
 			}
 
+			//不需要类型转换,正常赋值
+			values[i] = new(interface{})
 		}
-		resultMapList = append(resultMapList, resultMap)
+		//scan赋值
+		//scan assignment
+		scanerr := rows.Scan(values...)
+		if scanerr != nil {
+			scanerr = fmt.Errorf("QueryMapSlice-->rows.Scan异常:%w", scanerr)
+			FuncLogError(scanerr)
+			return nil, scanerr
+		}
+
+		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
+		for i, driverValueInfo := range fieldTempDriverValueMap {
+			//driverValueInfo := *driverValueInfoPtr
+			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
+			if errConverDriverValue != nil {
+				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+				FuncLogError(errConverDriverValue)
+				return nil, errConverDriverValue
+			}
+			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
+			values[i] = rightValue
+		}
+
+		//获取每一列的值
+		//Get the value of each column
+		for i, columnType := range columnTypes {
+
+			//取到指针下的值,[]byte格式
+			//Get the value under the pointer, []byte format
+			//v := *(values[i].(*interface{}))
+			v := reflect.ValueOf(values[i]).Elem().Interface()
+			//从[]byte转化成实际的类型值,例如string,int
+			//Convert from []byte to actual type value, such as string, int
+			v = converValueColumnType(v, columnType)
+			//赋值到Map
+			//Assign to Map
+			result[columnType.Name()] = v
+
+		}
+
+		//添加Map到数组
+		//Add Map to the array
+		resultMapList = append(resultMapList, result)
 
 	}
 
@@ -1334,132 +1504,4 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 		*affected, errAffected = typeConvertInt64toInt(rowsAffected)
 	}
 	return res, errAffected
-}
-
-//wrapQueryRowsValues 包装查询方法的值数组,返回列信息和所有结果的二维数组
-//如果是struct对象,dbColumnFieldMap不能为nil
-//如果是查询单字段,oneType不能为nil
-func wrapQueryRowsValues(rows *sql.Rows, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, oneType reflect.Type) ([][]interface{}, error) {
-
-	//字段信息二维数组
-	allValues := make([][]interface{}, 0)
-	//记录需要类型转换的字段信息
-	fieldTempDriverValueMap := make(map[int]*driverValueInfo)
-	//为null的字段,key是一维的i, v 是二维的j
-	nullMap := make(map[int]int)
-
-	//反射获取 []driver.Value的值
-	var driverValue reflect.Value
-	//判断是否有自定义扩展,避免无意义的反射
-	if len(CustomDriverValueMap) > 0 {
-		driverValue = reflect.Indirect(reflect.ValueOf(rows))
-		driverValue = driverValue.FieldByName("lastcols")
-	}
-	//循环遍历结果集
-	//Loop through the result set
-	for i := 0; rows.Next(); i++ {
-		values := make([]interface{}, len(columnTypes))
-		for j, columnType := range columnTypes {
-			//默认值
-			//values[j] = new(interface{})
-			//实体类的字段
-			var structField reflect.StructField
-			sfok := false
-			//字段类型
-			var fieldType reflect.Type
-
-			if dbColumnFieldMap != nil { //如果是实体类
-				structField, sfok = dbColumnFieldMap[strings.ToLower(columnType.Name())]
-				if sfok {
-					fieldType = structField.Type
-				}
-			} else if oneType != nil { //如果是查询单个字段
-				fieldType = oneType
-			}
-
-			dv := driverValue.Index(j)
-
-			//如果为字段为null
-			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null
-				values[j] = new(interface{})
-				nullMap[i] = j
-				continue
-			}
-
-			var value interface{}
-			//不需要类型转换,正常逻辑
-			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
-			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
-			if fieldType != nil {
-				value = reflect.New(fieldType).Interface()
-			} else { //map的时候,fieldType为nil
-				value = new(interface{})
-			}
-
-			//把指针地址放到数组
-			//Put the pointer address into the array
-			values[j] = value
-
-			//根据接收的类型,获取到类型转换的接口实现
-			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
-			if converOK { //需要类型转换,并且数据库值不为null
-				v, _ := converFunc.GetDriverValue(columnType, fieldType)
-				if v != nil {
-					values[j] = v
-					if i == 0 { //每条的规则应该是相同的
-						dvinfo := driverValueInfo{}
-						dvinfo.converFunc = converFunc
-						dvinfo.columnType = columnType
-						dvinfo.structFieldType = fieldType
-						fieldTempDriverValueMap[j] = &dvinfo
-					}
-				}
-
-			}
-
-		}
-
-		//values := make([]interface{}, len(columnTypes))
-		//copy(values, tempValues)
-		//scan赋值
-		//scan assignment
-		scanerr := rows.Scan(values...)
-		if scanerr != nil {
-			scanerr = fmt.Errorf("wrapQueryRowsValues-->rows.Scan异常:%w", scanerr)
-			FuncLogError(scanerr)
-			return allValues, scanerr
-		}
-
-		allValues = append(allValues, values)
-
-	}
-	//数据库为null的值
-	for i, j := range nullMap {
-		allValues[i][j] = nil
-	}
-
-	//需要类型转换的字段
-	if len(fieldTempDriverValueMap) < 1 {
-		return allValues, nil
-	}
-
-	//达梦的bug,需要再scan完成之后才能操作自定义的driver.Value
-	for _, values := range allValues {
-		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
-		for k, driverValueInfo := range fieldTempDriverValueMap {
-			//driverValueInfo := *driverValueInfoPtr
-			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, driverValueInfo.structFieldType, values[k])
-			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("wrapQueryRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
-				FuncLogError(errConverDriverValue)
-				return allValues, errConverDriverValue
-			}
-			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
-			values[k] = rightValue
-		}
-	}
-
-	return allValues, nil
-
 }

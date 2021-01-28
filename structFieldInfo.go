@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"go/ast"
 	"reflect"
 	"strings"
@@ -394,7 +395,6 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-/*
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
@@ -487,7 +487,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 
 	return scanerr
 }
-*/
+
 /*
 
 // sqlRowsValuesFast 包装接收sqlRows的Values数组,快速模式,数据库表不能有null值
@@ -673,7 +673,6 @@ type driverValueInfo struct {
 	converFunc      CustomDriverValueConver
 	columnType      *sql.ColumnType
 	tempDriverValue interface{}
-	structFieldType reflect.Type
 }
 
 /**
