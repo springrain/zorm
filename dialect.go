@@ -24,7 +24,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" { //MySQL,sqlite3,dm数据库
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "nt" { //MySQL,sqlite3,dm数据库,南大通用
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
@@ -35,7 +35,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "mssql" || dbType == "oracle" { //sqlserver 2012+,oracle 12c+
+	} else if dbType == "mssql" || dbType == "oracle" || dbType == "st" { //sqlserver 2012+,oracle 12c+,神通
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
@@ -419,7 +419,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 func reBindSQL(dbType string, sqlstr string) (string, error) {
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" {
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "nt" {
 		return sqlstr, nil
 	}
 
@@ -436,7 +436,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 		} else if dbType == "mssql" { //mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dbType == "oracle" { //oracle
+		} else if dbType == "oracle" || dbType == "st" { //oracle,神州通用
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else { //其他情况,还是使用?
