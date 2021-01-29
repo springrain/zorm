@@ -328,11 +328,11 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
 	if !hasPK { //如果没有设置主键,认为是自增或者序列
 		autoIncrement = true
-		if len(entity.GetPkSequence()) > 0 { //如果是序列
+		if len(entity.GetPkSequenceName()) > 0 { //如果是序列
 			sqlBuilder.WriteString(entity.GetPKColumnName())
 			sqlBuilder.WriteString(",")
-			valueSQLBuilder.WriteString(entity.GetPkSequence())
-			valueSQLBuilder.WriteString(",")
+			valueSQLBuilder.WriteString(entity.GetPkSequenceName())
+			valueSQLBuilder.WriteString(".NEXTVAL,")
 		}
 	}
 

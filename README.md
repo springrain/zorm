@@ -32,7 +32,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
 
 ### 南大通用(gbase)
-
+建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
 
 
 ## 测试用例  
