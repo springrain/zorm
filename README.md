@@ -18,15 +18,18 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ## 支持国产数据库  
 ### 达梦(dm)  
+配置zorm的 DriverName:dm ,DBType:dm  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.CustomDriverValueConver接口,自定义扩展处理  
 
 ### 人大金仓(kingbase)  
+配置zorm的 DriverName:kingbase ,DBType:kingbase    
 人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神州通用(shentong)  
+建议使用官方的aci驱动,配置zorm的 DriverName:aci ,DBType:shentong  
 
 
 ## 测试用例  
