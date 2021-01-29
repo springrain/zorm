@@ -82,7 +82,17 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 	}
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
+
 		if field.Name == pkFieldName { //如果是主键
+
+			if entity.IsTriggerPKValue() { //如果是后台触发器生成的主键值,sql语句中不再体现
+				//去掉这一列,后续不再处理
+				*columns = append((*columns)[:i], (*columns)[i+1:]...)
+				*values = append((*values)[:i], (*values)[i+1:]...)
+				i = i - 1
+				continue
+			}
+
 			pkKind := field.Type.Kind()
 
 			if pkKind == reflect.String {

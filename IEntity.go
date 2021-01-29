@@ -8,6 +8,8 @@ type IEntityStruct interface {
 	GetPKColumnName() string
 	//兼容主键序列.如果有值,优先级最高
 	GetPkSequence() string
+	//是否通过数据库触发器给主键赋值,例如oracle通过触发器使用SEQUENCE赋值给主键
+	IsTriggerPKValue() bool
 }
 
 //IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
@@ -46,6 +48,11 @@ func (entity *EntityStruct) GetPKColumnName() string {
 //GetPkSequence Oracle和pgsql没有自增,主键使用序列.优先级高于GetPKColumnName方法
 func (entity *EntityStruct) GetPkSequence() string {
 	return ""
+}
+
+//IsTriggerPKValue 是否通过数据库触发器给主键赋值,例如oracle通过触发器使用SEQUENCE赋值给主键
+func (entity *EntityStruct) IsTriggerPKValue() bool {
+	return false
 }
 
 //-------------------------------------------------------------------------//
