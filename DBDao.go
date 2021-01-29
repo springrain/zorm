@@ -992,7 +992,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	var lastInsertId *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
-	if autoIncrement && dbType == "postgresql" && entity.GetPKColumnName() != "" {
+	if autoIncrement && (dbType == "postgresql" || dbType == "kingbase") && entity.GetPKColumnName() != "" {
 		var p int64 = 0
 		lastInsertId = &p
 		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
@@ -1231,7 +1231,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 	var lastInsertId *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
-	if autoIncrement && dbType == "postgresql" && entity.GetPKColumnName() != "" {
+	if autoIncrement && (dbType == "postgresql" || dbType == "kingbase") && entity.GetPKColumnName() != "" {
 		var p int64 = 0
 		lastInsertId = &p
 		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
