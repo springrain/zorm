@@ -107,13 +107,13 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 
 			//主键的值
 			pkValue := (*values)[i]
-			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
+			if len(entity.GetPkSequenceName()) > 0 { //如果是主键序列
 				//拼接字符串
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 				sqlBuilder.WriteString(",")
-				valueSQLBuilder.WriteString(entity.GetPkSequence())
-				valueSQLBuilder.WriteString(",")
+				valueSQLBuilder.WriteString(entity.GetPkSequenceName())
+				valueSQLBuilder.WriteString(".NEXTVAL,")
 				//去掉这一列,后续不再处理
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
