@@ -30,12 +30,12 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	} else if dbType == "postgresql" || dbType == "kingbase" { //postgresql,kingbase
+	} else if dbType == "postgresql" || dbType == "kingbase" || dbType == "shentong" { //postgresql,kingbase,神通数据库
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "mssql" || dbType == "oracle" || dbType == "st" { //sqlserver 2012+,oracle 12c+,神通
+	} else if dbType == "mssql" || dbType == "oracle" { //sqlserver 2012+,oracle 12c+,神通
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
@@ -436,7 +436,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 		} else if dbType == "mssql" { //mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dbType == "oracle" || dbType == "st" { //oracle,神州通用
+		} else if dbType == "oracle" || dbType == "shentong" { //oracle,神州通用
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		} else { //其他情况,还是使用?
