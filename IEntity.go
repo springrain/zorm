@@ -6,8 +6,8 @@ type IEntityStruct interface {
 	GetTableName() string
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
-	//主键序列名称,如果有值,优先级最高
-	GetPkSequenceName() string
+	//主键序列,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	GetPkSequence() string
 	//是否通过数据库触发器给主键赋值,例如oracle通过触发器使用sequence赋值给主键
 	IsTriggerPKValue() bool
 }
@@ -18,8 +18,8 @@ type IEntityMap interface {
 	GetTableName() string
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
-	//主键序列名称,如果有值,优先级最高
-	GetPkSequenceName() string
+	//主键序列,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	GetPkSequence() string
 	//针对Map类型,记录数据库字段
 	GetDBFieldMap() map[string]interface{}
 	//设置数据库字段的值
@@ -45,8 +45,8 @@ func (entity *EntityStruct) GetPKColumnName() string {
 	return defaultPkName
 }
 
-//GetPkSequenceName Oracle和pgsql没有自增,主键使用序列.优先级高于GetPKColumnName方法
-func (entity *EntityStruct) GetPkSequenceName() string {
+//GetPkSequence Oracle和pgsql没有自增,主键使用序列,例如oracle的TESTSEQ.NEXTVAL.优先级高于GetPKColumnName方法
+func (entity *EntityStruct) GetPkSequence() string {
 	return ""
 }
 
@@ -88,8 +88,8 @@ func (entity *EntityMap) GetPKColumnName() string {
 	return entity.PkColumnName
 }
 
-//GetPkSequenceName Oracle和pgsql没有自增,主键使用序列.优先级高于GetPKColumnName方法
-func (entity *EntityMap) GetPkSequenceName() string {
+//GetPkSequence Oracle和pgsql没有自增,主键使用序列,例如oracle的TESTSEQ.NEXTVAL.优先级高于GetPKColumnName方法
+func (entity *EntityMap) GetPkSequence() string {
 	return entity.PkSequence
 }
 
