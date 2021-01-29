@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase),神通(shentong),mysql,postgresql,oracle,mssql,sqlite数据库.  
+go(golang)轻量级ORM,支持达梦(dm),金仓(kingbase),神通(shentong),mysql,postgresql,oracle,mssql,sqlite数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -10,7 +10,7 @@ go get gitee.com/chunanyong/zorm
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(人大金仓)
+* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓)
 * 支持数据库读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
@@ -24,8 +24,8 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 人大金仓(kingbase)  
 配置zorm.DataSourceConfig的 DriverName:kingbase ,DBType:kingbase    
-人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
-人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
+金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神州通用(shentong)  
