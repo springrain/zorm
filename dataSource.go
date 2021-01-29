@@ -193,7 +193,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 }
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
-func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args ...interface{}) *sql.Row {
+func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) *sql.Row {
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
@@ -208,7 +208,7 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
-func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args ...interface{}) (*sql.Rows, error) {
+func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
 	//打印SQL
 	if dbConnection.printSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
