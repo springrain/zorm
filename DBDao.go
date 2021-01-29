@@ -931,7 +931,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, finder.values)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -989,8 +989,17 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
+
+	var lastInsertId *int64
+	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
+	if autoIncrement && dbType == "postgresql" && entity.GetPKColumnName() != "" {
+		var p int64 = 0
+		lastInsertId = &p
+		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+	}
+
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertId)
 	if errexec != nil {
 		errexec = fmt.Errorf("Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1000,9 +1009,17 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//如果是自增主键
 	//If it is an auto-incrementing primary key
 	if autoIncrement {
-		//需要数据库支持,获取自增主键
-		//Need database support, get auto-incrementing primary key
-		autoIncrementIDInt64, e := (*res).LastInsertId()
+
+		var autoIncrementIDInt64 int64
+		var e error
+		if lastInsertId != nil {
+			autoIncrementIDInt64 = *lastInsertId
+		} else {
+			//需要数据库支持,获取自增主键
+			//Need database support, get auto-incrementing primary key
+			autoIncrementIDInt64, e = (*res).LastInsertId()
+		}
+
 		//数据库不支持自增主键,不再赋值给struct属性
 		//The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
 		if e != nil {
@@ -1083,7 +1100,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1166,7 +1183,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	values := make([]interface{}, 1, 1)
 	values[0] = value
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("Delete-->wrapExecUpdateValuesAffected执行删除错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1212,8 +1229,16 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
+	var lastInsertId *int64
+	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
+	if autoIncrement && dbType == "postgresql" && entity.GetPKColumnName() != "" {
+		var p int64 = 0
+		lastInsertId = &p
+		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+	}
+
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertId)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1222,8 +1247,15 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 	//如果是自增主键
 	if autoIncrement {
-		//需要数据库支持,获取自增主键
-		autoIncrementIDInt64, e := (*res).LastInsertId()
+		var autoIncrementIDInt64 int64
+		var e error
+		if lastInsertId != nil {
+			autoIncrementIDInt64 = *lastInsertId
+		} else {
+			//需要数据库支持,获取自增主键
+			//Need database support, get auto-incrementing primary key
+			autoIncrementIDInt64, e = (*res).LastInsertId()
+		}
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("InsertEntityMap数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
 			FuncLogError(e)
@@ -1284,7 +1316,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1339,7 +1371,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("updateStruct-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1483,7 +1515,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 }
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values []interface{}) (*sql.Result, error) {
+func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values []interface{}, lastInsertId *int64) (*sql.Result, error) {
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
@@ -1491,8 +1523,17 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
-
-	res, errexec := dbConnection.execContext(ctx, sqlstr, values)
+	var res *sql.Result
+	var errexec error
+	if lastInsertId != nil {
+		errexec = dbConnection.queryRowContext(ctx, sqlstr, values).Scan(lastInsertId)
+		if errexec == nil { //如果插入成功,返回
+			*affected = 1
+			return res, errexec
+		}
+	} else {
+		res, errexec = dbConnection.execContext(ctx, sqlstr, values)
+	}
 
 	if errexec != nil {
 		return res, errexec
