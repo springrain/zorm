@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase),mysql,postgresql,oracle,mssql,sqlite数据库.  
+go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase),神通(shentong),mysql,postgresql,oracle,mssql,sqlite数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -17,11 +17,17 @@ go get gitee.com/chunanyong/zorm
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## 支持国产数据库  
+### 达梦(dm)  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.CustomDriverValueConver接口,自定义扩展处理  
 
+### 人大金仓(kingbase)  
 人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
+
+### 神州通用(shentong)  
+
 
 ## 测试用例  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
@@ -163,9 +169,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
