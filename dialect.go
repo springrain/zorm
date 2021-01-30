@@ -107,12 +107,12 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 
 			//主键的值
 			pkValue := (*values)[i]
-			if len(entity.GetPkSequence()) > 0 { //如果是主键序列
+			if sequence, ok := entity.GetPkSequence()[dbType]; ok { //如果是主键序列
 				//拼接字符串
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 				sqlBuilder.WriteString(",")
-				valueSQLBuilder.WriteString(entity.GetPkSequence())
+				valueSQLBuilder.WriteString(sequence)
 				valueSQLBuilder.WriteString(",")
 				//去掉这一列,后续不再处理
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
@@ -328,10 +328,10 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
 	if !hasPK { //如果没有设置主键,认为是自增或者序列
 		autoIncrement = true
-		if len(entity.GetPkSequence()) > 0 { //如果是序列
+		if sequence, ok := entity.GetPkSequence()[dbType]; ok { //如果是序列
 			sqlBuilder.WriteString(entity.GetPKColumnName())
 			sqlBuilder.WriteString(",")
-			valueSQLBuilder.WriteString(entity.GetPkSequence())
+			valueSQLBuilder.WriteString(sequence)
 			valueSQLBuilder.WriteString(",")
 		}
 	}

@@ -6,8 +6,8 @@ type IEntityStruct interface {
 	GetTableName() string
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
-	//主键序列,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	GetPkSequence() string
+	//主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	GetPkSequence() map[string]string
 	//是否通过数据库触发器给主键赋值,例如oracle通过触发器使用sequence赋值给主键
 	IsTriggerPKValue() bool
 }
@@ -18,8 +18,8 @@ type IEntityMap interface {
 	GetTableName() string
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
-	//主键序列,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	GetPkSequence() string
+	//主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	GetPkSequence() map[string]string
 	//针对Map类型,记录数据库字段
 	GetDBFieldMap() map[string]interface{}
 	//设置数据库字段的值
@@ -45,9 +45,11 @@ func (entity *EntityStruct) GetPKColumnName() string {
 	return defaultPkName
 }
 
-//GetPkSequence Oracle和pgsql没有自增,主键使用序列,例如oracle的TESTSEQ.NEXTVAL.优先级高于GetPKColumnName方法
-func (entity *EntityStruct) GetPkSequence() string {
-	return ""
+var defaultPkSequence = make(map[string]string, 0)
+
+//GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+func (entity *EntityStruct) GetPkSequence() map[string]string {
+	return defaultPkSequence
 }
 
 //IsTriggerPKValue 是否通过数据库触发器给主键赋值,例如oracle通过触发器使用sequence赋值给主键
@@ -63,8 +65,8 @@ type EntityMap struct {
 	tableName string
 	//主键列名
 	PkColumnName string
-	//兼容主键序列.如果有值,优先级最高
-	PkSequence string
+	//主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	PkSequence map[string]string
 	//数据库字段,不暴露外部
 	dbFieldMap map[string]interface{}
 }
@@ -88,8 +90,8 @@ func (entity *EntityMap) GetPKColumnName() string {
 	return entity.PkColumnName
 }
 
-//GetPkSequence Oracle和pgsql没有自增,主键使用序列,例如oracle的TESTSEQ.NEXTVAL.优先级高于GetPKColumnName方法
-func (entity *EntityMap) GetPkSequence() string {
+//GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+func (entity *EntityMap) GetPkSequence() map[string]string {
 	return entity.PkSequence
 }
 
