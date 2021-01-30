@@ -440,7 +440,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 				//获取需要转换的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("sqlRowsValues-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
@@ -477,7 +477,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue)
 		if errConverDriverValue != nil {
-			errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+			errConverDriverValue = fmt.Errorf("sqlRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(errConverDriverValue)
 			return errConverDriverValue
 		}

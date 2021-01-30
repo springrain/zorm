@@ -228,18 +228,18 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return nil, nil
 }
 
-// Query 不要偷懒调用QuerySlice返回第一条,问题1.需要构建一个selice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
+// QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个selice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
 // 根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 // context必须传入,不能为空
-// 如果数据库是null,基本类型不支持,会返回异常,不做默认值处理,QuerySlice因为是列表,会设置为默认值
-// Query Don't be lazy to call Query Slice to return the first one
+// 如果数据库是null,基本类型不支持,会返回异常,不做默认值处理,Query因为是列表,会设置为默认值
+// QueryRow Don't be lazy to call QueryRow Slice to return the first one
 // Question 1. A selice needs to be constructed, and question 2. Other values ​​of the object passed by the caller will be discarded or overwritten
 // context must be passed in and cannot be empty
-func Query(ctx context.Context, finder *Finder, entity interface{}) error {
+func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
-		checkerr = fmt.Errorf("Query-->checkEntityKind类型检查错误:%w", checkerr)
+		checkerr = fmt.Errorf("QueryRow-->checkEntityKind类型检查错误:%w", checkerr)
 		FuncLogError(checkerr)
 		return checkerr
 	}
@@ -268,7 +268,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//Get the sql statement
 	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
 	if err != nil {
-		err = fmt.Errorf("Query-->wrapQuerySQL获取查询SQL语句错误:%w", err)
+		err = fmt.Errorf("QueryRow-->wrapQueryRowSQL获取查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return err
 	}
@@ -287,7 +287,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	defer rows.Close()
 
 	if e != nil {
-		e = fmt.Errorf("Query-->queryContext查询数据库错误:%w", e)
+		e = fmt.Errorf("QueryRow-->queryContext查询数据库错误:%w", e)
 		FuncLogError(e)
 		return e
 	}
@@ -299,7 +299,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	/*
 		columns, cne := rows.Columns()
 		if cne != nil {
-			cne = fmt.Errorf("Query-->rows.Columns数据库返回列名错误:%w", cne)
+			cne = fmt.Errorf("QueryRow-->rows.Columns数据库返回列名错误:%w", cne)
 			FuncLogError(cne)
 			return cne
 		}
@@ -307,7 +307,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//数据库字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
-		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
+		cte = fmt.Errorf("QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
 		FuncLogError(cte)
 		return cte
 	}
@@ -348,7 +348,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 				//获取需要转换的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("QueryRow-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
@@ -365,7 +365,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			}
 
 			if scanerr != nil {
-				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
+				scanerr = fmt.Errorf("QueryRow-->rows.Scan异常:%w", scanerr)
 				FuncLogError(scanerr)
 				return scanerr
 			}
@@ -376,7 +376,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 			//根据接收的临时值,返回需要接收值的指针
 			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue)
 			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("Query-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
+				errConverDriverValue = fmt.Errorf("QueryRow-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
 				return errConverDriverValue
 			}
@@ -397,7 +397,7 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	//Get the type field cache
 	dbColumnFieldMap, dbe := getDBColumnFieldMap(typeOf)
 	if dbe != nil {
-		dbe = fmt.Errorf("Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
+		dbe = fmt.Errorf("QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
 		return dbe
 	}
@@ -411,13 +411,13 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	for i := 0; rows.Next(); i++ {
 
 		if i > 0 {
-			return errors.New("Query查询出多条数据")
+			return errors.New("QueryRow查询出多条数据")
 		}
 
 		//接收对象设置值
 		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, valueOf)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("Query-->sqlRowsValues错误:%w", scanerr)
+			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
 			return scanerr
 		}
@@ -427,21 +427,21 @@ func Query(ctx context.Context, finder *Finder, entity interface{}) error {
 	return nil
 }
 
-// QuerySlice 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
+// Query 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 // 根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
 // context必须传入,不能为空
-// QuerySlice:Don't be lazy to call Query Map List, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome.
+// Query:Don't be lazy to call Query Map List, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome.
 // According to the Finder and encapsulation for the specified entity type, the entity must be of the *[]struct type, which has been initialized,This method only Append elements, so the caller does not need to force type conversion
 // context must be passed in and cannot be empty
-func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
+func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
-		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	pv1 := reflect.ValueOf(rowsSlicePtr)
 	if pv1.Kind() != reflect.Ptr { //如果不是指针
-		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	//获取数组元素
@@ -451,7 +451,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//如果不是数组
 	//If it is not an array.
 	if sliceValue.Kind() != reflect.Slice {
-		return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 	//获取数组内的元素类型
 	//Get the element type in the array
@@ -466,7 +466,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 
 	//如果不是struct
 	//if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
-	//	return errors.New("QuerySlice数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+	//	return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	//}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -489,7 +489,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
-		err = fmt.Errorf("QuerySlice-->wrapQuerySQL获取查询SQL语句错误:%w", err)
+		err = fmt.Errorf("Query-->wrapQueryRowSQL获取查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return err
 	}
@@ -507,14 +507,14 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	defer rows.Close()
 	if e != nil {
-		e = fmt.Errorf("QuerySlice-->queryContext查询rows异常:%w", e)
+		e = fmt.Errorf("Query-->queryContext查询rows异常:%w", e)
 		FuncLogError(e)
 		return e
 	}
 	//数据库返回的字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
-		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
+		cte = fmt.Errorf("QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
 		FuncLogError(cte)
 		return cte
 	}
@@ -555,7 +555,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				//获取需要转的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("QuerySlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("Query-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return errGetDriverValue
 				}
@@ -570,7 +570,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 			scanerr := rows.Scan(pv.Interface())
 
 			if scanerr != nil {
-				scanerr = fmt.Errorf("QuerySlice-->rows.Scan异常:%w", scanerr)
+				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
 				FuncLogError(scanerr)
 				return scanerr
 			}
@@ -579,7 +579,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 				//根据接收的临时值,返回需要接收值的指针
 				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue)
 				if errConverDriverValue != nil {
-					errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+					errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)
 					return errConverDriverValue
 				}
@@ -602,7 +602,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		if page != nil && finder.SelectTotalCount {
 			count, counterr := selectCount(ctx, finder)
 			if counterr != nil {
-				counterr = fmt.Errorf("QuerySlice-->selectCount查询总条数错误:%w", counterr)
+				counterr = fmt.Errorf("Query-->selectCount查询总条数错误:%w", counterr)
 				FuncLogError(counterr)
 				return counterr
 			}
@@ -616,7 +616,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	//Get the type field cache
 	dbColumnFieldMap, dbe := getDBColumnFieldMap(sliceElementType)
 	if dbe != nil {
-		dbe = fmt.Errorf("QuerySlice-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
+		dbe = fmt.Errorf("Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
 		return dbe
 	}
@@ -635,7 +635,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("QuerySlice-->sqlRowsValues异常:%w", scanerr)
+			scanerr = fmt.Errorf("Query-->sqlRowsValues异常:%w", scanerr)
 			FuncLogError(scanerr)
 			return scanerr
 		}
@@ -656,7 +656,7 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 	if page != nil && finder.SelectTotalCount {
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
-			counterr = fmt.Errorf("QuerySlice-->selectCount查询总条数错误:%w", counterr)
+			counterr = fmt.Errorf("Query-->selectCount查询总条数错误:%w", counterr)
 			FuncLogError(counterr)
 			return counterr
 		}
@@ -667,18 +667,18 @@ func QuerySlice(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, p
 
 }
 
-// QueryMap 根据Finder查询,封装Map
+// QueryRowMap 根据Finder查询,封装Map
 // context必须传入,不能为空
-// QueryMap encapsulates Map according to Finder query
+// QueryRowMap encapsulates Map according to Finder query
 // context must be passed in and cannot be empty
-func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
+func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryMap-->finder参数不能为nil")
+		return nil, errors.New("QueryRowMap-->finder参数不能为nil")
 	}
-	resultMapList, listerr := QueryMapSlice(ctx, finder, nil)
+	resultMapList, listerr := QueryMap(ctx, finder, nil)
 	if listerr != nil {
-		listerr = fmt.Errorf("QueryMap-->QueryMapSlice查询错误:%w", listerr)
+		listerr = fmt.Errorf("QueryRowMap-->QueryMap查询错误:%w", listerr)
 		FuncLogError(listerr)
 		return nil, listerr
 	}
@@ -686,23 +686,23 @@ func QueryMap(ctx context.Context, finder *Finder) (map[string]interface{}, erro
 		return nil, nil
 	}
 	if len(resultMapList) > 1 {
-		return resultMapList[0], errors.New("QueryMap查询出多条数据")
+		return resultMapList[0], errors.New("QueryRowMap查询出多条数据")
 	} else if len(resultMapList) == 0 { //数据库不存在值
 		return nil, nil
 	}
 	return resultMapList[0], nil
 }
 
-// QueryMapSlice 根据Finder查询,封装Map数组
+// QueryMap 根据Finder查询,封装Map数组
 // 根据数据库字段的类型,完成从[]byte到golang类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
 // context必须传入,不能为空
-// QueryMapSlice According to Finder query, encapsulate Map array
+// QueryMap According to Finder query, encapsulate Map array
 //According to the type of database field, the mapping from []byte to golang type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
 //context must be passed in and cannot be empty
-func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryMapSlice-->finder参数不能为nil")
+		return nil, errors.New("QueryMap-->finder参数不能为nil")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -727,7 +727,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
-		err = fmt.Errorf("QueryMapSlice -->wrapQuerySQL查询SQL语句错误:%w", err)
+		err = fmt.Errorf("QueryMap -->wrapQueryRowSQL查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return nil, err
 	}
@@ -745,7 +745,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	defer rows.Close()
 	if e != nil {
-		e = fmt.Errorf("QueryMapSlice-->queryContext查询rows错误:%w", e)
+		e = fmt.Errorf("QueryMap-->queryContext查询rows错误:%w", e)
 		FuncLogError(e)
 		return nil, e
 	}
@@ -754,7 +754,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
 	columnTypes, cne := rows.ColumnTypes()
 	if cne != nil {
-		cne = fmt.Errorf("QueryMapSlice-->rows.ColumnTypes数据库返回列名错误:%w", cne)
+		cne = fmt.Errorf("QueryMap-->rows.ColumnTypes数据库返回列名错误:%w", cne)
 		FuncLogError(cne)
 		return nil, cne
 	}
@@ -801,7 +801,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 				//获取需要转的临时值
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("QueryMapSlice-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("QueryMap-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
 					return nil, errGetDriverValue
 				}
@@ -827,7 +827,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 		//scan assignment
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("QueryMapSlice-->rows.Scan异常:%w", scanerr)
+			scanerr = fmt.Errorf("QueryMap-->rows.Scan异常:%w", scanerr)
 			FuncLogError(scanerr)
 			return nil, scanerr
 		}
@@ -838,7 +838,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
 			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("QuerySlice-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+				errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
 				return nil, errConverDriverValue
 			}
@@ -874,7 +874,7 @@ func QueryMapSlice(ctx context.Context, finder *Finder, page *Page) ([]map[strin
 	if page != nil && finder.SelectTotalCount {
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
-			counterr = fmt.Errorf("QueryMapSlice-->selectCount查询总条数错误:%w", counterr)
+			counterr = fmt.Errorf("QueryMap-->selectCount查询总条数错误:%w", counterr)
 			FuncLogError(counterr)
 			return resultMapList, counterr
 		}
@@ -1004,8 +1004,8 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 			var p int64 = 0
 			sqlOutReturningId = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
-			values = append(values, v)
+			//v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
+			values = append(values, sqlOutReturningId)
 		}
 
 	}
@@ -1427,7 +1427,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	//Customized query total number Finder,mainly for the sake of performance in complex situations such as group by, manually write the total number of statements
 	if finder.CountFinder != nil {
 		count := -1
-		err := Query(ctx, finder.CountFinder, &count)
+		err := QueryRow(ctx, finder.CountFinder, &count)
 		if err != nil {
 			return -1, err
 		}
@@ -1472,7 +1472,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	countFinder.values = finder.values
 
 	count := -1
-	cerr := Query(ctx, countFinder, &count)
+	cerr := QueryRow(ctx, countFinder, &count)
 	if cerr != nil {
 		return -1, cerr
 	}

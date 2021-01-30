@@ -276,8 +276,8 @@ func TestInsertEntityMap(t *testing.T) {
 	}
 }
 
-//TestQuery 05.Test query a struct object
-func TestQuery(t *testing.T) {
+//TestQueryRow 05.Test query a struct object
+func TestQueryRow(t *testing.T) {
 
 	//Declare a pointer to an object to carry the returned data.
 	demo := &demoStruct{}
@@ -292,7 +292,7 @@ func TestQuery(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//Execute query
-	err := zorm.Query(ctx, finder, demo)
+	err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
@@ -301,8 +301,8 @@ func TestQuery(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestQueryMap 06.Test query map receiving results, used in scenarios that are not suitable for struct, more flexible
-func TestQueryMap(t *testing.T) {
+//TestQueryRowMap 06.Test query map receiving results, used in scenarios that are not suitable for struct, more flexible
+func TestQueryRowMap(t *testing.T) {
 
 	//Finder for constructing query.
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -310,7 +310,7 @@ func TestQueryMap(t *testing.T) {
     //The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 	//Execute query
-	resultMap, err := zorm.QueryMap(ctx, finder)
+	resultMap, err := zorm.QueryRowMap(ctx, finder)
 
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
@@ -320,7 +320,7 @@ func TestQueryMap(t *testing.T) {
 }
 
 //TestQuerySlice 07.Test query object list
-func TestQuerySlice(t *testing.T) {
+func TestQuery(t *testing.T) {
 	//Create a slice to receive the result
 	list := make([]*demoStruct, 0)
 
@@ -332,7 +332,7 @@ func TestQuerySlice(t *testing.T) {
 	page.PageSize = 20 //20 items per page, the default is 20
 
 	//Execute query
-	err := zorm.QuerySlice(ctx, finder, &list, page)
+	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
@@ -340,8 +340,8 @@ func TestQuerySlice(t *testing.T) {
 	fmt.Println("Total number:", page.TotalCount, "  List:", list)
 }
 
-//TestQueryMapSlice 08.Test query map list, used in scenarios where struct is not convenient, a record is a map object.
-func TestQueryMapSlice(t *testing.T) {
+//TestQueryMap 08.Test query map list, used in scenarios where struct is not convenient, a record is a map object.
+func TestQueryMap(t *testing.T) {
 	//Finder for constructing query.
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	
@@ -349,7 +349,7 @@ func TestQueryMapSlice(t *testing.T) {
 	page := zorm.NewPage()
 
 	//Execute query
-	listMap, err := zorm.QueryMapSlice(ctx, finder, page)
+	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
@@ -501,7 +501,7 @@ func TestOther(t *testing.T) {
 
 	finder := zorm.NewSelectFinder(demoStructTableName)
 	//Pass the newly generated new Ctx to the function of zorm.
-	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
+	list, _ := zorm.QueryRowMap(newCtx, finder, nil)
 	fmt.Println(list)
 
 	//Scenario 2. Read-write separation of a single database. 
