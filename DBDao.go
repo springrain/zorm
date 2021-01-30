@@ -1004,8 +1004,8 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 			var p int64 = 0
 			sqlOutReturningId = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			//v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
-			values = append(values, sqlOutReturningId)
+			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
+			values = append(values, v)
 		}
 
 	}
