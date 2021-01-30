@@ -7,9 +7,8 @@ type IEntityStruct interface {
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
 	//主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 	GetPkSequence() map[string]string
-	//是否通过数据库触发器给主键赋值,例如oracle通过触发器使用sequence赋值给主键
-	IsTriggerPKValue() bool
 }
 
 //IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
@@ -45,16 +44,12 @@ func (entity *EntityStruct) GetPKColumnName() string {
 	return defaultPkName
 }
 
-var defaultPkSequence = make(map[string]string, 0)
+//var defaultPkSequence = make(map[string]string, 0)
 
 //GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 func (entity *EntityStruct) GetPkSequence() map[string]string {
-	return defaultPkSequence
-}
-
-//IsTriggerPKValue 是否通过数据库触发器给主键赋值,例如oracle通过触发器使用sequence赋值给主键
-func (entity *EntityStruct) IsTriggerPKValue() bool {
-	return false
+	return nil
 }
 
 //-------------------------------------------------------------------------//
@@ -91,6 +86,7 @@ func (entity *EntityMap) GetPKColumnName() string {
 }
 
 //GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 func (entity *EntityMap) GetPkSequence() map[string]string {
 	return entity.PkSequence
 }

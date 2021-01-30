@@ -995,7 +995,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	var lastInsertId *int64
 	var sqlOutReturningId *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
-	if autoIncrement && entity.GetPKColumnName() != "" {
+	if autoIncrement > 0 {
 		if dbType == "postgresql" || dbType == "kingbase" {
 			var p int64 = 0
 			lastInsertId = &p
@@ -1020,7 +1020,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//如果是自增主键
 	//If it is an auto-incrementing primary key
-	if autoIncrement {
+	if autoIncrement > 0 {
 		//如果是oracle,shentong 的返回自增主键
 		if lastInsertId == nil && sqlOutReturningId != nil {
 			lastInsertId = sqlOutReturningId

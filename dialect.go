@@ -52,7 +52,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 
 //wrapInsertSQL 包装保存Struct语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, string, error) {
+func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	savesql, err := reBindSQL(dbType, sqlstr)
 	return savesql, autoIncrement, pktype, err
@@ -60,10 +60,10 @@ func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 
 //wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, string, error) {
+func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 
-	//是否自增,默认false
-	autoIncrement := false
+	//自增类型  0(不自增),1(普通自增),2(序列自增),3(触发器自增)
+	autoIncrement := 0
 	//主键类型
 	pktype := ""
 	//SQL语句的构造器
@@ -80,12 +80,28 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 	if e != nil {
 		return "", autoIncrement, pktype, e
 	}
+
+	var sequence string
+	var sequenceOK bool
+	if entity.GetPkSequence() != nil {
+		sequence, sequenceOK = entity.GetPkSequence()[dbType]
+		if sequenceOK { //自增
+			if sequence == "" { //触发器自增
+				autoIncrement = 3
+			} else { //序列自增
+				autoIncrement = 2
+			}
+
+		}
+
+	}
+
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 
 		if field.Name == pkFieldName { //如果是主键
 
-			if entity.IsTriggerPKValue() { //如果是后台触发器生成的主键值,sql语句中不再体现
+			if autoIncrement == 3 { //如果是后台触发器生成的主键值,sql语句中不再体现
 				//去掉这一列,后续不再处理
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
@@ -107,7 +123,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 
 			//主键的值
 			pkValue := (*values)[i]
-			if sequence, ok := entity.GetPkSequence()[dbType]; ok { //如果是主键序列
+			if autoIncrement == 2 { //如果是序列自增
 				//拼接字符串
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
@@ -130,7 +146,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 				//如果是数字类型,并且值为0,认为是数据库自增,从数组中删除掉主键的信息,让数据库自己生成
 			} else if (pktype == "int" && pkValue.(int) == 0) || (pktype == "int64" && pkValue.(int64) == 0) {
 				//标记是自增主键
-				autoIncrement = true
+				autoIncrement = 1
 				//去掉这一列,后续不再处理
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
@@ -162,10 +178,10 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 
 //wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, bool, error) {
+func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
-		return "", false, errors.New("wrapInsertSliceSQL对象数组不能为空")
+		return "", 0, errors.New("wrapInsertSliceSQL对象数组不能为空")
 	}
 
 	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
