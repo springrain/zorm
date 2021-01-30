@@ -990,12 +990,23 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, err
 	}
 
+	//处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertId *int64
+	var sqlOutReturningId *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
-	if autoIncrement && (dbType == "postgresql" || dbType == "oracle" || dbType == "kingbase") && entity.GetPKColumnName() != "" {
-		var p int64 = 0
-		lastInsertId = &p
-		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+	if autoIncrement && entity.GetPKColumnName() != "" {
+		if dbType == "postgresql" || dbType == "kingbase" {
+			var p int64 = 0
+			lastInsertId = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+		} else if dbType == "oracle" || dbType == "shentong" {
+			var p int64 = 0
+			sqlOutReturningId = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
+			v := sql.Out{Dest: sqlOutReturningId}
+			values = append(values, v)
+		}
+
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1009,6 +1020,10 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//如果是自增主键
 	//If it is an auto-incrementing primary key
 	if autoIncrement {
+		//如果是oracle,shentong 的返回自增主键
+		if lastInsertId == nil && sqlOutReturningId != nil {
+			lastInsertId = sqlOutReturningId
+		}
 
 		var autoIncrementIDInt64 int64
 		var e error
@@ -1229,12 +1244,24 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		FuncLogError(err)
 		return affected, err
 	}
+
+	//处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertId *int64
+	var sqlOutReturningId *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
-	if autoIncrement && (dbType == "postgresql" || dbType == "oracle" || dbType == "kingbase") && entity.GetPKColumnName() != "" {
-		var p int64 = 0
-		lastInsertId = &p
-		sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+	if autoIncrement && entity.GetPKColumnName() != "" {
+		if dbType == "postgresql" || dbType == "kingbase" {
+			var p int64 = 0
+			lastInsertId = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+		} else if dbType == "oracle" || dbType == "shentong" {
+			var p int64 = 0
+			sqlOutReturningId = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
+			v := sql.Out{Dest: sqlOutReturningId}
+			values = append(values, v)
+		}
+
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1247,6 +1274,11 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 	//如果是自增主键
 	if autoIncrement {
+		//如果是oracle,shentong 的返回自增主键
+		if lastInsertId == nil && sqlOutReturningId != nil {
+			lastInsertId = sqlOutReturningId
+		}
+
 		var autoIncrementIDInt64 int64
 		var e error
 		if lastInsertId != nil {
