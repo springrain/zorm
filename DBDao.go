@@ -333,7 +333,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 		//循环遍历结果集
 		for i := 0; rows.Next(); i++ {
 			if i > 0 {
-				return errors.New("Query查询出多条数据")
+				return errors.New("QueryRow查询出多条数据")
 			}
 			var scanerr error
 			//判断是否有自定义扩展,避免无意义的反射
@@ -514,7 +514,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	//数据库返回的字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
-		cte = fmt.Errorf("QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
+		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
 		FuncLogError(cte)
 		return cte
 	}
@@ -838,7 +838,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
 			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+				errConverDriverValue = fmt.Errorf("QueryMap-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
 				return nil, errConverDriverValue
 			}
