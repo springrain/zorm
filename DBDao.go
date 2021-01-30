@@ -228,7 +228,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return nil, nil
 }
 
-// QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个selice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
+// QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个slice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
 // 根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 // context必须传入,不能为空
 // 如果数据库是null,基本类型不支持,会返回异常,不做默认值处理,Query因为是列表,会设置为默认值
@@ -268,7 +268,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	//Get the sql statement
 	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
 	if err != nil {
-		err = fmt.Errorf("QueryRow-->wrapQueryRowSQL获取查询SQL语句错误:%w", err)
+		err = fmt.Errorf("QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return err
 	}
@@ -489,7 +489,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
-		err = fmt.Errorf("Query-->wrapQueryRowSQL获取查询SQL语句错误:%w", err)
+		err = fmt.Errorf("Query-->wrapQuerySQL获取查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return err
 	}
@@ -727,7 +727,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
-		err = fmt.Errorf("QueryMap -->wrapQueryRowSQL查询SQL语句错误:%w", err)
+		err = fmt.Errorf("QueryMap -->wrapQuerySQL查询SQL语句错误:%w", err)
 		FuncLogError(err)
 		return nil, err
 	}
