@@ -990,6 +990,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, err
 	}
 
+	//oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	//处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertId *int64
 	var sqlOutReturningId *int64
