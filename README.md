@@ -33,6 +33,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 南大通用(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:gbase~~  
+注意修改 /opt/ShenTong/admin/实例名.conf中 ```ora_input_emptystr_isnull = false```
 
 
 ## 测试用例  
