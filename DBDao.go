@@ -993,7 +993,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	//处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertId *int64
-	var sqlOutReturningId *int64
+	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
 		if dbType == "postgresql" || dbType == "kingbase" {
@@ -1002,9 +1002,9 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
 		} else if dbType == "oracle" || dbType == "shentong" {
 			var p int64 = 0
-			sqlOutReturningId = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
+			zormSQLOutReturningID = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
+			v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
 			values = append(values, v)
 		}
 
@@ -1022,8 +1022,8 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//If it is an auto-incrementing primary key
 	if autoIncrement > 0 {
 		//如果是oracle,shentong 的返回自增主键
-		if lastInsertId == nil && sqlOutReturningId != nil {
-			lastInsertId = sqlOutReturningId
+		if lastInsertId == nil && zormSQLOutReturningID != nil {
+			lastInsertId = zormSQLOutReturningID
 		}
 
 		var autoIncrementIDInt64 int64
@@ -1248,7 +1248,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 	//处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertId *int64
-	var sqlOutReturningId *int64
+	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
 		if dbType == "postgresql" || dbType == "kingbase" {
@@ -1257,9 +1257,9 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
 		} else if dbType == "oracle" || dbType == "shentong" {
 			var p int64 = 0
-			sqlOutReturningId = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
+			zormSQLOutReturningID = &p
+			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
+			v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
 			values = append(values, v)
 		}
 
@@ -1276,8 +1276,8 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	//如果是自增主键
 	if autoIncrement {
 		//如果是oracle,shentong 的返回自增主键
-		if lastInsertId == nil && sqlOutReturningId != nil {
-			lastInsertId = sqlOutReturningId
+		if lastInsertId == nil && zormSQLOutReturningID != nil {
+			lastInsertId = zormSQLOutReturningID
 		}
 
 		var autoIncrementIDInt64 int64
