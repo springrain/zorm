@@ -29,7 +29,8 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神州通用(shentong)  
-建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
+建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong 
+问题1:神通使用AUTO_INCREMENT自增时,goang驱动LastInsertId()方法,不能获取正确值.使用序列zorm可以正常获取新增的ID.   
 
 ### 南大通用(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
