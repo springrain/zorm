@@ -232,7 +232,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 // 根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 // context必须传入,不能为空
 // 如果数据库是null,基本类型不支持,会返回异常,不做默认值处理,Query因为是列表,会设置为默认值
-// QueryRow Don't be lazy to call QueryRow Slice to return the first one
+// QueryRow Don't be lazy to call Query to return the first one
 // Question 1. A selice needs to be constructed, and question 2. Other values ​​of the object passed by the caller will be discarded or overwritten
 // context must be passed in and cannot be empty
 func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
@@ -427,10 +427,10 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	return nil
 }
 
-// Query 不要偷懒调用QueryMapList,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
+// Query 不要偷懒调用QueryMap,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 // 根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
 // context必须传入,不能为空
-// Query:Don't be lazy to call Query Map List, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome.
+// Query:Don't be lazy to call QueryMap, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome.
 // According to the Finder and encapsulation for the specified entity type, the entity must be of the *[]struct type, which has been initialized,This method only Append elements, so the caller does not need to force type conversion
 // context must be passed in and cannot be empty
 func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
