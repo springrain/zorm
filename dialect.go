@@ -85,7 +85,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 	var sequenceOK bool
 	if entity.GetPkSequence() != nil {
 		sequence, sequenceOK = entity.GetPkSequence()[dbType]
-		if sequenceOK { //自增
+		if sequenceOK { //存在序列
 			if sequence == "" { //触发器自增
 				autoIncrement = 3
 			} else { //序列自增
