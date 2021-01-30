@@ -1003,7 +1003,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 			var p int64 = 0
 			sqlOutReturningId = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			v := sql.Out{Dest: sqlOutReturningId}
+			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
 			values = append(values, v)
 		}
 
@@ -1258,7 +1258,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 			var p int64 = 0
 			sqlOutReturningId = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :sqlOutReturningId "
-			v := sql.Out{Dest: sqlOutReturningId}
+			v := sql.Named("sqlOutReturningId", sql.Out{Dest: sqlOutReturningId})
 			values = append(values, v)
 		}
 
