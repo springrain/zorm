@@ -277,8 +277,8 @@ func TestInsertEntityMap(t *testing.T) {
 	}
 }
 
-//TestQuery 05.测试查询一个struct对象
-func TestQuery(t *testing.T) {
+//TestQueryRow 05.测试查询一个struct对象
+func TestQueryRow(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
 	demo := &demoStruct{}
