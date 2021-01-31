@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,支持达梦(dm),人大金仓(kingbase),mysql,postgresql,oracle,mssql,sqlite数据库.  
+go(golang)轻量级ORM,支持达梦(dm),金仓(kingbase),神通(shentong),mysql,postgresql,oracle,mssql,sqlite数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -10,18 +10,32 @@ go get gitee.com/chunanyong/zorm
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(人大金仓)
+* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通)
 * 支持数据库读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## 支持国产数据库  
+### 达梦(dm)  
+配置zorm.DataSourceConfig的 DriverName:dm ,DBType:dm  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.CustomDriverValueConver接口,自定义扩展处理  
 
-人大金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
-人大金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+### 人大金仓(kingbase)  
+配置zorm.DataSourceConfig的 DriverName:kingbase ,DBType:kingbase    
+金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
+金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
+
+### 神州通用(shentong)  
+建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
+问题1:神通使用AUTO_INCREMENT自增或者触发器自增,goang驱动LastInsertId()方法不能获取正确值.使用序列zorm可以正常获取新增的ID.   
+
+### 南大通用(gbase)
+~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
+
+
 
 ## 测试用例  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
@@ -163,9 +177,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
@@ -264,8 +278,8 @@ func TestInsertEntityMap(t *testing.T) {
 	}
 }
 
-//TestQuery 05.测试查询一个struct对象
-func TestQuery(t *testing.T) {
+//TestQueryRow 05.测试查询一个struct对象
+func TestQueryRow(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
 	demo := &demoStruct{}
@@ -279,7 +293,7 @@ func TestQuery(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//执行查询
-	err := zorm.Query(ctx, finder, demo)
+	err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -288,15 +302,15 @@ func TestQuery(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestQueryMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
-func TestQueryMap(t *testing.T) {
+//TestQueryRowMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
+func TestQueryRowMap(t *testing.T) {
 
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 	//执行查询
-	resultMap, err := zorm.QueryMap(ctx, finder)
+	resultMap, err := zorm.QueryRowMap(ctx, finder)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -305,8 +319,8 @@ func TestQueryMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuerySlice 07.测试查询对象列表
-func TestQuerySlice(t *testing.T) {
+//TestQuery 07.测试查询对象列表
+func TestQuery(t *testing.T) {
 	//创建用于接收结果的slice
 	list := make([]*demoStruct, 0)
 
@@ -318,7 +332,7 @@ func TestQuerySlice(t *testing.T) {
 	page.PageSize = 20 //每页20条,默认是20
 
 	//执行查询
-	err := zorm.QuerySlice(ctx, finder, &list, page)
+	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
@@ -326,16 +340,16 @@ func TestQuerySlice(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
 }
 
-//TestQueryMapSlice 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
-func TestQueryMapSlice(t *testing.T) {
+//TestQueryMap 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+func TestQueryMap(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	
+
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
 	//执行查询
-	listMap, err := zorm.QueryMapSlice(ctx, finder, page)
+	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
@@ -449,12 +463,11 @@ func TestDelete(t *testing.T) {
 
 }
 
-
 //TestProc 14.测试调用存储过程
 func TestProc(t *testing.T) {
 	demo := &demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.Query(ctx, finder, demo)
+	zorm.QueryRow(ctx, finder, demo)
 	fmt.Println(demo)
 }
 
@@ -462,10 +475,9 @@ func TestProc(t *testing.T) {
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
-	zorm.Query(ctx, finder, &userName)
+	zorm.QueryRow(ctx, finder, &userName)
 	fmt.Println(userName)
 }
-
 
 //TestOther 16.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
@@ -478,7 +490,7 @@ func TestOther(t *testing.T) {
 
 	finder := zorm.NewSelectFinder(demoStructTableName)
 	//把新产生的newCtx传递到zorm的函数
-	list, _ := zorm.QueryMapSlice(newCtx, finder, nil)
+	list, _ := zorm.QueryMap(newCtx, finder, nil)
 	fmt.Println(list)
 
 	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
@@ -493,7 +505,6 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
 }
-
 
 //---------------------------------//
 
