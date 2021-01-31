@@ -344,7 +344,7 @@ func TestQuery(t *testing.T) {
 func TestQueryMap(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	
+
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
@@ -463,12 +463,11 @@ func TestDelete(t *testing.T) {
 
 }
 
-
 //TestProc 14.测试调用存储过程
 func TestProc(t *testing.T) {
 	demo := &demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.Query(ctx, finder, demo)
+	zorm.QueryRow(ctx, finder, demo)
 	fmt.Println(demo)
 }
 
@@ -476,10 +475,9 @@ func TestProc(t *testing.T) {
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
-	zorm.Query(ctx, finder, &userName)
+	zorm.QueryRow(ctx, finder, &userName)
 	fmt.Println(userName)
 }
-
 
 //TestOther 16.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
@@ -492,7 +490,7 @@ func TestOther(t *testing.T) {
 
 	finder := zorm.NewSelectFinder(demoStructTableName)
 	//把新产生的newCtx传递到zorm的函数
-	list, _ := zorm.QueryRowMap(newCtx, finder, nil)
+	list, _ := zorm.QueryMap(newCtx, finder, nil)
 	fmt.Println(list)
 
 	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
@@ -507,7 +505,6 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
 }
-
 
 //---------------------------------//
 
