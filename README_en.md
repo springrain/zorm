@@ -476,7 +476,7 @@ func TestDelete(t *testing.T) {
 func TestProc(t *testing.T) {
 	demo := &demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.Query(ctx, finder, demo)
+	zorm.QueryRow(ctx, finder, demo)
 	fmt.Println(demo)
 }
 
@@ -484,7 +484,7 @@ func TestProc(t *testing.T) {
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
-	zorm.Query(ctx, finder, &userName)
+	zorm.QueryRow(ctx, finder, &userName)
 	fmt.Println(userName)
 }
 
