@@ -10,7 +10,7 @@ go get gitee.com/chunanyong/zorm
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓)
+* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通)
 * 支持数据库读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
