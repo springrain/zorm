@@ -100,17 +100,8 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 		field := (*columns)[i]
 
 		if field.Name == pkFieldName { //如果是主键
-
-			if autoIncrement == 3 { //如果是后台触发器生成的主键值,sql语句中不再体现
-				//去掉这一列,后续不再处理
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				continue
-			}
-
+			//获取主键类型
 			pkKind := field.Type.Kind()
-
 			if pkKind == reflect.String {
 				pktype = "string"
 			} else if pkKind == reflect.Int || pkKind == reflect.Int32 || pkKind == reflect.Int16 || pkKind == reflect.Int8 {
@@ -119,6 +110,14 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 				pktype = "int64"
 			} else {
 				return "", autoIncrement, pktype, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
+			}
+
+			if autoIncrement == 3 { //如果是后台触发器生成的主键值,sql语句中不再体现
+				//去掉这一列,后续不再处理
+				*columns = append((*columns)[:i], (*columns)[i+1:]...)
+				*values = append((*values)[:i], (*values)[i+1:]...)
+				i = i - 1
+				continue
 			}
 
 			//主键的值
