@@ -30,7 +30,6 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 神州通用(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
-~~问题1:神通使用AUTO_INCREMENT自增或者触发器自增,goang驱动LastInsertId()方法不能获取正确值.使用序列zorm可以正常获取新增的ID.~~ (新版本已经能正常获取)
 
 ### 南大通用(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
