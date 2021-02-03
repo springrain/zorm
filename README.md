@@ -166,7 +166,7 @@ func init() {
 	//dbDaoConfig: Database configuration
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN: Database connection string
-		// DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
+		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3, 
         // dm, kingbase and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
