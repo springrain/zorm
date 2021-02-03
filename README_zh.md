@@ -11,7 +11,7 @@ go get gitee.com/chunanyong/zorm
 * 代码精简,总计2000行左右,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通)
-* 支持数据库读写分离
+* 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
@@ -30,10 +30,10 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 神州通用(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
-问题1:神通使用AUTO_INCREMENT自增或者触发器自增,goang驱动LastInsertId()方法不能获取正确值.使用序列zorm可以正常获取新增的ID.   
 
 ### 南大通用(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
+可以先使用odbc进行驱动链接,DriverName:odbc ,DBType:gbase
 
 
 
