@@ -189,6 +189,10 @@ func init() {
 		ConnMaxLifetimeSecond: 600,
 		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
 		PrintSQL: true,
+
+		//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
+		//db, mock, err := sqlmock.New()
+		//MockSQLDB: db,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao

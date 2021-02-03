@@ -39,18 +39,27 @@ type DataSourceConfig struct {
 	//ConnMaxLifetimeSecond: (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
 	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
 	ConnMaxLifetimeSecond int
+
+	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
+	//db, mock, err := sqlmock.New()
+	MockSQLDB *sql.DB
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
-	db, err := sql.Open(config.DriverName, config.DSN)
-	if err != nil {
-		err = fmt.Errorf("newDataSource-->open数据库打开失败:%w", err)
-		FuncLogError(err)
-		return nil, err
+	var db *sql.DB
+	var errSQLOpen error
+	if config.MockSQLDB == nil {
+		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
+		if errSQLOpen != nil {
+			errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
+			FuncLogError(errSQLOpen)
+			return nil, errSQLOpen
+		}
+	} else {
+		db = config.MockSQLDB
 	}
-
 	maxOpenConns := config.MaxOpenConns
 	maxIdleConns := config.MaxIdleConns
 	connMaxLifetimeSecond := config.ConnMaxLifetimeSecond
