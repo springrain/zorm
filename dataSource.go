@@ -42,7 +42,7 @@ type DataSourceConfig struct {
 
 	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
 	//db, mock, err := sqlmock.New()
-	MockSQLDB *sql.DB
+	//MockSQLDB *sql.DB
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
@@ -50,16 +50,16 @@ type DataSourceConfig struct {
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	var db *sql.DB
 	var errSQLOpen error
-	if config.MockSQLDB == nil {
-		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
-		if errSQLOpen != nil {
-			errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
-			FuncLogError(errSQLOpen)
-			return nil, errSQLOpen
-		}
-	} else {
-		db = config.MockSQLDB
+	//if config.MockSQLDB == nil {
+	db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
+	if errSQLOpen != nil {
+		errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
+		FuncLogError(errSQLOpen)
+		return nil, errSQLOpen
 	}
+	//} else {
+	//	db = config.MockSQLDB
+	//}
 	maxOpenConns := config.MaxOpenConns
 	maxIdleConns := config.MaxIdleConns
 	connMaxLifetimeSecond := config.ConnMaxLifetimeSecond

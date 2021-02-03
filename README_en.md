@@ -182,10 +182,6 @@ func init() {
 		ConnMaxLifetimeSecond: 600,
 		//PrintSQL: Print SQL. Func Print SQL will be used to record SQL
 		PrintSQL: true,
-		
-		//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
-		//db, mock, err := sqlmock.New()
-		//MockSQLDB: db,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
