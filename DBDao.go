@@ -120,7 +120,7 @@ func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Con
 	return ctx, nil
 }
 
-// BindContextTransactionIsolationLevel 设置事务的隔离级别,值参考sql.IsolationLevel,如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别.parent不能为空
+// BindContextTransactionIsolationLevel 绑定事务的隔离级别,值参考sql.IsolationLevel,如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别.parent不能为空
 //需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
 func (dbDao *DBDao) BindContextTransactionIsolationLevel(parent context.Context, isolationLevel sql.IsolationLevel) (context.Context, error) {
 	if parent == nil {
