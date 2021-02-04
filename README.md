@@ -33,7 +33,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 南大通用(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
-可以先使用odbc驱动,DriverName:odbc ,DBType:gbase
+暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
 
 
