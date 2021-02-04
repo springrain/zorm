@@ -7,7 +7,7 @@ type IEntityStruct interface {
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
 	//GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]"",有bug,数据库无法返回自增的ID
+	//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 	GetPkSequence() map[string]string
 }
 
@@ -18,7 +18,7 @@ type IEntityMap interface {
 	//获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
 	GetPKColumnName() string
 	//GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]"",有bug,数据库无法返回自增的ID
+	//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 	GetPkSequence() map[string]string
 	//针对Map类型,记录数据库字段
 	GetDBFieldMap() map[string]interface{}
@@ -48,7 +48,7 @@ func (entity *EntityStruct) GetPKColumnName() string {
 //var defaultPkSequence = make(map[string]string, 0)
 
 //GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]"",有bug,数据库无法返回自增的ID
+//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 func (entity *EntityStruct) GetPkSequence() map[string]string {
 	return nil
 }
@@ -87,7 +87,7 @@ func (entity *EntityMap) GetPKColumnName() string {
 }
 
 //GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]"",有bug,数据库无法返回自增的ID
+//如果key对应的value是 "",则代表是触发器触发的序列,例如 ["oracle"]""
 func (entity *EntityMap) GetPkSequence() map[string]string {
 	return entity.PkSequence
 }
