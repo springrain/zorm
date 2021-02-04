@@ -189,6 +189,8 @@ func init() {
 		ConnMaxLifetimeSecond: 600,
 		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
 		PrintSQL: true,
+		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+	    DefaultTxOptions:nil
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
@@ -199,7 +201,7 @@ func init() {
 func TestInsert(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个demo对象
 		demo := newDemoStruct()
@@ -221,7 +223,7 @@ func TestInsert(t *testing.T) {
 func TestInsertSlice(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
@@ -252,7 +254,7 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -364,7 +366,7 @@ func TestQueryMap(t *testing.T) {
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
@@ -387,7 +389,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//声明一个对象的指针,用于更新数据
@@ -408,7 +410,7 @@ func TestUpdate(t *testing.T) {
 //TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
@@ -430,7 +432,7 @@ func TestUpdateFinder(t *testing.T) {
 //TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -454,7 +456,7 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTransactionIsolationLevel(ctx, sql.LevelDefault),如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别
+	//可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用默认的事务隔离级别
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"

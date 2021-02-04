@@ -12,6 +12,7 @@ import (
 // dataSorce  Isolate sql native objects
 type dataSource struct {
 	*sql.DB
+	//config *DataSourceConfig
 }
 
 // DataSourceConfig 数据库连接池的配置
@@ -40,9 +41,13 @@ type DataSourceConfig struct {
 	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
 	ConnMaxLifetimeSecond int
 
+	//事务隔离级别的默认配置,默认为nil
+	DefaultTxOptions *sql.TxOptions
+
 	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
 	//db, mock, err := sqlmock.New()
 	//MockSQLDB *sql.DB
+
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
@@ -113,16 +118,8 @@ type dataBaseConnection struct {
 	// 原生事务
 	// native Transaction
 	tx *sql.Tx
-	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase 和DBType对应,处理数据库有多个驱动
-	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,kingbase corresponds to DBType,A database may have multiple drivers
-	driverName string
-	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
-	//Database Type:mysql,postgresql,oracle,mssql,sqlite,dm,kingbase corresponds to DriverName,A database may have multiple drivers
-	dbType string
-
-	//是否打印sql
-	//Whether to print SQL, use zorm.PrintSQL record sql
-	printSQL bool
+	// 数据库配置
+	config *DataSourceConfig
 
 	//commitSign   int8    // 提交标记,控制是否提交事务
 	//rollbackSign bool    // 回滚标记,控制是否回滚事务
@@ -136,12 +133,11 @@ func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 
 		//设置事务配置,主要是隔离级别
 		var txOptions *sql.TxOptions
-		isolationLevel := ctx.Value(contextTransactionIsolationLevelKey)
-		if isolationLevel != nil {
-			isolationLevelValue, ok := isolationLevel.(sql.IsolationLevel)
-			if ok && isolationLevelValue >= 0 {
-				txOptions = &sql.TxOptions{Isolation: isolationLevelValue}
-			}
+		contextTxOptions := ctx.Value(contextTxOptionsKey)
+		if contextTxOptions != nil {
+			txOptions, _ = contextTxOptions.(*sql.TxOptions)
+		} else {
+			txOptions = dbConnection.config.DefaultTxOptions
 		}
 
 		tx, err := dbConnection.db.BeginTx(ctx, txOptions)
@@ -199,7 +195,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 
 	//打印SQL
 	//print SQL
-	if dbConnection.printSQL {
+	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
 		FuncPrintSQL(*execsql, args)
 	}
@@ -215,7 +211,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) *sql.Row {
 	//打印SQL
-	if dbConnection.printSQL {
+	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(*query, args)
 	}
@@ -230,7 +226,7 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
 	//打印SQL
-	if dbConnection.printSQL {
+	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(*query, args)
 	}
@@ -246,7 +242,7 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query *string) (*sql.Stmt, error) {
 	//打印SQL
 	//print SQL
-	if dbConnection.printSQL {
+	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", query))
 		FuncPrintSQL(*query, nil)
 	}

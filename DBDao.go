@@ -32,8 +32,8 @@ type wrapContextStringKey string
 // The key of context WithValue cannot be a basic type, such as a string, wrap it
 const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
 
-//事务隔离级别的key,用于设置sql.IsolationLevel
-const contextTransactionIsolationLevelKey = wrapContextStringKey("contextTransactionIsolationLevelKey")
+//事务选项设置TxOptions,主要是设置事务的隔离级别
+const contextTxOptionsKey = wrapContextStringKey("contextTxOptionsKey")
 
 // NewContextDBConnectionValueKey 创建context中存放DBConnection的key
 // 故意使用一个公开方法,返回私有类型wrapContextStringKey,多库时禁止自定义contextKey,只能调用这个方法,不能接收也不能改变
@@ -100,9 +100,7 @@ func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = dbDao.dataSource.DB
-	dbConnection.dbType = dbDao.config.DBType
-	dbConnection.driverName = dbDao.config.DriverName
-	dbConnection.printSQL = dbDao.config.PrintSQL
+	dbConnection.config = dbDao.config
 	return dbConnection, nil
 }
 
@@ -120,14 +118,14 @@ func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Con
 	return ctx, nil
 }
 
-// BindContextTransactionIsolationLevel 绑定事务的隔离级别,值参考sql.IsolationLevel,如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别.parent不能为空
+// BindContextTxOptions 绑定事务的隔离级别,参考sql.IsolationLevel,如果txOptions为nil,使用默认的事务隔离级别.parent不能为空
 //需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
-func (dbDao *DBDao) BindContextTransactionIsolationLevel(parent context.Context, isolationLevel sql.IsolationLevel) (context.Context, error) {
+func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.TxOptions) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("SetContextTransactionIsolationLevel context的parent不能为nil")
+		return nil, errors.New("BindContextTxOptions context的parent不能为nil")
 	}
 
-	ctx := context.WithValue(parent, contextTransactionIsolationLevelKey, isolationLevel)
+	ctx := context.WithValue(parent, contextTxOptionsKey, txOptions)
 	return ctx, nil
 }
 
@@ -151,7 +149,7 @@ Transaction 的示例代码
 // 在多库的场景,手动获取dbConnection,然后绑定到一个新的context,传入进来
 // 不要去掉匿名函数的context参数,因为如果Transaction的context中没有dbConnection,会新建一个context并放入dbConnection,此时的context指针已经变化,不能直接使用Transaction的context参数
 // bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
-// 在事务开始前,可以通过zorm.SetContextTransactionIsolationLevel方法设置事务的隔离级别
+// 在事务开始前,可以通过zorm.BindContextTxOptions方法设置事务的隔离级别
 // return的error如果不为nil,事务就会回滚
 // Transaction method, isolate db Connection related API. This method must be used for transaction processing and unified transaction mode
 // If there is no db Connection in the input ctx, use default Dao to start the transaction and submit it finally
@@ -276,7 +274,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//获取到sql语句
@@ -499,7 +497,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
@@ -737,7 +735,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(0).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
@@ -936,7 +934,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	sqlstr, err = reBindSQL(dbType, sqlstr)
@@ -993,7 +991,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//SQL语句
@@ -1120,7 +1118,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//SQL语句
@@ -1201,7 +1199,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//SQL语句
@@ -1250,7 +1248,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//SQL语句
@@ -1352,7 +1350,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	//SQL语句
@@ -1403,7 +1401,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	if dbConnection == nil {
 		dbType = FuncReadWriteStrategy(1).config.DBType
 	} else {
-		dbType = dbConnection.dbType
+		dbType = dbConnection.config.DBType
 	}
 
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
