@@ -190,7 +190,8 @@ func init() {
 		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
 		PrintSQL: true,
 		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
-	    DefaultTxOptions:nil
+		//DefaultTxOptions: nil,
+		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
