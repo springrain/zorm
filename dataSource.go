@@ -133,7 +133,18 @@ type dataBaseConnection struct {
 func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 	//s.rollbackSign = true
 	if dbConnection.tx == nil {
-		tx, err := dbConnection.db.BeginTx(ctx, nil)
+
+		//设置事务配置,主要是隔离级别
+		var txOptions *sql.TxOptions
+		isolationLevel := ctx.Value(contextTransactionIsolationLevelKey)
+		if isolationLevel != nil {
+			isolationLevelValue, ok := isolationLevel.(sql.IsolationLevel)
+			if ok && isolationLevelValue >= 0 {
+				txOptions = &sql.TxOptions{Isolation: isolationLevelValue}
+			}
+		}
+
+		tx, err := dbConnection.db.BeginTx(ctx, txOptions)
 		if err != nil {
 			err = fmt.Errorf("beginTx事务开启失败:%w", err)
 			//ZormErrorLog(err)

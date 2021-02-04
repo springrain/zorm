@@ -32,6 +32,9 @@ type wrapContextStringKey string
 // The key of context WithValue cannot be a basic type, such as a string, wrap it
 const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
 
+//事务隔离级别的key,用于设置sql.IsolationLevel
+const contextTransactionIsolationLevelKey = wrapContextStringKey("contextTransactionIsolationLevelKey")
+
 // NewContextDBConnectionValueKey 创建context中存放DBConnection的key
 // 故意使用一个公开方法,返回私有类型wrapContextStringKey,多库时禁止自定义contextKey,只能调用这个方法,不能接收也不能改变
 // 例如:ctx = context.WithValue(ctx, zorm.NewContextDBConnectionValueKey(), dbConnection)
@@ -117,6 +120,17 @@ func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Con
 	return ctx, nil
 }
 
+// SetContextTransactionIsolationLevel 设置事务的隔离级别,值参考sql.IsolationLevel,如果isolationLevel为nil或者值小于0,使用默认的事务隔离级别.parent不能为空
+//需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
+func (dbDao *DBDao) SetContextTransactionIsolationLevel(parent context.Context, isolationLevel sql.IsolationLevel) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("SetContextTransactionIsolationLevel context的parent不能为nil")
+	}
+
+	ctx := context.WithValue(parent, contextTransactionIsolationLevelKey, isolationLevel)
+	return ctx, nil
+}
+
 /*
 Transaction 的示例代码
   //匿名函数return的error如果不为nil,事务就会回滚
@@ -137,6 +151,7 @@ Transaction 的示例代码
 // 在多库的场景,手动获取dbConnection,然后绑定到一个新的context,传入进来
 // 不要去掉匿名函数的context参数,因为如果Transaction的context中没有dbConnection,会新建一个context并放入dbConnection,此时的context指针已经变化,不能直接使用Transaction的context参数
 // bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
+// 在事务开始前,可以通过zorm.SetContextTransactionIsolationLevel方法设置事务的隔离级别
 // return的error如果不为nil,事务就会回滚
 // Transaction method, isolate db Connection related API. This method must be used for transaction processing and unified transaction mode
 // If there is no db Connection in the input ctx, use default Dao to start the transaction and submit it finally
