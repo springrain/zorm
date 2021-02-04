@@ -107,9 +107,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 // const beginStatus = 1
 
 // dataBaseConnection 数据库dbConnection会话,可以原生查询或者事务
-// 方法都应包含 dbConnection dataBaseConnection这样的入参,context必须传入,不能为空
 // dataBaseConnection Database session, native query or transaction.
-// The method should contain input parameters such as dbConnection dataBaseConnection,and the "context" must be passed in and cannot be empty.
 type dataBaseConnection struct {
 
 	// 原生db
