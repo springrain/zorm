@@ -15,7 +15,7 @@ go get gitee.com/chunanyong/zorm
 * Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
 * Support database read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
-zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
+zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## Support domestic database  
 DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
@@ -91,9 +91,9 @@ type demoStruct struct {
 	//Active int `column:"active"`
 
 	//------------------The end of the database field, the custom field is written below---------------//
-	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
+	//If the query field is not found in the column tag, it will be mapped to the struct attribute based on the name (case insensitive)
 
-	//模拟自定义的字段Active
+	//Custom field Active
     Active int
 
 }
@@ -186,7 +186,7 @@ func init() {
 		ConnMaxLifetimeSecond: 600,
 		//PrintSQL: Print SQL. Func Print SQL will be used to record SQL
 		PrintSQL: true,
-		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
 	}
@@ -201,7 +201,7 @@ func TestInsert(t *testing.T) {
 
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//Create a demo object
 		demo := newDemoStruct()
@@ -225,7 +225,7 @@ func TestInsertSlice(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
@@ -257,7 +257,7 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	// You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -396,7 +396,7 @@ func TestUpdate(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//Declare a pointer to an object to update data.
@@ -419,7 +419,7 @@ func TestUpdate(t *testing.T) {
 // or even manually write insert statement
 func TestUpdateFinder(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
@@ -442,7 +442,7 @@ func TestUpdateFinder(t *testing.T) {
 func TestUpdateEntityMap(t *testing.T) {
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -467,7 +467,7 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.To delete a struct object, the primary key must have a value.
 func TestDelete(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
