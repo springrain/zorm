@@ -60,8 +60,8 @@ CREATE TABLE `t_demo`  (
   `id` varchar(50)  NOT NULL COMMENT 'Primary key',
   `userName` varchar(30)  NOT NULL COMMENT 'Name',
   `password` varchar(50)  NOT NULL COMMENT 'password',
-  `createTime` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-  `active` int(0) NOT NULL DEFAULT 1 COMMENT 'Is it valid (0 no, 1 yes)',
+  `createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `active` int  COMMENT 'Is it valid (0 no, 1 yes)',
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = 'example' ;
 
@@ -88,9 +88,13 @@ type demoStruct struct {
 	CreateTime time.Time `column:"createTime"`
 
 	//Active: Is it valid (0 no, 1 yes)
-	Active int `column:"active"`
+	//Active int `column:"active"`
 
 	//------------------The end of the database field, the custom field is written below---------------//
+	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
+
+	//模拟自定义的字段Active
+    Active int
 
 }
 
@@ -182,6 +186,9 @@ func init() {
 		ConnMaxLifetimeSecond: 600,
 		//PrintSQL: Print SQL. Func Print SQL will be used to record SQL
 		PrintSQL: true,
+		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+		//DefaultTxOptions: nil,
+		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
@@ -194,6 +201,7 @@ func TestInsert(t *testing.T) {
 
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//Create a demo object
 		demo := newDemoStruct()
@@ -217,6 +225,7 @@ func TestInsertSlice(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
@@ -248,6 +257,7 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	// You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -386,6 +396,7 @@ func TestUpdate(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//Declare a pointer to an object to update data.
@@ -408,6 +419,7 @@ func TestUpdate(t *testing.T) {
 // or even manually write insert statement
 func TestUpdateFinder(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
@@ -430,6 +442,7 @@ func TestUpdateFinder(t *testing.T) {
 func TestUpdateEntityMap(t *testing.T) {
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -454,6 +467,7 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.To delete a struct object, the primary key must have a value.
 func TestDelete(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
