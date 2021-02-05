@@ -72,8 +72,8 @@ CREATE TABLE `t_demo`  (
   `id` varchar(50)  NOT NULL COMMENT '主键',
   `userName` varchar(30)  NOT NULL COMMENT '姓名',
   `password` varchar(50)  NOT NULL COMMENT '密码',
-  `createTime` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-  `active` int(0) NOT NULL DEFAULT 1 COMMENT '是否有效(0否,1是)',
+  `createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `active` int  COMMENT '是否有效(0否,1是)',
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = '例子' ;
 
@@ -100,9 +100,13 @@ type demoStruct struct {
 	CreateTime time.Time `column:"createTime"`
 
 	//Active 是否有效(0否,1是)
-	Active int `column:"active"`
+	//Active int `column:"active"`
 
 	//------------------数据库字段结束,自定义字段写在下面---------------//
+
+	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
+    Active int
+
 
 }
 
