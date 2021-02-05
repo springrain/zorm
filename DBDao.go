@@ -408,7 +408,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	valueOf := reflect.ValueOf(entity).Elem()
 	//获取到类型的字段缓存
 	//Get the type field cache
-	dbColumnFieldMap, dbe := getDBColumnFieldMap(typeOf)
+	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(typeOf)
 	if dbe != nil {
 		dbe = fmt.Errorf("QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
@@ -428,7 +428,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 		}
 
 		//接收对象设置值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, valueOf)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -627,7 +627,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 	//获取到类型的字段缓存
 	//Get the type field cache
-	dbColumnFieldMap, dbe := getDBColumnFieldMap(sliceElementType)
+	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(sliceElementType)
 	if dbe != nil {
 		dbe = fmt.Errorf("Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
@@ -643,7 +643,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		//设置接收值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, pv)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)

@@ -70,8 +70,11 @@ func structFieldInfo(typeOf reflect.Type) error {
 	entityName := typeOf.String()
 
 	//缓存的key
+	//所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
 	exportCacheKey := exportPrefix + entityName
+	//所有私有变量的属性,key是struct属性的名称,不区分大小写
 	privateCacheKey := privatePrefix + entityName
+	//所有数据库的属性,key是数据库的字段名称,不区分大小写
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
 	//structFieldTagCacheKey := structFieldTagPrefix + entityName
 	//dbPKNameCacheKey := dbPKNamePrefix + entityName
@@ -119,8 +122,8 @@ func structFieldInfo(typeOf reflect.Type) error {
 		// fmt.Println(k, ":", v)
 		field := v.(reflect.StructField)
 		fieldName := field.Name
-		if ast.IsExported(fieldName) { //如果是可以输出的
-			exportStructFieldMap[fieldName] = field
+		if ast.IsExported(fieldName) { //如果是可以输出的,不区分大小写
+			exportStructFieldMap[strings.ToLower(fieldName)] = field
 			//如果是数据库字段
 			tagColumnValue := field.Tag.Get(tagColumnName)
 			if len(tagColumnValue) > 0 {
@@ -131,7 +134,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 			}
 
 		} else { //私有属性
-			privateStructFieldMap[fieldName] = field
+			privateStructFieldMap[strings.ToLower(fieldName)] = field
 		}
 
 		return true
@@ -258,19 +261,37 @@ func deepCopy(dst, src interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func getDBColumnFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, error) {
-	entityName := typeOf.String()
+//getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
+func getDBColumnExportFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
+	dbColumnFieldMap, err := getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
+	if err != nil {
+		return nil, nil, err
+	}
+	exportFieldMap, err := getCacheStructFieldInfoMap(typeOf, exportPrefix)
+	return dbColumnFieldMap, exportFieldMap, err
+}
 
-	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
-	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[dbColumnNamePrefix+entityName]
+//getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
+func getDBColumnFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, error) {
+	return getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
+}
+
+//getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
+func getCacheStructFieldInfoMap(typeOf reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
+	if typeOf == nil {
+		return nil, errors.New("getCacheStructFieldInfoMap-->typeOf不能为空")
+	}
+	key := keyPrefix + typeOf.String()
+	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
+	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
 	if !dbOk { //缓存不存在
 		//获取实体类的输出字段和私有 字段
 		err := structFieldInfo(typeOf)
 		if err != nil {
 			return nil, err
 		}
-		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(dbColumnNamePrefix + entityName)
-		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[dbColumnNamePrefix+entityName]
+		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
+		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 	}
 
 	/*
@@ -399,7 +420,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
-func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columnTypes))
@@ -413,15 +434,19 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	//遍历数据库的列名
 	//Traverse the database column names
 	for i, columnType := range columnTypes {
-		column := columnType.Name()
+		columnName := strings.ToLower(columnType.Name())
 		//从缓存中获取列名的field字段
 		//Get the field field of the column name from the cache
-		field, fok := dbColumnFieldMap[strings.ToLower(column)]
-		//如果列名不存在,就初始化一个空值
+		field, fok := dbColumnFieldMap[columnName]
+		//如果列名不存在,就尝试去获取实体类属性,兼容处理临时字段,如果还找不到,就初始化为空指
 		//If the column name does not exist, initialize a null value
 		if !fok {
-			values[i] = new(interface{})
-			continue
+			field, fok = exportFieldMap[columnName]
+			if !fok {
+				values[i] = new(interface{})
+				continue
+			}
+
 		}
 		dv := driverValue.Index(i)
 		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
