@@ -103,8 +103,9 @@ type demoStruct struct {
 	//Active int `column:"active"`
 
 	//------------------数据库字段结束,自定义字段写在下面---------------//
-
 	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
+
+	//模拟自定义的字段Active
     Active int
 
 
