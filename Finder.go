@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-//Finder： 查询数据库的载体,所有的sql语句都要通过Finder执行.
-//Finder： To query the database carrier, all SQL statements must be executed through Finder.
+//Finder 查询数据库的载体,所有的sql语句都要通过Finder执行.
+//Finder To query the database carrier, all SQL statements must be executed through Finder.
 type Finder struct {
 	//拼接SQL
 	//Splicing SQL.
@@ -31,7 +31,7 @@ type Finder struct {
 }
 
 //NewFinder  初始化一个Finder,生成一个空的Finder
-//NewFinder: Initialize a Finder and generate an empty Finder
+//NewFinder Initialize a Finder and generate an empty Finder
 func NewFinder() *Finder {
 	finder := Finder{}
 	finder.SelectTotalCount = true
@@ -40,7 +40,7 @@ func NewFinder() *Finder {
 	return &finder
 }
 
-//NewSelectFinder: 根据表名初始化查询的Finder | Finder that initializes the query based on the table name.
+//NewSelectFinder 根据表名初始化查询的Finder | Finder that initializes the query based on the table name.
 //NewSelectFinder("tableName") SELECT * FROM tableName
 //NewSelectFinder("tableName", "id,name") SELECT id,name FROM tableName
 func NewSelectFinder(tableName string, strs ...string) *Finder {
@@ -58,8 +58,8 @@ func NewSelectFinder(tableName string, strs ...string) *Finder {
 	return finder
 }
 
-//NewUpdateFinder: 根据表名初始化更新的Finder,  UPDATE tableName SET
-//NewUpdateFinder: Initialize the updated Finder according to the table name, UPDATE tableName SET.
+//NewUpdateFinder 根据表名初始化更新的Finder,  UPDATE tableName SET
+//NewUpdateFinder Initialize the updated Finder according to the table name, UPDATE tableName SET.
 func NewUpdateFinder(tableName string) *Finder {
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("UPDATE ")
@@ -68,8 +68,8 @@ func NewUpdateFinder(tableName string) *Finder {
 	return finder
 }
 
-//NewDeleteFinder： 根据表名初始化删除的'Finder',  DELETE FROM tableName
-//NewDeleteFinder： Finder for initial deletion based on table name. DELETE FROM tableName
+//NewDeleteFinder 根据表名初始化删除的'Finder',  DELETE FROM tableName
+//NewDeleteFinder Finder for initial deletion based on table name. DELETE FROM tableName
 func NewDeleteFinder(tableName string) *Finder {
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("DELETE FROM ")
@@ -116,7 +116,7 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 }
 
 //AppendFinder 添加另一个Finder finder.AppendFinder(f)
-//AppendFinder: Add another Finder . finder.AppendFinder(f)
+//AppendFinder Add another Finder . finder.AppendFinder(f)
 func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 	if f == nil {
 		return nil, errors.New("finder-->AppendFinder参数是nil")
@@ -142,8 +142,8 @@ func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 	return finder, nil
 }
 
-//GetSQL: 返回Finder封装的SQL语句
-//GetSQL: Return the SQL statement encapsulated by the Finder.
+//GetSQL 返回Finder封装的SQL语句
+//GetSQL Return the SQL statement encapsulated by the Finder.
 func (finder *Finder) GetSQL() (string, error) {
 	//不要自己构建finder,使用Newxxx方法
 	//Don't build finder by yourself, use Newxxx method.
