@@ -302,13 +302,16 @@ func TestQueryRow(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//Execute query
-	_,err := zorm.QueryRow(ctx, finder, demo)
+	has,err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
-	//Print result
-	fmt.Println(demo)
+	if has { //数据库存在数据
+		//Print result
+		fmt.Println(demo)
+	}
+	
 }
 
 //TestQueryRowMap 06.Test query map receiving results, used in scenarios that are not suitable for struct, more flexible
