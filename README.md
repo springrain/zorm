@@ -304,7 +304,7 @@ func TestQueryRow(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//执行查询
-	err := zorm.QueryRow(ctx, finder, demo)
+	_,err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
