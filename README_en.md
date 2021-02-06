@@ -94,7 +94,7 @@ type demoStruct struct {
 	//If the query field is not found in the column tag, it will be mapped to the struct attribute based on the name (case insensitive)
 
 	//Custom field Active
-    Active int
+	Active int
 
 }
 
