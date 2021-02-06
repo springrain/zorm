@@ -248,24 +248,25 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 // QueryRow Don't be lazy to call Query to return the first one
 // Question 1. A selice needs to be constructed, and question 2. Other values ​​of the object passed by the caller will be discarded or overwritten
 // context must be passed in and cannot be empty
-func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
+func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
 
+	has := false
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		checkerr = fmt.Errorf("QueryRow-->checkEntityKind类型检查错误:%w", checkerr)
 		FuncLogError(checkerr)
-		return checkerr
+		return has, checkerr
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return errFromContxt
+		return has, errFromContxt
 	}
 	//自己构建的dbConnection
 	//dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
-		return errDBConnection
+		return has, errDBConnection
 	}
 
 	var dbType string = ""
@@ -283,7 +284,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	if err != nil {
 		err = fmt.Errorf("QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", err)
 		FuncLogError(err)
-		return err
+		return has, err
 	}
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
@@ -291,7 +292,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	var dbConnectionerr error
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
 	if dbConnectionerr != nil {
-		return dbConnectionerr
+		return has, dbConnectionerr
 	}
 
 	//根据语句和参数查询
@@ -302,7 +303,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	if e != nil {
 		e = fmt.Errorf("QueryRow-->queryContext查询数据库错误:%w", e)
 		FuncLogError(e)
-		return e
+		return has, e
 	}
 
 	//typeOf := reflect.TypeOf(entity).Elem()
@@ -322,7 +323,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	if cte != nil {
 		cte = fmt.Errorf("QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
 		FuncLogError(cte)
-		return cte
+		return has, cte
 	}
 
 	//反射获取 []driver.Value的值
@@ -345,8 +346,9 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 		var tempDriverValue driver.Value
 		//循环遍历结果集
 		for i := 0; rows.Next(); i++ {
+			has = true
 			if i > 0 {
-				return errors.New("QueryRow查询出多条数据")
+				return has, errors.New("QueryRow查询出多条数据")
 			}
 			var scanerr error
 			//判断是否有自定义扩展,避免无意义的反射
@@ -363,7 +365,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryRow-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
-					return errGetDriverValue
+					return has, errGetDriverValue
 				}
 
 				//返回值为nil,不做任何处理
@@ -380,7 +382,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 			if scanerr != nil {
 				scanerr = fmt.Errorf("QueryRow-->rows.Scan异常:%w", scanerr)
 				FuncLogError(scanerr)
-				return scanerr
+				return has, scanerr
 			}
 		}
 
@@ -391,14 +393,14 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryRow-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
-				return errConverDriverValue
+				return has, errConverDriverValue
 			}
 
 			//把返回的值复制给接收的对象,
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 
 		}
-		return nil
+		return has, nil
 		//只查询一个字段的逻辑结束
 	}
 
@@ -412,7 +414,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	if dbe != nil {
 		dbe = fmt.Errorf("QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
-		return dbe
+		return has, dbe
 	}
 
 	//反射获取 []driver.Value的值
@@ -422,9 +424,9 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 	//循环遍历结果集
 	//Loop through the result set
 	for i := 0; rows.Next(); i++ {
-
+		has = true
 		if i > 0 {
-			return errors.New("QueryRow查询出多条数据")
+			return has, errors.New("QueryRow查询出多条数据")
 		}
 
 		//接收对象设置值
@@ -432,12 +434,12 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) error {
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
-			return scanerr
+			return has, scanerr
 		}
 
 	}
 
-	return nil
+	return has, nil
 }
 
 // Query 不要偷懒调用QueryMap,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
@@ -1440,7 +1442,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	//Customized query total number Finder,mainly for the sake of performance in complex situations such as group by, manually write the total number of statements
 	if finder.CountFinder != nil {
 		count := -1
-		err := QueryRow(ctx, finder.CountFinder, &count)
+		_, err := QueryRow(ctx, finder.CountFinder, &count)
 		if err != nil {
 			return -1, err
 		}
@@ -1485,7 +1487,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	countFinder.values = finder.values
 
 	count := -1
-	cerr := QueryRow(ctx, countFinder, &count)
+	_, cerr := QueryRow(ctx, countFinder, &count)
 	if cerr != nil {
 		return -1, cerr
 	}
