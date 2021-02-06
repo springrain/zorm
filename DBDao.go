@@ -444,7 +444,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 
 // Query 不要偷懒调用QueryMap,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 // 根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
-// context必须传入,不能为空.如果想不分页,查询所有的数据,page传入nil
+// context必须传入,不能为空.如果想不分页,查询所有数据,page传入nil
 // Query:Don't be lazy to call QueryMap, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome.
 // According to the Finder and encapsulation for the specified entity type, the entity must be of the *[]struct type, which has been initialized,This method only Append elements, so the caller does not need to force type conversion
 // context must be passed in and cannot be empty

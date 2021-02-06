@@ -345,7 +345,7 @@ func TestQuery(t *testing.T) {
 	page.PageNo = 1    //查询第1页,默认是1
 	page.PageSize = 20 //每页20条,默认是20
 
-	//执行查询.如果不想分页,查询所有的数据,page传入nil
+	//执行查询.如果不想分页,查询所有数据,page传入nil
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
