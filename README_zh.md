@@ -106,7 +106,7 @@ type demoStruct struct {
 	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
 
 	//模拟自定义的字段Active
-    Active int
+	Active int
 
 
 }
