@@ -20,7 +20,7 @@ func decodeToString(b []byte) string {
 }
 
 func encodeBool(b bool) []byte {
-	if b == true {
+	if b {
 		return []byte{1}
 	}
 	return []byte{0}
