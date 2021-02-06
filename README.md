@@ -10,10 +10,10 @@ go get gitee.com/chunanyong/zorm
 
 * Written based on native SQL statements,It is the streamlining and optimization of [springrain](https://gitee.com/chunanyong/springrain).
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* The code is streamlined, with a total of about 2000 lines, detailed comments, convenient for customization and modification. 
+* The code is streamlined,  total 2500 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
 * Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
-* Support database read and write separation.
+* Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
 zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
