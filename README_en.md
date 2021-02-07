@@ -332,7 +332,7 @@ func TestQueryRowMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuerySlice 07.Test query object list
+//TestQuery 07.Test query object list
 func TestQuery(t *testing.T) {
 	//Create a slice to receive the result
 	list := make([]*demoStruct, 0)
@@ -366,7 +366,7 @@ func TestQueryMap(t *testing.T) {
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
-	//Print result
+	//Print result.如果不想分页,查询所有数据,page传入nil
 	fmt.Println("Total number:", page.TotalCount, "  List:", listMap)
 }
 
