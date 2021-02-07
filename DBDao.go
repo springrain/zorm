@@ -361,7 +361,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			var errGetDriverValue error
 			if converOK { //如果有类型需要转换
 				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf, dbConnection.config, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryRow-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -389,7 +389,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		//如果需要类型转换,需要把临时值转换成需要接收的类型值
 		if converOK && tempDriverValue != nil {
 			//根据接收的临时值,返回需要接收值的指针
-			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue)
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue, dbConnection.config, finder)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryRow-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -430,7 +430,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		}
 
 		//接收对象设置值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf, dbConnection.config, finder)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -568,7 +568,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			//如果需要转换
 			if converOK {
 				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType, dbConnection.config, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("Query-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -592,7 +592,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			//如果需要类型转换,需要把临时值转换成需要接收的类型值
 			if converOK && tempDriverValue != nil {
 				//根据接收的临时值,返回需要接收值的指针
-				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue)
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue, dbConnection.config, finder)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)
@@ -645,7 +645,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		//设置接收值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv, dbConnection.config, finder)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
@@ -814,7 +814,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 			//如果需要类型转换
 			if converOK {
 				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil, dbConnection.config, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryMap-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -851,7 +851,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		for i, driverValueInfo := range fieldTempDriverValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue)
+			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue, dbConnection.config, finder)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryMap-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)

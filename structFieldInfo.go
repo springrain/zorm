@@ -420,7 +420,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
-func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf reflect.Value) error {
+func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf reflect.Value, config *DataSourceConfig, finder *Finder) error {
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columnTypes))
@@ -463,7 +463,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 			//如果需要类型转换
 			if converOK {
 				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type())
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type(), config, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("sqlRowsValues-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -500,7 +500,7 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	//循环需要替换的值
 	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue)
+		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue, config, finder)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("sqlRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(errConverDriverValue)
@@ -684,15 +684,15 @@ var CustomDriverValueMap = make(map[string]CustomDriverValueConver)
 
 //CustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type CustomDriverValueConver interface {
-	//GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
+	//GetDriverValue 根据数据库列类型,实体类属性类型,数据库配置,Finder对象,返回driver.Value的实例
 	//如果无法获取到structFieldType,例如Map查询,会传入nil
 	//如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error)
+	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, config *DataSourceConfig, finder *Finder) (driver.Value, error)
 
-	//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
+	//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,数据库配置,Finder对象
 	//如果无法获取到structFieldType,例如Map查询,会传入nil
 	//返回符合接收类型值的指针,指针,指针!!!!
-	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error)
+	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, config *DataSourceConfig, finder *Finder) (interface{}, error)
 }
 type driverValueInfo struct {
 	converFunc      CustomDriverValueConver
@@ -707,13 +707,13 @@ type CustomDMText struct{}
 //GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, config *DataSourceConfig, finder *Finder) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
 //ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, config *DataSourceConfig, finder *Finder) (interface{}, error) {
 	dmClob, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dmClob.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
