@@ -30,9 +30,11 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 
 ### 神州通用(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
+注意：官方驱动go-aci为兼容oracle，存在把空字符串处理成了NULL的问题。这会导致设置了not null属性的字段，insert空引号时会报字段不能未空的ERROR.
+临时解决方案可以先把字段的not null限制去掉，目前已反馈官方，修复后这里会更新.
 
 ### 南大通用(gbase)
-~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
+~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
 暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
 

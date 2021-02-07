@@ -22,6 +22,18 @@ DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com
 
 kingbase(Ren Da Jincang)Driver Instructions: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 The core of Kingbase(Ren Da Jincang) 8 is based on postgresql 9.6. You can use [https://github.com/lib/pq](https://github.com/lib/pq) for testing. The official driver is recommended for the production environment.    
+Pay attention to modify ora_input_emptystr_isnull = false in the data/kingbase.conf file , because golang has no null value. Generally, the database is not null, the default value of golang string is' '. 
+If this value is set to true, the database will set the value to null, which conflicts with the field property not null. Therefore, an error is reported.
+
+shentong(Shenzhou General Data)Instructions:
+It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,DBType:shentong  
+Note: in order to be compatible with Oracle, the official go-aci driver has the problem of processing the empty string into null. This will result in the field with the not null attribute set, when the insert quotation mark is empty, the error that the field cannot be empty will be reported
+The temporary solution can remove the not null restriction of the field first. Now it has been fed back to the official. It will be updated here after repair
+
+
+gbase(GENERAL DATA)
+~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
+Use odbc driver for the time being,DriverName:odbc ,DBType:gbase
 
 ## Test case  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
@@ -597,3 +609,4 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
+
