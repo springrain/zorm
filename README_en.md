@@ -32,7 +32,7 @@ The temporary solution can remove the not null restriction of the field first. N
 
 
 gbase(GENERAL DATA)
-~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
+~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
 Use odbc driver for the time being,DriverName:odbc ,DBType:gbase
 
 ## Test case  
