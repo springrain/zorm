@@ -27,9 +27,6 @@ If this value is set to true, the database will set the value to null, which con
 
 shentong(Shenzhou General Data)Instructions:
 It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,DBType:shentong  
-Note: in order to be compatible with Oracle, the official go-aci driver has the problem of processing the empty string into null. This will result in the field with the not null attribute set, when the insert quotation mark is empty, the error that the field cannot be empty will be reported
-The temporary solution can remove the not null restriction of the field first. Now it has been fed back to the official. It will be updated here after repair
-
 
 gbase(GENERAL DATA)
 ~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
@@ -609,4 +606,5 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
+
 
