@@ -149,7 +149,7 @@ Transaction 的示例代码
 // 在多库的场景,手动获取dbConnection,然后绑定到一个新的context,传入进来
 // 不要去掉匿名函数的context参数,因为如果Transaction的context中没有dbConnection,会新建一个context并放入dbConnection,此时的context指针已经变化,不能直接使用Transaction的context参数
 // bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
-// 在事务开始前,可以通过zorm.BindContextTxOptions方法设置事务的隔离级别
+// 如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 // return的error如果不为nil,事务就会回滚
 // Transaction method, isolate db Connection related API. This method must be used for transaction processing and unified transaction mode
 // If there is no db Connection in the input ctx, use default Dao to start the transaction and submit it finally
