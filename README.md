@@ -362,7 +362,7 @@ func TestQueryMap(t *testing.T) {
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
-	//执行查询
+	//执行查询.如果不想分页,查询所有数据,page传入nil
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
