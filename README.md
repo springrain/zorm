@@ -529,16 +529,16 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 
 //实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型,实体类属性类型,数据库配置,Finder对象,返回driver.Value的实例
+//GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, config *DataSourceConfig, finder *Finder) (driver.Value, error) {
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, finder *Finder) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,数据库配置,Finder对象
+//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,Finder对象
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, config *DataSourceConfig, finder *Finder) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *Finder) (interface{}, error) {
 	dmClob, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dmClob.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
