@@ -2,7 +2,8 @@
 更新内容：
  -增强自定义类型转换的功能
  -完善文档,注释
- -非常感谢 @chien_tung 同学增加的changelog,以后版本发布都会记录changelog
+ -非常感谢 @anxuanzi 完善代码生成器
+ -非常感谢 @chien_tung 增加changelog,以后版本发布都会记录changelog
 
 1.4.4
 更新内容：
