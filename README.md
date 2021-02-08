@@ -22,6 +22,15 @@ DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com
 
 kingbase(Ren Da Jincang)Driver Instructions: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 The core of Kingbase(Ren Da Jincang) 8 is based on postgresql 9.6. You can use [https://github.com/lib/pq](https://github.com/lib/pq) for testing. The official driver is recommended for the production environment.    
+Pay attention to modify ora_input_emptystr_isnull = false in the data/kingbase.conf file , because golang has no null value. Generally, the database is not null, the default value of golang string is' '. 
+If this value is set to true, the database will set the value to null, which conflicts with the field property not null. Therefore, an error is reported.
+
+shentong(Shenzhou General Data)Instructions:
+It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,DBType:shentong  
+
+gbase(GENERAL DATA)
+~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
+Use odbc driver for the time being,DriverName:odbc ,DBType:gbase
 
 ## Test case  
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
@@ -302,13 +311,16 @@ func TestQueryRow(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//Execute query
-	_, err := zorm.QueryRow(ctx, finder, demo)
+	has,err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
-	//Print result
-	fmt.Println(demo)
+	if has { //数据库存在数据
+		//Print result
+		fmt.Println(demo)
+	}
+	
 }
 
 //TestQueryRowMap 06.Test query map receiving results, used in scenarios that are not suitable for struct, more flexible
@@ -329,7 +341,7 @@ func TestQueryRowMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuerySlice 07.Test query object list
+//TestQuery 07.Test query object list
 func TestQuery(t *testing.T) {
 	//Create a slice to receive the result
 	list := make([]*demoStruct, 0)
@@ -341,7 +353,7 @@ func TestQuery(t *testing.T) {
 	page.PageNo = 1    //Query page 1, default is 1
 	page.PageSize = 20 //20 items per page, the default is 20
 
-	//Execute query
+	//Execute query.如果想不分页,查询所有数据,page传入nil
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
@@ -363,7 +375,7 @@ func TestQueryMap(t *testing.T) {
 	if err != nil { //Mark test failed
 		t.Errorf("error:%v", err)
 	}
-	//Print result
+	//Print result.如果不想分页,查询所有数据,page传入nil
 	fmt.Println("Total number:", page.TotalCount, "  List:", listMap)
 }
 
@@ -538,12 +550,12 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 //To implement the interface of CustomDriverValueConver,extend the custom type, such as text type of dm database, the mapped type is dm.DmClob type , cannot use string type to receive directly.
 type CustomDMText struct{}
 //GetDriverValue according to the database column type and entity class field type, return driver.Value Instance. If the return value is nil, no type replacement is performed and the default method is used.
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, finder *zorm.Finder) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
 
 //ConverDriverValue database column type, entity class field type, GetDriverValue returned driver.Value New value, return the pointer according to the receiving type value, pointer, pointer!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
 	dm, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dm.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
@@ -594,3 +606,5 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
+
+
