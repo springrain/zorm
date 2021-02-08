@@ -304,13 +304,16 @@ func TestQueryRow(t *testing.T) {
 	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
 
 	//执行查询
-	_, err := zorm.QueryRow(ctx, finder, demo)
+	has,err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-	//打印结果
-	fmt.Println(demo)
+
+	if has { //数据库存在数据
+		//打印结果
+		fmt.Println(demo)
+	}
 }
 
 //TestQueryRowMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
@@ -342,7 +345,7 @@ func TestQuery(t *testing.T) {
 	page.PageNo = 1    //查询第1页,默认是1
 	page.PageSize = 20 //每页20条,默认是20
 
-	//执行查询
+	//执行查询.如果不想分页,查询所有数据,page传入nil
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -359,7 +362,7 @@ func TestQueryMap(t *testing.T) {
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 
-	//执行查询
+	//执行查询.如果不想分页,查询所有数据,page传入nil
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -526,16 +529,16 @@ func myReadWriteStrategy(rwType int) *zorm.DBDao {
 
 //实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型和实体类属性类型,返回driver.Value的实例
+//GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type) (driver.Value, error) {
+func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, finder *zorm.Finder) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值
+//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,Finder对象
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
 	dmClob, _ := tempDriverValue.(*dm.DmClob)
 	dmlen, _ := dmClob.GetLength()
 	strInt64 := strconv.FormatInt(dmlen, 10)
@@ -585,3 +588,4 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
       gorm:    26.40s     13201878 ns/op 2392826 B/op  57031 allocs/op
       xorm:    30.77s     15382967 ns/op 1637098 B/op  72088 allocs/op
 ```
+
