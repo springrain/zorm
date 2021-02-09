@@ -167,7 +167,7 @@ var ctx = context.Background()
 func init() {
 
 	//Custom zorm log output
-	//zorm.LogCalldepth = 4 //Level of log call
+	//zorm.LogCallDepth = 4 //Level of log call
 	//zorm.FuncLogError = myFuncLogError //Function to record exception log.
 	//zorm.FuncLogPanic = myFuncLogPanic //Record panic log, use Zorm Error Log by default
 	//zorm.FuncPrintSQL = myFuncPrintSQL //A function that prints SQL
