@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/shopspring/decimal"
+	"gitee.com/chunanyong/zorm/decimal"
 )
 
 func encodeString(s string) []byte {

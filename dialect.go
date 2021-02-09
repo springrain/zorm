@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/chunanyong/gouuid"
+	"gitee.com/chunanyong/zorm/gouuid"
 )
 
 //wrapPageSQL：包装分页的SQL语句
