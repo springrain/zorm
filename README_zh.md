@@ -169,7 +169,7 @@ var ctx = context.Background()
 func init() {
 
 	//自定义zorm日志输出
-	//zorm.LogCalldepth = 4 //日志调用的层级
+	//zorm.LogCallDepth = 4 //日志调用的层级
 	//zorm.FuncLogError = myFuncLogError //记录异常日志的函数
 	//zorm.FuncLogPanic = myFuncLogPanic //记录panic日志,默认使用ZormErrorLog实现
 	//zorm.FuncPrintSQL = myFuncPrintSQL //打印sql的函数
