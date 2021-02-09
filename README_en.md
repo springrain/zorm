@@ -1,5 +1,5 @@
 ## Introduction
-This is a lightweight ORM that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite databases.
+This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
 Author blog:[https://www.jiagou.com](https://www.jiagou.com)  
@@ -10,7 +10,7 @@ go get gitee.com/chunanyong/zorm
 
 * Written based on native SQL statements,It is the streamlining and optimization of [springrain](https://gitee.com/chunanyong/springrain).
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* The code is streamlined,  total 2500 lines, detailed comments, convenient for customization and modification. 
+* The code is streamlined, main part 2500 lines, zero dependency 4200 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
 * Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
 * Support more databases, read and write separation.
