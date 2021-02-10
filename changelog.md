@@ -23,6 +23,16 @@ v1.4.3
  - 修复触发器自增主键的逻辑bug
  - 文档完善和细节调整
 
+v1.4.2
+更新内容:
+ - 正式支持神州通用(shentong)数据库
+ - 完善pgsql和kingbase的自增主键返回值支持
+ - 七家公司的同学建议查询和golang sql方法命名保持统一.做了一个艰难的决定,修改zorm的部分方法名.全局依次替换字符串即可.
+zorm.Query(                 替换为    zorm.QueryRow(
+zorm.QuerySlice(          替换为    zorm.Query(
+zorm.QueryMap(          替换为    zorm.QueryRowMap(
+zorm.QueryMapSlice(   替换为    zorm.QueryMap(
+
 v1.4.1
 更新内容：
  - 支持自定义扩展字段映射逻辑
@@ -43,10 +53,17 @@ v1.3.7
  - 非常感谢 @chien_tung  同学反馈的问题,修复主键自增int和init64类型的兼容性.
  - 其他代码细节优化.
 
-v1.3.5
+v1.3.6
 更新内容：
  - 完善注释文档
  - 修复Delete方法的参数类型错误
+ - 其他代码细节优化.
+
+v1.3.5
+更新内容：
+ - 完善注释文档
+ - 兼容处理数据库为null时,基本类型取默认值,感谢@fastabler的pr
+ - 修复批量保存方法的一个bug:如果slice的长度为1,在pgsql和oracle会出现异常
  - 其他代码细节优化.
 
 v1.3.4
