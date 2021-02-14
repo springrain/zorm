@@ -441,7 +441,9 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 		//如果列名不存在,就尝试去获取实体类属性,兼容处理临时字段,如果还找不到,就初始化为空指
 		//If the column name does not exist, initialize a null value
 		if !fok {
-			field, fok = exportFieldMap[columnName]
+			//支持驼峰
+			cname := strings.ReplaceAll(columnName, "_", "")
+			field, fok = exportFieldMap[cname]
 			if !fok {
 				values[i] = new(interface{})
 				continue
