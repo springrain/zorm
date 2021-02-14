@@ -602,7 +602,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		return v
 	}
 	if len(value) < 1 { //值为空,为nil
-		return nil
+		return value
 	}
 
 	//获取数据库类型,自己对应golang的基础类型值,不处理sql.Nullxxx类型
@@ -634,7 +634,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	}
 	//其他类型以后再写.....
 	//Other types will be written later...
-	return nil
+	return v
 }
 
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
