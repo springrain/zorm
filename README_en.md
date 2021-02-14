@@ -100,7 +100,7 @@ type demoStruct struct {
 	//Active int `column:"active"`
 
 	//------------------The end of the database field, the custom field is written below---------------//
-	//If the query field is not found in the column tag, it will be mapped to the struct attribute based on the name (case insensitive)
+	//If the query field is not found in the column tag, it will be mapped to the struct attribute based on the name (case insensitive, _ underscore to hump)
 
 	//Custom field Active
 	Active int
