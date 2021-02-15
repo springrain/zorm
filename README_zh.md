@@ -8,7 +8,7 @@ go get gitee.com/chunanyong/zorm
 ```  
 * 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
 * [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* 代码精简,总计2500行,注释详细,方便定制修改.  
+* 代码精简,主体2500行,零依赖4200行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
 * 支持多库和读写分离
@@ -103,7 +103,7 @@ type demoStruct struct {
 	//Active int `column:"active"`
 
 	//------------------数据库字段结束,自定义字段写在下面---------------//
-	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写)映射到struct的属性上
+	//如果查询的字段在column tag中没有找到,就会根据名称(不区分大小写,支持 _ 转驼峰)映射到struct的属性上
 
 	//模拟自定义的字段Active
 	Active int
@@ -178,7 +178,7 @@ func init() {
 	//log.SetFlags(log.LstdFlags)
 	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
-	//dbDaoConfig 数据库的配置
+	//dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
