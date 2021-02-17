@@ -1,6 +1,6 @@
 package zorm
 
-``//IEntityStruct： "struct"实体类的接口,所有的struct实体类都要实现这个接口
+//IEntityStruct： "struct"实体类的接口,所有的struct实体类都要实现这个接口
 //IEntityStruct： The interface of the "struct" entity class, all struct entity classes must implement this interface.
 type IEntityStruct interface {
 	//获取表名称
@@ -118,7 +118,6 @@ func (entity *EntityMap) GetTableName() string {
 func (entity *EntityMap) GetPKColumnName() string {
 	return entity.PkColumnName
 }
-
 
 //GetPkSequence： 主键序列,因为需要兼容多种数据库的序列,所以使用map.
 //key是DBType,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
