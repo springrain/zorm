@@ -8,7 +8,7 @@ import (
 )
 
 //Finder 查询数据库的载体,所有的sql语句都要通过Finder执行.
-//Finder To query the database carrier, all SQL statements must be executed through Finder.
+//Finder To query the database carrier, all SQL statements must be executed through Finder
 type Finder struct {
 	//拼接SQL
 	//Splicing SQL.
@@ -17,13 +17,13 @@ type Finder struct {
 	//SQL parameter values.
 	values []interface{}
 	//注入检查,默认true 不允许SQL注入的 ' 单引号
-	//Injection check, default true does not allow SQL injection  single quote.
+	//Injection check, default true does not allow SQL injection  single quote
 	InjectionCheck bool
 	//CountFinder 自定义的查询总条数'Finder',使用指针默认为nil.主要是为了在'group by'等复杂情况下,为了性能,手动编写总条数语句
 	//CountFinder The total number of custom queries is'Finder', and the pointer is nil by default. It is mainly used to manually write the total number of statements for performance in complex situations such as'group by'
 	CountFinder *Finder
 	//是否自动查询总条数,默认true.同时需要Page不为nil,才查询总条数
-	//Whether to automatically query the total number of entries, the default is true. At the same time, the Page is not nil to query the total number of entries.
+	//Whether to automatically query the total number of entries, the default is true. At the same time, the Page is not nil to query the total number of entries
 	SelectTotalCount bool
 	//SQL语句
 	//SQL statement
@@ -40,7 +40,7 @@ func NewFinder() *Finder {
 	return &finder
 }
 
-//NewSelectFinder 根据表名初始化查询的Finder | Finder that initializes the query based on the table name.
+//NewSelectFinder 根据表名初始化查询的Finder | Finder that initializes the query based on the table name
 //NewSelectFinder("tableName") SELECT * FROM tableName
 //NewSelectFinder("tableName", "id,name") SELECT id,name FROM tableName
 func NewSelectFinder(tableName string, strs ...string) *Finder {
@@ -59,7 +59,7 @@ func NewSelectFinder(tableName string, strs ...string) *Finder {
 }
 
 //NewUpdateFinder 根据表名初始化更新的Finder,  UPDATE tableName SET
-//NewUpdateFinder Initialize the updated Finder according to the table name, UPDATE tableName SET.
+//NewUpdateFinder Initialize the updated Finder according to the table name, UPDATE tableName SET
 func NewUpdateFinder(tableName string) *Finder {
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("UPDATE ")
@@ -75,7 +75,7 @@ func NewDeleteFinder(tableName string) *Finder {
 	finder.sqlBuilder.WriteString("DELETE FROM ")
 	finder.sqlBuilder.WriteString(tableName)
 	//所有的 WHERE 都不加,规则统一,好记
-	//No WHERE is added, the rules are unified, easy to remember.
+	//No WHERE is added, the rules are unified, easy to remember
 	//finder.sqlBuilder.WriteString(" WHERE ")
 	return finder
 }
@@ -99,7 +99,7 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 			finder.sqlstr = ""
 		}
 		//默认加一个空格,避免手误两个字符串连接再一起
-		//A space is added by default to avoid hand mistakes when connecting two strings together.
+		//A space is added by default to avoid hand mistakes when connecting two strings together
 		finder.sqlBuilder.WriteString(" ")
 
 		finder.sqlBuilder.WriteString(s)
@@ -123,7 +123,7 @@ func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 	}
 
 	//不要自己构建finder,使用Newxxx方法
-	//Don't build finder by yourself, use Newxxx method.
+	//Don't build finder by yourself, use Newxxx method
 	if finder.values == nil {
 		return nil, errors.New("finder-->AppendFinder不要自己构建finder,使用Newxxx方法")
 	}
@@ -143,10 +143,10 @@ func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 }
 
 //GetSQL 返回Finder封装的SQL语句
-//GetSQL Return the SQL statement encapsulated by the Finder.
+//GetSQL Return the SQL statement encapsulated by the Finder
 func (finder *Finder) GetSQL() (string, error) {
 	//不要自己构建finder,使用Newxxx方法
-	//Don't build finder by yourself, use Newxxx method.
+	//Don't build finder by yourself, use Newxxx method
 	if finder.values == nil {
 		return "", errors.New("finder-->GetSQL不要自己构建finder,使用Newxxx方法")
 	}
@@ -195,22 +195,22 @@ func (finder *Finder) GetSQL() (string, error) {
 	//Traverse all parameters
 	for i, v := range finder.values {
 		//先拼接问号,问号切割之后,问号就丢失了,先补充上
-		//First splicing the question mark, after the question mark is cut, the question mark is lost, add it first.
+		//First splicing the question mark, after the question mark is cut, the question mark is lost, add it first
 		newSQLStr.WriteString("?")
 
 		valueOf := reflect.ValueOf(v)
 		typeOf := reflect.TypeOf(v)
 		kind := valueOf.Kind()
 		//如果参数是个指针类型
-		//If the parameter is a pointer type.
-		if kind == reflect.Ptr { //如果是指针 ｜ If it is a pointer.
+		//If the parameter is a pointer type
+		if kind == reflect.Ptr { //如果是指针 ｜ If it is a pointer
 			valueOf = valueOf.Elem()
 			typeOf = typeOf.Elem()
 			kind = valueOf.Kind()
 		}
 
 		//如果不是数组或者slice
-		//If it is not an array or slice.
+		//If it is not an array or slice
 		if !(kind == reflect.Array || kind == reflect.Slice) {
 			//记录新值
 			//Record new value.
@@ -234,18 +234,18 @@ func (finder *Finder) GetSQL() (string, error) {
 
 		//如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
 		//获取数组类型参数值的长度
-		//If it is not a string type value, the length cannot be taken, this is a bug, first comment.
-		//Get the length of the array type parameter value.
+		//If it is not a string type value, the length cannot be taken, this is a bug, first comment
+		//Get the length of the array type parameter value
 		sliceLen := valueOf.Len()
 		//数组类型的参数长度小于1,认为是有异常的参数
-		//The parameter length of the array type is less than 1, which is considered to be an abnormal parameter.
+		//The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 		if sliceLen < 1 {
 			return sqlstr, errors.New("finder-->GetSQL语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
 		}
 
 		for j := 0; j < sliceLen; j++ {
-			//每多一个参数,对应",?" 两个符号.增加的问号长度总计是(sliceLen-1)*2.
-			//Every additional parameter, correspond ",?" ,The total length of the increased question mark is (sliceLen-1)*2.
+			//每多一个参数,对应",?" 两个符号.增加的问号长度总计是(sliceLen-1)*2
+			//Every additional parameter, correspond ",?" ,The total length of the increased question mark is (sliceLen-1)*2
 			if j >= 1 {
 				//记录SQL
 				//Log SQL.
@@ -261,7 +261,7 @@ func (finder *Finder) GetSQL() (string, error) {
 		newSQLStr.WriteString(questions[i+1])
 	}
 	//重新赋值
-	//Reassign.
+	//Reassign
 	finder.sqlstr = newSQLStr.String()
 	finder.values = newValues
 	return finder.sqlstr, nil
