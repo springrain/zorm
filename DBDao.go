@@ -1007,13 +1007,13 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	//处理序列产生的自增主键,例如oracle,postgresql等
-	var lastInsertId *int64
+	var lastInsertID *int64
 	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
 		if dbType == "postgresql" || dbType == "kingbase" {
 			var p int64 = 0
-			lastInsertId = &p
+			lastInsertID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
 		} else if dbType == "oracle" || dbType == "shentong" {
 			var p int64 = 0
@@ -1026,7 +1026,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertId)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1037,14 +1037,14 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//If it is an auto-incrementing primary key
 	if autoIncrement > 0 {
 		//如果是oracle,shentong 的返回自增主键
-		if lastInsertId == nil && zormSQLOutReturningID != nil {
-			lastInsertId = zormSQLOutReturningID
+		if lastInsertID == nil && zormSQLOutReturningID != nil {
+			lastInsertID = zormSQLOutReturningID
 		}
 
 		var autoIncrementIDInt64 int64
 		var e error
-		if lastInsertId != nil {
-			autoIncrementIDInt64 = *lastInsertId
+		if lastInsertID != nil {
+			autoIncrementIDInt64 = *lastInsertID
 		} else {
 			//需要数据库支持,获取自增主键
 			//Need database support, get auto-incrementing primary key
@@ -1262,13 +1262,13 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 
 	//处理序列产生的自增主键,例如oracle,postgresql等
-	var lastInsertId *int64
+	var lastInsertID *int64
 	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
 		if dbType == "postgresql" || dbType == "kingbase" {
 			var p int64 = 0
-			lastInsertId = &p
+			lastInsertID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
 		} else if dbType == "oracle" || dbType == "shentong" {
 			var p int64 = 0
@@ -1281,7 +1281,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertId)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1291,14 +1291,14 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	//如果是自增主键
 	if autoIncrement {
 		//如果是oracle,shentong 的返回自增主键
-		if lastInsertId == nil && zormSQLOutReturningID != nil {
-			lastInsertId = zormSQLOutReturningID
+		if lastInsertID == nil && zormSQLOutReturningID != nil {
+			lastInsertID = zormSQLOutReturningID
 		}
 
 		var autoIncrementIDInt64 int64
 		var e error
-		if lastInsertId != nil {
-			autoIncrementIDInt64 = *lastInsertId
+		if lastInsertID != nil {
+			autoIncrementIDInt64 = *lastInsertID
 		} else {
 			//需要数据库支持,获取自增主键
 			//Need database support, get auto-incrementing primary key
@@ -1563,7 +1563,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 }
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values []interface{}, lastInsertId *int64) (*sql.Result, error) {
+func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
@@ -1573,8 +1573,8 @@ func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseCon
 	}
 	var res *sql.Result
 	var errexec error
-	if lastInsertId != nil {
-		errexec = dbConnection.queryRowContext(ctx, sqlstr, values).Scan(lastInsertId)
+	if lastInsertID != nil {
+		errexec = dbConnection.queryRowContext(ctx, sqlstr, values).Scan(lastInsertID)
 		if errexec == nil { //如果插入成功,返回
 			*affected = 1
 			return res, errexec

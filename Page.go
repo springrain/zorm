@@ -1,14 +1,14 @@
 package zorm
 
 //Page 分页对象
-//Page：Pagination object.
+//Page Pagination object
 type Page struct {
 	//当前页码,从1开始
-	//Current page number, starting from 1.
+	//Current page number, starting from 1
 	PageNo int
 
 	//每页多少条,默认20条
-	//How many items per page, 20 items by default.
+	//How many items per page, 20 items by default
 	PageSize int
 
 	//数据总条数
@@ -36,8 +36,8 @@ type Page struct {
 	LastPage bool
 }
 
-//NewPage: 创建Page对象
-//NewPage: Create Page object
+//NewPage 创建Page对象
+//NewPage Create Page object
 func NewPage() *Page {
 	page := Page{}
 	page.PageNo = 1
@@ -45,8 +45,8 @@ func NewPage() *Page {
 	return &page
 }
 
-//setTotalCount: 设置总条数,计算其他值
-//setTotalCount: Set the total number of bars, calculate other values.
+//setTotalCount 设置总条数,计算其他值
+//setTotalCount Set the total number of bars, calculate other values
 func (page *Page) setTotalCount(total int) {
 	page.TotalCount = total
 	page.PageCount = (page.TotalCount + page.PageSize - 1) / page.PageSize
