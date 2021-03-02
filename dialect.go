@@ -12,10 +12,9 @@ import (
 	"gitee.com/chunanyong/zorm/gouuid"
 )
 
-//wrapPageSQL：包装分页的SQL语句
-//wrapPageSQL：SQL statement for wrapping paging.
+//wrapPageSQL 包装分页的SQL语句
+//wrapPageSQL SQL statement for wrapping paging
 func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
-	//查询order by 的位置.为了保持各个数据库之间的分页语句兼容,要求都要有order by,不然迁移数据库时的风险就很大了
 	//新的分页方法都已经不需要order by了,不再强制检查
 	//The new paging method does not require 'order by' anymore, no longer mandatory check.
 	//
@@ -53,11 +52,10 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	return reBindSQL(dbType, sqlstr)
 }
 
-//wrapInsertSQL: 包装保存Struct语句.返回语句,是否自增,错误信息
-//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针.
-
-//wrapInsertSQL:Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message.
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed.
+//wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
+//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+//wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
+//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	savesql, err := reBindSQL(dbType, sqlstr)
@@ -66,9 +64,8 @@ func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 
 //wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-
-//Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message.
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed.
+//Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
+//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 
 	//自增类型  0(不自增),1(普通自增),2(序列自增),3(触发器自增)
@@ -205,7 +202,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 
 //wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
-//wrapInsertSliceSQL：Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message.
+//wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message.
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
@@ -296,10 +293,10 @@ func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []
 
 }
 
-//wrapUpdateSQL: 包装更新Struct语句
-//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针.
-//wrapUpdateSQL: Package update Struct statement.
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed.
+//wrapUpdateSQL 包装更新Struct语句
+//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+//wrapUpdateSQL Package update Struct statement
+//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
@@ -363,7 +360,7 @@ func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 }
 
 //wrapDeleteSQL 包装删除Struct语句
-//wrapDeleteSQL:Package delete Struct statement.
+//wrapDeleteSQL Package delete Struct statement
 func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 
 	//SQL语句的构造器
@@ -380,9 +377,9 @@ func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 
 }
 
-//wrapInsertEntityMapSQL: 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-//wrapInsertEntityMapSQL:Pack and save the Map statement. Because Map does not have field attributes,
-//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete.
+//wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+//wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
+//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bool, error) {
 	//是否自增,默认false
 	autoIncrement := false
@@ -446,9 +443,9 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	return sqlstr, values, autoIncrement, nil
 }
 
-//wrapUpdateEntityMapSQL: 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的.
-//wrapUpdateEntityMapSQL: Wrap the Map update statement. Because Map does not have field attributes,
-//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete.
+//wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+//wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
+//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
@@ -498,8 +495,8 @@ func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	return sqlstr, values, nil
 }
 
-//wrapQuerySQL: 封装查询语句
-//wrapQuerySQL: Encapsulated query statement
+//wrapQuerySQL 封装查询语句
+//wrapQuerySQL Encapsulated query statement
 func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 
 	//获取到没有page的sql的语句
@@ -520,8 +517,8 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 	return sqlstr, err
 }
 
-//reBindSQL: 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-//reBindSQL: Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
+//reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
+//reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dbType string, sqlstr string) (string, error) {
 	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" {
 		return sqlstr, nil
@@ -552,12 +549,12 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 }
 
 //查询'order by'在sql中出现的开始位置和结束位置
-//Query the start position and end position of'order by' in SQL.
+//Query the start position and end position of'order by' in SQL
 var orderByExpr = "\\s+(order)\\s+(by)+\\s"
 var orderByRegexp, _ = regexp.Compile(orderByExpr)
 
 //findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
-// findOrderByIndex: Query the start position and end position of'order by' in SQL.
+// findOrderByIndex Query the start position and end position of'order by' in SQL
 func findOrderByIndex(strsql string) []int {
 	loc := orderByRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
@@ -568,8 +565,8 @@ func findOrderByIndex(strsql string) []int {
 var groupByExpr = "\\s+(group)\\s+(by)+\\s"
 var groupByRegexp, _ = regexp.Compile(groupByExpr)
 
-//findGroupByIndex: 查询group by在sql中出现的开始位置和结束位置
-//findGroupByIndex:Query the start position and end position of'group by' in sql。
+//findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
+//findGroupByIndex Query the start position and end position of'group by' in sql
 func findGroupByIndex(strsql string) []int {
 	loc := groupByRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
@@ -580,15 +577,15 @@ func findGroupByIndex(strsql string) []int {
 var fromExpr = "\\s+(from)+\\s"
 var fromRegexp, _ = regexp.Compile(fromExpr)
 
-//findFromIndexa: 查询from在sql中出现的开始位置和结束位置
-//findFromIndex:Query the start position and end position of 'from' in sql
+//findFromIndexa 查询from在sql中出现的开始位置和结束位置
+//findFromIndex Query the start position and end position of 'from' in sql
 func findFromIndex(strsql string) []int {
 	loc := fromRegexp.FindStringIndex(strings.ToLower(strsql))
 	return loc
 }
 
 //converValueColumnType 根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
-//converValueColumnType: According to the field type of the database, it is converted to the type of golang, and the sql.Nullxxx type is not processed
+//converValueColumnType According to the field type of the database, it is converted to the type of golang, and the sql.Nullxxx type is not processed
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
 
 	if v == nil {
@@ -638,11 +635,11 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 }
 
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
-//FuncGenerateStringID:Function to generate string ID by default. Convenient for custom extension
+//FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID func() string = generateStringID
 
-//generateStringID: 生成主键字符串
-//generateStringID: Generate primary key string.
+//generateStringID 生成主键字符串
+//generateStringID Generate primary key string
 func generateStringID() string {
 	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
 	pk, errUUID := gouuid.NewV4()

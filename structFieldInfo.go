@@ -52,14 +52,14 @@ const (
 	dbPKNamePrefix = "_dbPKName_"
 )
 
-// 用于缓存反射的信息,sync.Map内部处理了并发锁
+//cacheStructFieldInfoMap 用于缓存反射的信息,sync.Map内部处理了并发锁
 //var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
 var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
 //用于缓存field对应的column的tag值
 //var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
 
-//获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型.
+//structFieldInfo 获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型
 //第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
 func structFieldInfo(typeOf reflect.Type) error {
 
@@ -153,7 +153,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 	return nil
 }
 
-//递归调用struct的匿名属性,就近覆盖属性.
+//recursiveAnonymousStruct 递归调用struct的匿名属性,就近覆盖属性
 func recursiveAnonymousStruct(allFieldMap *sync.Map, anonymous []reflect.StructField) {
 
 	for i := 0; i < len(anonymous); i++ {
@@ -201,7 +201,7 @@ func recursiveAnonymousStruct(allFieldMap *sync.Map, anonymous []reflect.StructF
 
 }
 
-//根据数据库的字段名,找到struct映射的字段,并赋值
+//setFieldValueByColumnName 根据数据库的字段名,找到struct映射的字段,并赋值
 func setFieldValueByColumnName(entity interface{}, columnName string, value interface{}) error {
 	//先从本地缓存中查找
 	typeOf := reflect.TypeOf(entity)
@@ -223,7 +223,7 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 
 }
 
-//获取指定字段的值
+//structFieldValue 获取指定字段的值
 func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 	if s == nil || len(fieldName) < 1 {
@@ -252,7 +252,7 @@ func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 }
 
-//深度拷贝对象.golang没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
+//deepCopy 深度拷贝对象.golang没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
 func deepCopy(dst, src interface{}) error {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
@@ -322,7 +322,7 @@ func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string 
 }
 */
 
-//根据保存的对象,返回插入的语句,需要插入的字段,字段的值.
+//columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
 func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -379,7 +379,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 
 }
 
-//获取实体类主键属性名称
+//entityPKFieldName 获取实体类主键属性名称
 func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error) {
 
 	//检查是否是指针对象
@@ -400,7 +400,7 @@ func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error
 
 }
 
-//检查entity类型必须是*struct类型或者基础类型的指针
+//checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
 func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	if entity == nil {
 		return nil, errors.New("checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")

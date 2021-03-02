@@ -19,8 +19,8 @@ type Finder struct {
 	//注入检查,默认true 不允许SQL注入的 ' 单引号
 	//Injection check, default true does not allow SQL injection  single quote.
 	InjectionCheck bool
-	//CountFinder: 自定义的查询总条数'Finder',使用指针默认为nil.主要是为了在'group by'等复杂情况下,为了性能,手动编写总条数语句
-	//CountFinder: The total number of custom queries is'Finder', and the pointer is nil by default. It is mainly used to manually write the total number of statements for performance in complex situations such as'group by'
+	//CountFinder 自定义的查询总条数'Finder',使用指针默认为nil.主要是为了在'group by'等复杂情况下,为了性能,手动编写总条数语句
+	//CountFinder The total number of custom queries is'Finder', and the pointer is nil by default. It is mainly used to manually write the total number of statements for performance in complex situations such as'group by'
 	CountFinder *Finder
 	//是否自动查询总条数,默认true.同时需要Page不为nil,才查询总条数
 	//Whether to automatically query the total number of entries, the default is true. At the same time, the Page is not nil to query the total number of entries.
@@ -80,12 +80,12 @@ func NewDeleteFinder(tableName string) *Finder {
 	return finder
 }
 
-//Append 添加SQL和参数的值,第一个参数是语句,后面的参数[可选]是参数的值,顺序要正确.
+//Append 添加SQL和参数的值,第一个参数是语句,后面的参数[可选]是参数的值,顺序要正确
 //例如: finder.Append(" and id=? and name=? ",23123,"abc")
 //只拼接SQL,例如: finder.Append(" and name=123 ")
-//Append:Add SQL and parameter values, the first parameter is the statement, and the following parameter (optional) is the value of the parameter, in the correct order.
-//E.g :  finder.Append(" and id=? and name=? ",23123,"abc").
-//Only splice SQL, E.g : finder.Append(" and name=123 ").
+//Append:Add SQL and parameter values, the first parameter is the statement, and the following parameter (optional) is the value of the parameter, in the correct order
+//E.g:  finder.Append(" and id=? and name=? ",23123,"abc")
+//Only splice SQL, E.g: finder.Append(" and name=123 ")
 func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 
 	//不要自己构建finder,使用Newxxx方法
