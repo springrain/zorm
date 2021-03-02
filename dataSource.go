@@ -65,30 +65,28 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	//	} else {
 	//		db = config.MockSQLDB
 	//	}
-	maxOpenConns := config.MaxOpenConns
-	maxIdleConns := config.MaxIdleConns
-	connMaxLifetimeSecond := config.ConnMaxLifetimeSecond
-	if maxOpenConns == 0 {
-		maxOpenConns = 50
+
+	if config.MaxOpenConns == 0 {
+		config.MaxOpenConns = 50
 	}
-	if maxIdleConns == 0 {
-		maxIdleConns = 50
+	if config.MaxIdleConns == 0 {
+		config.MaxIdleConns = 50
 	}
 
-	if connMaxLifetimeSecond == 0 {
-		connMaxLifetimeSecond = 600
+	if config.ConnMaxLifetimeSecond == 0 {
+		config.ConnMaxLifetimeSecond = 600
 	}
 
 	//设置数据库最大连接数
 	//Set the maximum number of database connections
-	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxOpenConns(config.MaxOpenConns)
 	//设置数据库最大空闲连接数
 	//Set the maximum number of free connections to the database
-	db.SetMaxIdleConns(maxIdleConns)
+	db.SetMaxIdleConns(config.MaxIdleConns)
 	//连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 	//(Connection survival time in seconds) Destroy and rebuild the connection after the default 600 seconds (10 minutes)
 	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
-	db.SetConnMaxLifetime(time.Second * time.Duration(connMaxLifetimeSecond))
+	db.SetConnMaxLifetime(time.Second * time.Duration(config.ConnMaxLifetimeSecond))
 
 	//验证连接
 	if pingerr := db.Ping(); pingerr != nil {
