@@ -12,7 +12,8 @@ go get gitee.com/chunanyong/zorm
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
 * 支持多库和读写分离
-* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
+* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
+* 不支持联合主键(艰难取舍)  
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
