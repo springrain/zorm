@@ -119,8 +119,12 @@ func (entity *demoStruct) GetTableName() string {
 }
 
 //GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称
+//不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)
+//如果没有主键,也需要实现这个方法, return "" 即可
 //IEntityStruct 接口的方法,实体类需要实现!!!
 func (entity *demoStruct) GetPKColumnName() string {
+	//如果没有主键
+	//return ""
 	return "id"
 }
 
