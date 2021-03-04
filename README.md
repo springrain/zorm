@@ -113,11 +113,13 @@ type demoStruct struct {
 }
 
 //GetTableName 获取表名称
+//IEntityStruct 接口的方法,实体类需要实现!!!
 func (entity *demoStruct) GetTableName() string {
 	return demoStructTableName
 }
 
-//GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
+//GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称
+//IEntityStruct 接口的方法,实体类需要实现!!!
 func (entity *demoStruct) GetPKColumnName() string {
 	return "id"
 }
