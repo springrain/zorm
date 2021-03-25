@@ -7,7 +7,7 @@ go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shento
 go get gitee.com/chunanyong/zorm 
 ```  
 * 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
-* [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
+* [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
 * 代码精简,主体2500行,零依赖4200行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
@@ -53,7 +53,7 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 ## 数据库脚本和实体类
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
-生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
+生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/wsgt
 ```go 
 
 package testzorm
