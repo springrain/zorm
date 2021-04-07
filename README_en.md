@@ -556,12 +556,28 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 
 //ConverDriverValue database column type, entity class field type, GetDriverValue returned driver.Value New value, return the pointer according to the receiving type value, pointer, pointer!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
-	dm, _ := tempDriverValue.(*dm.DmClob)
-	dmlen, _ := dm.GetLength()
+	//Type conversion
+	dmClob, isok := tempDriverValue.(*dm.DmClob)
+	if !isok {
+		return tempDriverValue, nil
+	}
+
+	//Get the length
+	dmlen, errLength := dmClob.GetLength()
+	if errLength != nil {
+		return dmClob, errLength
+	}
+
+	//Convert int64 to int type
 	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, _ := strconv.Atoi(strInt64)
-	str, _ := dm.ReadString(1, dmlenInt)
-	return &str, nil
+	dmlenInt, errAtoi := strconv.Atoi(strInt64)
+	if errAtoi != nil {
+		return dmClob, errAtoi
+	}
+
+	//Read string
+	str, errReadString := dmClob.ReadString(1, dmlenInt)
+	return &str, errReadString
 }
 //zorm.CustomDriverValueMap for configuration driver.Value and the corresponding processing relationship, key is the string of drier.Value. For example *dm.DmClob
 //It is usually added in the init method

@@ -719,12 +719,28 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
-	dmClob, _ := tempDriverValue.(*dm.DmClob)
-	dmlen, _ := dmClob.GetLength()
+	//类型转换
+	dmClob, isok := tempDriverValue.(*dm.DmClob)
+	if !isok {
+		return tempDriverValue, nil
+	}
+
+	//获取长度
+	dmlen, errLength := dmClob.GetLength()
+	if errLength != nil {
+		return dmClob, errLength
+	}
+
+	//int64转成int类型
 	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, _ := strconv.Atoi(strInt64)
-	str, _ := dmClob.ReadString(1, dmlenInt)
-	return &str, nil
+	dmlenInt, errAtoi := strconv.Atoi(strInt64)
+	if errAtoi != nil {
+		return dmClob, errAtoi
+	}
+
+	//读取字符串
+	str, errReadString := dmClob.ReadString(1, dmlenInt)
+	return &str, errReadString
 }
 //CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
 //一般是放到init方法里进行添加
