@@ -722,7 +722,7 @@ func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structF
 	//类型转换
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
-		return tempDriverValue, nil
+		return tempDriverValue, errors.New("转换至*dm.DmClob类型失败")
 	}
 
 	//获取长度

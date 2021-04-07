@@ -559,7 +559,7 @@ func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structF
 	//Type conversion
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
-		return tempDriverValue, nil
+		return tempDriverValue, errors.New("Conversion to *dm.DmClob type failed")
 	}
 
 	//Get the length
