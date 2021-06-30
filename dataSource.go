@@ -44,6 +44,9 @@ type DataSourceConfig struct {
 	//事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
+	//全局禁用事务,默认false.为了处理某些数据库不支持事务,比如clickhouse
+	DisableTransaction bool
+
 	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
 	//db, mock, err := sqlmock.New()
 	//MockSQLDB *sql.DB

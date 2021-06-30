@@ -178,7 +178,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if checkerr != nil {
 		return nil, checkerr
 	}
-	if dbConnection == nil || dbConnection.tx == nil {
+	//如果没有事务,并且事务没有被禁用,开启事务
+	if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("Transaction 事务开启失败:%w ", beginerr)
@@ -205,6 +206,10 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
 			//}
+			//如果全局禁用了事务
+			if dbConnection.config.DisableTransaction {
+				return
+			}
 			rberr := dbConnection.rollback()
 			if rberr != nil {
 				rberr = fmt.Errorf("recover内事务回滚失败:%w", rberr)
@@ -218,6 +223,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if err != nil {
 		err = fmt.Errorf("Transaction-->doTransaction事务执行失败:%w", err)
 		FuncLogError(err)
+
+		//如果全局禁用了事务
+		if dbConnection.config.DisableTransaction {
+			return info, err
+		}
+
 		//不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
 		//It is not the start party to roll back the transaction, which may cause inaccurate log records,but rollback is the most important, roll back as soon as possible
 		rberr := dbConnection.rollback()
@@ -946,7 +957,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, finder.values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1026,7 +1037,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1131,7 +1142,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1214,7 +1225,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	values := make([]interface{}, 1, 1)
 	values[0] = value
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("Delete-->wrapExecUpdateValuesAffected执行删除错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1281,7 +1292,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1364,7 +1375,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1419,7 +1430,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, dbConnection, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("updateStruct-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(errexec)
@@ -1532,9 +1543,10 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 	//dbConnection为空
 	//dbConnection is nil
 	if dbConnection == nil {
-
+		//是否禁用了事务
+		disabletx := FuncReadWriteStrategy(rwType).config.DisableTransaction
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
-		if hastx {
+		if hastx && (!disabletx) {
 			return ctx, nil, errDBConnection
 		}
 
@@ -1554,8 +1566,8 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 		if dbConnection.db == nil { //禁止外部构建
 			return ctx, dbConnection, errDBConnection
 		}
-		tx := dbConnection.tx
-		if tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
+
+		if dbConnection.tx == nil && hastx && (!dbConnection.config.DisableTransaction) { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
 	}
@@ -1563,10 +1575,11 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 }
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-func wrapExecUpdateValuesAffected(ctx context.Context, dbConnection *dataBaseConnection, affected *int, sqlstr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
+func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
+	var dbConnection *dataBaseConnection
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
