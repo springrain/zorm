@@ -951,14 +951,6 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		dbType = dbConnection.config.DBType
 	}
 
-	// 数据库语法兼容处理
-	sqlstr, err = reUpdateFinderSQL(dbType, sqlstr)
-	if err != nil {
-		err = fmt.Errorf("UpdateFinder-->reUpdateFinderSQL获取SQL语句错误:%w", err)
-		FuncLogError(err)
-		return affected, err
-	}
-
 	sqlstr, err = reBindSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
@@ -1586,7 +1578,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 }
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
+func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
 	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
@@ -1595,6 +1587,15 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstr *st
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
+
+	// 数据库语法兼容处理
+	sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.DBType, sqlstrptr)
+	if reUpdateFinderSQLErr != nil {
+		reUpdateFinderSQLErr = fmt.Errorf("wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
+		FuncLogError(reUpdateFinderSQLErr)
+		return nil, reUpdateFinderSQLErr
+	}
+
 	var res *sql.Result
 	var errexec error
 	if lastInsertID != nil {

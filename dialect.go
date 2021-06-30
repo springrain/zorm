@@ -307,15 +307,10 @@ func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
 
-	if dbType == "clickhouse" { //如果是 clickhouse
-		sqlBuilder.WriteString("ALTER TABLE ")
-		sqlBuilder.WriteString(entity.GetTableName())
-		sqlBuilder.WriteString(" UPDATE ")
-	} else { //其他情况
-		sqlBuilder.WriteString("UPDATE ")
-		sqlBuilder.WriteString(entity.GetTableName())
-		sqlBuilder.WriteString(" SET ")
-	}
+	sqlBuilder.WriteString("UPDATE ")
+	sqlBuilder.WriteString(entity.GetTableName())
+	sqlBuilder.WriteString(" SET ")
+
 	//主键的值
 	//The value of the primary key
 	var pkValue interface{}
@@ -377,15 +372,8 @@ func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
 
-	if dbType == "clickhouse" { //如果是 clickhouse
-		sqlBuilder.WriteString("ALTER TABLE ")
-		sqlBuilder.WriteString(entity.GetTableName())
-		sqlBuilder.WriteString(" DELETE ")
-	} else {
-		sqlBuilder.WriteString("DELETE FROM ")
-		sqlBuilder.WriteString(entity.GetTableName())
-	}
-
+	sqlBuilder.WriteString("DELETE FROM ")
+	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" WHERE ")
 	sqlBuilder.WriteString(entity.GetPKColumnName())
 	sqlBuilder.WriteString("=?")
@@ -473,15 +461,9 @@ func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
 
-	if dbType == "clickhouse" { //如果是 clickhouse
-		sqlBuilder.WriteString("ALTER TABLE ")
-		sqlBuilder.WriteString(entity.GetTableName())
-		sqlBuilder.WriteString(" UPDATE ")
-	} else { //其他情况
-		sqlBuilder.WriteString("UPDATE ")
-		sqlBuilder.WriteString(entity.GetTableName())
-		sqlBuilder.WriteString(" SET ")
-	}
+	sqlBuilder.WriteString("UPDATE ")
+	sqlBuilder.WriteString(entity.GetTableName())
+	sqlBuilder.WriteString(" SET ")
 
 	//SQL对应的参数
 	//SQL corresponding parameters
@@ -574,7 +556,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 }
 
 //reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
-func reUpdateFinderSQL(dbType string, sqlstr string) (string, error) {
+func reUpdateFinderSQL(dbType string, sqlstr *string) (*string, error) {
 
 	//处理clickhouse的特殊更新语法
 	if dbType == "clickhouse" {
@@ -596,9 +578,10 @@ func reUpdateFinderSQL(dbType string, sqlstr string) (string, error) {
 		}
 
 		//截取字符串
-		content := sqlstr[len(sqls[0]):]
+		content := (*sqlstr)[len(sqls[0]):]
 		sqlBuilder.WriteString(content)
-		return sqlBuilder.String(), nil
+		sql := sqlBuilder.String()
+		return &sql, nil
 	}
 	return sqlstr, nil
 
@@ -647,8 +630,8 @@ var updateRegexp = regexp.MustCompile(updateExper)
 
 // findUpdateTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名
-func findUpdateTableName(strsql string) []string {
-	matchs := updateRegexp.FindStringSubmatch(strsql)
+func findUpdateTableName(strsql *string) []string {
+	matchs := updateRegexp.FindStringSubmatch(*strsql)
 	return matchs
 }
 
@@ -659,8 +642,8 @@ var deleteRegexp = regexp.MustCompile(deleteExper)
 
 // findDeleteTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名
-func findDeleteTableName(strsql string) []string {
-	matchs := deleteRegexp.FindStringSubmatch(strsql)
+func findDeleteTableName(strsql *string) []string {
+	matchs := deleteRegexp.FindStringSubmatch(*strsql)
 	return matchs
 
 }
