@@ -472,9 +472,16 @@ func wrapUpdateEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("UPDATE ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(" SET ")
+
+	if dbType == "clickhouse" { //如果是 clickhouse
+		sqlBuilder.WriteString("ALTER TABLE ")
+		sqlBuilder.WriteString(entity.GetTableName())
+		sqlBuilder.WriteString(" UPDATE ")
+	} else { //其他情况
+		sqlBuilder.WriteString("UPDATE ")
+		sqlBuilder.WriteString(entity.GetTableName())
+		sqlBuilder.WriteString(" SET ")
+	}
 
 	//SQL对应的参数
 	//SQL corresponding parameters
