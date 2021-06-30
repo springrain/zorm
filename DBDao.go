@@ -1601,9 +1601,13 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstr *st
 	}
 	//影响的行数
 	//Number of rows affected
+
 	rowsAffected, errAffected := (*res).RowsAffected()
 	if errAffected == nil {
 		*affected, errAffected = typeConvertInt64toInt(rowsAffected)
+	} else { //如果不支持返回条数,设置位nil,影响的条数设置成-1
+		*affected = -1
+		errAffected = nil
 	}
 	return res, errAffected
 }
