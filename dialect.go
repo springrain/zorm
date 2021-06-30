@@ -611,7 +611,7 @@ func findFromIndex(strsql string) []int {
 
 // 从更新语句中获取表名
 //update\\s(.+)set\\s.*
-var updateExper = "(?i)^update\\s(.+)\\s+set+\\s"
+var updateExper = "(?i)^[ ]*update+\\s(.+)\\s+set+\\s"
 var updateRegexp = regexp.MustCompile(updateExper)
 
 // findUpdateTableName 获取语句中表名
@@ -623,7 +623,7 @@ func findUpdateTableName(strsql string) []string {
 
 // 从删除语句中获取表名
 //delete\\sfrom\\s(.+)where\\s(.*)
-var deleteExper = "(?i)^delete\\sfrom\\s(.+)where\\s"
+var deleteExper = "(?i)^[ ]*delete+\\s+from+\\s(.+)\\s+where\\s"
 var deleteRegexp = regexp.MustCompile(deleteExper)
 
 // findDeleteTableName 获取语句中表名
