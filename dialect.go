@@ -1,15 +1,16 @@
 package zorm
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"errors"
+	"fmt"
+	"math/big"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"gitee.com/chunanyong/zorm/gouuid"
 )
 
 //wrapPageSQL 包装分页的SQL语句
@@ -58,6 +59,9 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
+	if err != nil {
+		return sqlstr, autoIncrement, pktype, err
+	}
 	savesql, err := reBindSQL(dbType, sqlstr)
 	return savesql, autoIncrement, pktype, err
 }
@@ -641,6 +645,26 @@ var FuncGenerateStringID func() string = generateStringID
 //generateStringID 生成主键字符串
 //generateStringID Generate primary key string
 func generateStringID() string {
+
+	randNum, randErr := rand.Int(rand.Reader, big.NewInt(1000000000))
+	if randErr != nil {
+		return ""
+	}
+	//获取9位数,前置补0,确保9位数
+	rand9 := fmt.Sprintf("%09d", randNum)
+
+	//获取纳秒 按照 年月日时分秒毫秒纳秒 拼接为字符串
+	pk := time.Now().Format("2006.01.02.15.04.05.000000")
+	pk = strings.ReplaceAll(pk, ".", "")
+
+	pk = pk + rand9
+	return pk
+}
+
+//generateStringID 生成主键字符串
+//generateStringID Generate primary key string
+/*
+func generateStringID() string {
 	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
 	pk, errUUID := gouuid.NewV4()
 	if errUUID != nil {
@@ -648,3 +672,4 @@ func generateStringID() string {
 	}
 	return pk.String()
 }
+*/

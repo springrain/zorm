@@ -1470,7 +1470,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	}
 	//特殊关键字,包装SQL
 	//Special keywords, wrap SQL
-	if strings.Index(s, " distinct ") > -1 || strings.Index(s, " union ") > -1 || gbi > -1 {
+	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {
 		countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
 	} else {
 		locFrom := findFromIndex(countsql)
