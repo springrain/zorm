@@ -1,5 +1,5 @@
 ## Introduction
-This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite databases.
+This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite,clickhouse databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
 Author blog:[https://www.jiagou.com](https://www.jiagou.com)  
@@ -180,11 +180,11 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN: Database connection string
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3, 
+		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3,clickhouse, 
         // dm, kingbase and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
-		// Database type (based on dialect judgment): mysql, postgresql, 
-        // oracle, mssql, sqlite, dm, kingbase and DriverName correspond to multiple drivers for processing databases
+		// Database type (based on dialect judgment): mysql, postgresql,oracle, mssql, sqlite, clickhouse,
+        // dm, kingbase and DriverName correspond to multiple drivers for processing databases
 		DBType: "mysql",
 		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,

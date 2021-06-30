@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite数据库.  
+go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -10,7 +10,7 @@ go get gitee.com/chunanyong/zorm
 * [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
 * 代码精简,主体2500行,零依赖4200行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
+* 支持mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
@@ -189,9 +189,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
