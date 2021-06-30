@@ -646,6 +646,7 @@ var FuncGenerateStringID func() string = generateStringID
 //generateStringID Generate primary key string
 func generateStringID() string {
 
+	// 使用 crypto/rand 真随机9位数
 	randNum, randErr := rand.Int(rand.Reader, big.NewInt(1000000000))
 	if randErr != nil {
 		return ""
