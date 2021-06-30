@@ -573,6 +573,35 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 	return sqlBuilder.String(), nil
 }
 
+//reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
+func reUpdateFinderSQL(dbType string, sqlstr string) (string, error) {
+	if dbType != "clickhouse" {
+		//SQL语句的构造器
+		//SQL statement constructor
+		var sqlBuilder strings.Builder
+		sqlBuilder.WriteString("ALTER TABLE ")
+		sqls := findUpdateTableName(sqlstr)
+		if len(sqls) >= 2 { //如果是更新语句
+			sqlBuilder.WriteString(sqls[1])
+			sqlBuilder.WriteString(" UPDATE ")
+		} else { //如果不是更新语句
+			sqls = findDeleteTableName(sqlstr)
+			if len(sqls) < 2 { //如果也不是删除语句
+				return sqlstr, nil
+			}
+			sqlBuilder.WriteString(sqls[1])
+			sqlBuilder.WriteString(" DELETE ")
+		}
+
+		//截取字符串
+		content := sqlstr[len(sqls[0]):]
+		sqlBuilder.WriteString(content)
+		return sqlBuilder.String(), nil
+	}
+	return sqlstr, nil
+
+}
+
 //查询'order by'在sql中出现的开始位置和结束位置
 //Query the start position and end position of'order by' in SQL
 var orderByExpr = "(?i)\\s+order+\\s+by+\\s"

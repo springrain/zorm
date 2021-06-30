@@ -951,12 +951,21 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		dbType = dbConnection.config.DBType
 	}
 
+	// 数据库语法兼容处理
+	sqlstr, err = reUpdateFinderSQL(dbType, sqlstr)
+	if err != nil {
+		err = fmt.Errorf("UpdateFinder-->reUpdateFinderSQL获取SQL语句错误:%w", err)
+		FuncLogError(err)
+		return affected, err
+	}
+
 	sqlstr, err = reBindSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
 		return affected, err
 	}
+
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
