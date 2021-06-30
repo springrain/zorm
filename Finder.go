@@ -157,7 +157,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	finder.sqlstr = sqlstr
 	//包含单引号,属于非法字符串
 	//Contains single quotes, which are illegal strings
-	if finder.InjectionCheck && (strings.Index(sqlstr, "'") >= 0) {
+	if finder.InjectionCheck && (strings.Contains(sqlstr, "'")) {
 		return "", errors.New("finder-->GetSQL SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
 	}
 
