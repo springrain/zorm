@@ -599,13 +599,13 @@ func findGroupByIndex(strsql string) []int {
 
 //查询 from 在sql中出现的开始位置和结束位置
 //Query the start position and end position of 'from' in sql
-var fromExpr = "\\s+(from)+\\s"
+var fromExpr = "(?i)\\s+from+\\s"
 var fromRegexp, _ = regexp.Compile(fromExpr)
 
 //findFromIndexa 查询from在sql中出现的开始位置和结束位置
 //findFromIndex Query the start position and end position of 'from' in sql
 func findFromIndex(strsql string) []int {
-	loc := fromRegexp.FindStringIndex(strings.ToLower(strsql))
+	loc := fromRegexp.FindStringIndex(strsql)
 	return loc
 }
 
