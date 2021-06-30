@@ -575,25 +575,25 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 
 //查询'order by'在sql中出现的开始位置和结束位置
 //Query the start position and end position of'order by' in SQL
-var orderByExpr = "\\s+(order)\\s+(by)+\\s"
+var orderByExpr = "(?i)\\s+order+\\s+by+\\s"
 var orderByRegexp, _ = regexp.Compile(orderByExpr)
 
 //findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
 // findOrderByIndex Query the start position and end position of'order by' in SQL
 func findOrderByIndex(strsql string) []int {
-	loc := orderByRegexp.FindStringIndex(strings.ToLower(strsql))
+	loc := orderByRegexp.FindStringIndex(strsql)
 	return loc
 }
 
 //查询'group by'在sql中出现的开始位置和结束位置
 //Query the start position and end position of'group by' in sql。
-var groupByExpr = "\\s+(group)\\s+(by)+\\s"
+var groupByExpr = "(?i)\\s+group+\\s+by+\\s"
 var groupByRegexp, _ = regexp.Compile(groupByExpr)
 
 //findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
 //findGroupByIndex Query the start position and end position of'group by' in sql
 func findGroupByIndex(strsql string) []int {
-	loc := groupByRegexp.FindStringIndex(strings.ToLower(strsql))
+	loc := groupByRegexp.FindStringIndex(strsql)
 	return loc
 }
 
@@ -611,22 +611,27 @@ func findFromIndex(strsql string) []int {
 
 // 从更新语句中获取表名
 //update\\s(.+)set\\s.*
-var updateExper = "^update\\s(.+)(\\s+set+\\s)"
-var updateRegexp, _ = regexp.Compile(updateExper)
+var updateExper = "(?i)^update\\s(.+)\\s+set+\\s"
+var updateRegexp = regexp.MustCompile(updateExper)
 
-func findUpdateIndex(strsql string) []int {
-	loc := updateRegexp.FindStringIndex(strings.ToLower(strsql))
-	return loc
+// findUpdateTableName 获取语句中表名
+// 第一个是符合的整体数据,第二个是表名
+func findUpdateTableName(strsql string) []string {
+	matchs := updateRegexp.FindStringSubmatch(strsql)
+	return matchs
 }
 
 // 从删除语句中获取表名
 //delete\\sfrom\\s(.+)where\\s(.*)
-var deleteExper = "^delete\\sfrom\\s(.+)where\\s"
-var deleteRegexp, _ = regexp.Compile(deleteExper)
+var deleteExper = "(?i)^delete\\sfrom\\s(.+)where\\s"
+var deleteRegexp = regexp.MustCompile(deleteExper)
 
-func findDeleteIndex(strsql string) []int {
-	loc := deleteRegexp.FindStringIndex(strings.ToLower(strsql))
-	return loc
+// findDeleteTableName 获取语句中表名
+// 第一个是符合的整体数据,第二个是表名
+func findDeleteTableName(strsql string) []string {
+	matchs := deleteRegexp.FindStringSubmatch(strsql)
+	return matchs
+
 }
 
 //converValueColumnType 根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
