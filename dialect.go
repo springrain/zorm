@@ -27,7 +27,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" { //MySQL,sqlite3,dm数据库,南大通用
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" { //MySQL,sqlite3,dm数据库,南大通用,clickhouse
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
@@ -306,10 +306,16 @@ func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("UPDATE ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(" SET ")
 
+	if dbType == "clickhouse" { //如果是 clickhouse
+		sqlBuilder.WriteString("ALTER TABLE ")
+		sqlBuilder.WriteString(entity.GetTableName())
+		sqlBuilder.WriteString(" UPDATE ")
+	} else { //其他情况
+		sqlBuilder.WriteString("UPDATE ")
+		sqlBuilder.WriteString(entity.GetTableName())
+		sqlBuilder.WriteString(" SET ")
+	}
 	//主键的值
 	//The value of the primary key
 	var pkValue interface{}
@@ -370,8 +376,16 @@ func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("DELETE FROM ")
-	sqlBuilder.WriteString(entity.GetTableName())
+
+	if dbType == "clickhouse" { //如果是 clickhouse
+		sqlBuilder.WriteString("ALTER TABLE ")
+		sqlBuilder.WriteString(entity.GetTableName())
+		sqlBuilder.WriteString(" DELETE ")
+	} else {
+		sqlBuilder.WriteString("DELETE FROM ")
+		sqlBuilder.WriteString(entity.GetTableName())
+	}
+
 	sqlBuilder.WriteString(" WHERE ")
 	sqlBuilder.WriteString(entity.GetPKColumnName())
 	sqlBuilder.WriteString("=?")
