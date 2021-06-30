@@ -609,6 +609,26 @@ func findFromIndex(strsql string) []int {
 	return loc
 }
 
+// 从更新语句中获取表名
+//update\\s(.+)set\\s.*
+var updateExper = "^update\\s(.+)(\\s+set+\\s)"
+var updateRegexp, _ = regexp.Compile(updateExper)
+
+func findUpdateIndex(strsql string) []int {
+	loc := updateRegexp.FindStringIndex(strings.ToLower(strsql))
+	return loc
+}
+
+// 从删除语句中获取表名
+//delete\\sfrom\\s(.+)where\\s(.*)
+var deleteExper = "^delete\\sfrom\\s(.+)where\\s"
+var deleteRegexp, _ = regexp.Compile(deleteExper)
+
+func findDeleteIndex(strsql string) []int {
+	loc := deleteRegexp.FindStringIndex(strings.ToLower(strsql))
+	return loc
+}
+
 //converValueColumnType 根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
 //converValueColumnType According to the field type of the database, it is converted to the type of golang, and the sql.Nullxxx type is not processed
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
