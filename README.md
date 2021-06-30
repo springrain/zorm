@@ -8,7 +8,7 @@ go get gitee.com/chunanyong/zorm
 ```  
 * 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
 * [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
-* 代码精简,主体2500行,零依赖4200行,注释详细,方便定制修改.  
+* 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
 * 支持多库和读写分离
