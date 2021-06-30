@@ -45,7 +45,8 @@ type DataSourceConfig struct {
 	DefaultTxOptions *sql.TxOptions
 
 	//全局禁用事务,默认false.为了处理某些数据库不支持事务,比如clickhouse
-	DisableTransaction bool
+	//禁用事务应该有驱动实现,不应该由orm实现
+	//DisableTransaction bool
 
 	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
 	//db, mock, err := sqlmock.New()

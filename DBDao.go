@@ -179,7 +179,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		return nil, checkerr
 	}
 	//如果没有事务,并且事务没有被禁用,开启事务
-	if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
+	//if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
+	if dbConnection.tx == nil {
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("Transaction 事务开启失败:%w ", beginerr)
@@ -207,9 +208,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//	return
 			//}
 			//如果全局禁用了事务
-			if dbConnection.config.DisableTransaction {
-				return
-			}
+			//if dbConnection.config.DisableTransaction {
+			//	return
+			//}
 			rberr := dbConnection.rollback()
 			if rberr != nil {
 				rberr = fmt.Errorf("recover内事务回滚失败:%w", rberr)
@@ -225,9 +226,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		FuncLogError(err)
 
 		//如果全局禁用了事务
-		if dbConnection.config.DisableTransaction {
-			return info, err
-		}
+		//if dbConnection.config.DisableTransaction {
+		//	return info, err
+		//}
 
 		//不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
 		//It is not the start party to roll back the transaction, which may cause inaccurate log records,but rollback is the most important, roll back as soon as possible
@@ -1544,9 +1545,10 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 	//dbConnection is nil
 	if dbConnection == nil {
 		//是否禁用了事务
-		disabletx := FuncReadWriteStrategy(rwType).config.DisableTransaction
+		//disabletx := FuncReadWriteStrategy(rwType).config.DisableTransaction
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
-		if hastx && (!disabletx) {
+		//if hastx && (!disabletx) {
+		if hastx {
 			return ctx, nil, errDBConnection
 		}
 
@@ -1566,8 +1568,8 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 		if dbConnection.db == nil { //禁止外部构建
 			return ctx, dbConnection, errDBConnection
 		}
-
-		if dbConnection.tx == nil && hastx && (!dbConnection.config.DisableTransaction) { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
+		//if dbConnection.tx == nil && hastx && (!dbConnection.config.DisableTransaction) {
+		if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
 	}
