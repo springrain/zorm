@@ -575,7 +575,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 
 //reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
 func reUpdateFinderSQL(dbType string, sqlstr string) (string, error) {
-	if dbType != "clickhouse" {
+	if dbType == "clickhouse" {
 		//SQL语句的构造器
 		//SQL statement constructor
 		var sqlBuilder strings.Builder
@@ -590,7 +590,7 @@ func reUpdateFinderSQL(dbType string, sqlstr string) (string, error) {
 				return sqlstr, nil
 			}
 			sqlBuilder.WriteString(sqls[1])
-			sqlBuilder.WriteString(" DELETE ")
+			sqlBuilder.WriteString(" DELETE WHERE ")
 		}
 
 		//截取字符串
