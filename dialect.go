@@ -624,7 +624,7 @@ func findSelectFromIndex(strsql string) []int {
 	if len(loc) < 2 {
 		return loc
 	}
-	//最后的FROM后推4位字符串
+	//最后的FROM前推4位字符串
 	loc[0] = loc[1] - 4
 	return loc
 }
