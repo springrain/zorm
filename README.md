@@ -14,7 +14,7 @@ go get gitee.com/chunanyong/zorm
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
-* clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
+* 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
