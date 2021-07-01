@@ -589,7 +589,7 @@ func reUpdateFinderSQL(dbType string, sqlstr *string) (*string, error) {
 
 //查询'order by'在sql中出现的开始位置和结束位置
 //Query the start position and end position of'order by' in SQL
-var orderByExpr = "(?i)\\s+order+\\s+by+\\s"
+var orderByExpr = "(?i)\\s+order\\s+by\\s+"
 var orderByRegexp, _ = regexp.Compile(orderByExpr)
 
 //findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
@@ -601,7 +601,7 @@ func findOrderByIndex(strsql string) []int {
 
 //查询'group by'在sql中出现的开始位置和结束位置
 //Query the start position and end position of'group by' in sql。
-var groupByExpr = "(?i)\\s+group+\\s+by+\\s"
+var groupByExpr = "(?i)\\s+group\\s+by\\s+"
 var groupByRegexp, _ = regexp.Compile(groupByExpr)
 
 //findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
@@ -613,20 +613,26 @@ func findGroupByIndex(strsql string) []int {
 
 //查询 from 在sql中出现的开始位置和结束位置
 //Query the start position and end position of 'from' in sql
-var fromExpr = "(?i)\\s+from+\\s"
+var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
 var fromRegexp, _ = regexp.Compile(fromExpr)
 
 //findFromIndexa 查询from在sql中出现的开始位置和结束位置
-//findFromIndex Query the start position and end position of 'from' in sql
-func findFromIndex(strsql string) []int {
+//findSelectFromIndex Query the start position and end position of 'from' in sql
+func findSelectFromIndex(strsql string) []int {
+	//匹配出来的是完整的字符串,用最后的FROM即可
 	loc := fromRegexp.FindStringIndex(strsql)
+	if len(loc) < 2 {
+		return loc
+	}
+	//最后的FROM后推4位字符串
+	loc[0] = loc[1] - 4
 	return loc
 }
 
 // 从更新语句中获取表名
 //update\\s(.+)set\\s.*
-var updateExper = "(?i)^[ ]*update+\\s(.+)\\s+set+\\s"
-var updateRegexp = regexp.MustCompile(updateExper)
+var updateExper = "(?i)^\\s*update\\s+(\\w+)\\s+set\\s"
+var updateRegexp, _ = regexp.Compile(updateExper)
 
 // findUpdateTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名
@@ -637,8 +643,8 @@ func findUpdateTableName(strsql *string) []string {
 
 // 从删除语句中获取表名
 //delete\\sfrom\\s(.+)where\\s(.*)
-var deleteExper = "(?i)^[ ]*delete+\\s+from+\\s(.+)\\s+where\\s"
-var deleteRegexp = regexp.MustCompile(deleteExper)
+var deleteExper = "(?i)^\\s*delete\\s+from\\s+(\\w+)\\s+where\\s"
+var deleteRegexp, _ = regexp.Compile(deleteExper)
 
 // findDeleteTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名

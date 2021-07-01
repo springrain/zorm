@@ -1486,7 +1486,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {
 		countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
 	} else {
-		locFrom := findFromIndex(countsql)
+		locFrom := findSelectFromIndex(countsql)
 		//没有找到FROM关键字,认为是异常语句
 		//The FROM keyword was not found, which is considered an abnormal statement
 		if len(locFrom) == 0 {
