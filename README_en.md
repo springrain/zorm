@@ -197,7 +197,7 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
-		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
+		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
