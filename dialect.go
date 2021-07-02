@@ -527,7 +527,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 //reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dbType string, sqlstr string) (string, error) {
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" {
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" {
 		return sqlstr, nil
 	}
 
