@@ -215,7 +215,8 @@ func init() {
 func TestInsert(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个demo对象
 		demo := newDemoStruct()
@@ -237,7 +238,8 @@ func TestInsert(t *testing.T) {
 func TestInsertSlice(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
@@ -268,7 +270,8 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -309,19 +312,16 @@ func TestQueryRow(t *testing.T) {
 	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
 	//执行查询
-	has,err := zorm.QueryRow(ctx, finder, demo)
+	_, err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-
-	if has { //数据库存在数据
-		//打印结果
-		fmt.Println(demo)
-	}
+	//打印结果
+	fmt.Println(demo)
 }
 
 //TestQueryRowMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
@@ -330,7 +330,7 @@ func TestQueryRowMap(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 	//执行查询
 	resultMap, err := zorm.QueryRowMap(ctx, finder)
 
@@ -350,10 +350,10 @@ func TestQuery(t *testing.T) {
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-	page.PageNo = 1    //查询第1页,默认是1
-	page.PageSize = 20 //每页20条,默认是20
+	page.PageNo = 2   //查询第1页,默认是1
+	page.PageSize = 2 //每页20条,默认是20
 
-	//执行查询.如果不想分页,查询所有数据,page传入nil
+	//执行查询
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -369,8 +369,9 @@ func TestQueryMap(t *testing.T) {
 
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-
-	//执行查询.如果不想分页,查询所有数据,page传入nil
+	page.PageNo = 1   //查询第1页,默认是1
+	page.PageSize = 2 //每页20条,默认是20
+	//执行查询
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -383,11 +384,12 @@ func TestQueryMap(t *testing.T) {
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
@@ -406,12 +408,13 @@ func TestUpdateNotZeroValue(t *testing.T) {
 func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "TestUpdate"
 
 		_, err := zorm.Update(ctx, demo)
@@ -427,12 +430,13 @@ func TestUpdate(t *testing.T) {
 //TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
-		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
 		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateFinder(ctx, finder)
@@ -449,14 +453,15 @@ func TestUpdateFinder(t *testing.T) {
 //TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
 		//设置主键名称
 		entityMap.PkColumnName = "id"
 		//Set 设置数据库的字段值,主键必须有值
-		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("userName", "TestUpdateEntityMap")
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
@@ -473,10 +478,11 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
-		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
+		demo.Id = "20210630163227149563000042432429"
 
 		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
 		_, err := zorm.Delete(ctx, demo)

@@ -210,7 +210,7 @@ func TestInsert(t *testing.T) {
 
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//Create a demo object
 		demo := newDemoStruct()
@@ -234,7 +234,7 @@ func TestInsertSlice(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
@@ -266,7 +266,7 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	// You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -408,7 +408,7 @@ func TestUpdate(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//Declare a pointer to an object to update data.
@@ -431,7 +431,7 @@ func TestUpdate(t *testing.T) {
 // or even manually write insert statement
 func TestUpdateFinder(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
@@ -454,7 +454,7 @@ func TestUpdateFinder(t *testing.T) {
 func TestUpdateEntityMap(t *testing.T) {
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -479,7 +479,7 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.To delete a struct object, the primary key must have a value.
 func TestDelete(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
