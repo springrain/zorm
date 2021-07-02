@@ -613,6 +613,7 @@ mysql.RegisterResource(config.GetATConfig().DSN)
 //后续正常初始化zorm
 
 //tm注册事务服务,参照官方例子
+//计划改进,基于事务管理器实现,不使用proxy
 tm.Implement(svc.ProxySvc)
 
 //................//
