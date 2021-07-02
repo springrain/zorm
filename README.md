@@ -14,6 +14,7 @@ go get gitee.com/chunanyong/zorm
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
+* 支持使用seata-golang实现分布式事务  
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
@@ -581,7 +582,52 @@ func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structF
 zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
+##  分布式事务
+基于zorm和seata-golang良好的设计,无需修改业务代码,零侵入实现分布式事务.  
+```golang
+//DataSourceConfig 配置  DefaultTxOptions
+//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
+//注册mysql驱动
+import (
+	"github.com/opentrx/mysql/v2"
+	"github.com/opentrx/seata-golang/v2/pkg/client"
+	"github.com/opentrx/seata-golang/v2/pkg/client/config"
+	"github.com/opentrx/seata-golang/v2/pkg/client/rm"
+	"github.com/opentrx/seata-golang/v2/pkg/client/tm"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	seataContext "github.com/opentrx/seata-golang/v2/pkg/client/base/context"
+)
+
+//读取配置文件
+configPath := os.Getenv("ConfigPath")
+conf := config.InitConfiguration(configPath)
+//设置日志
+log.Init(conf.Log.LogPath, conf.Log.LogLevel)
+//初始化配置
+client.Init(conf)
+//注册mysql驱动
+rm.RegisterTransactionServiceServer(mysql.GetDataSourceManager())
+mysql.RegisterResource(config.GetATConfig().DSN)
+
+//后续正常初始化zorm
+
+//tm注册事务服务,参照官方例子
+tm.Implement(svc.ProxySvc)
+
+//................//
+
+//ctx传递事务 XID
+
+//通过seataContext获取XID
+rootContext := ctx.(*seataContext.RootContext)
+
+//获取XID.可以通过gin的header传递,或者其他方式传递
+ xid:=rootContext.GetXID()
+
+// xid绑定到ctx,后续正常使用zorm传递ctx即可
+ctx =context.WithValue(ctx,mysql.XID,xid)
+```
 
 ##  性能压测
 
