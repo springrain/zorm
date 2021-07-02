@@ -583,7 +583,7 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 ##  分布式事务
-基于zorm和seata-golang良好的设计,无需修改业务代码,零侵入实现分布式事务.  
+基于seata-golang实现分布式事务.  
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
