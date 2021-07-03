@@ -287,8 +287,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	//If it is the transaction opener, commit the transaction
 	if txOpen {
 		commitError := dbConnection.commit()
-		//如果是全局事务的开启方
-		if seataTxOpen {
+		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
+		if commitError == nil && seataTxOpen {
 			seataErr := seataGlobalTransaction.SeataCommit(ctx)
 			if seataErr != nil {
 				seataErr = fmt.Errorf("Transaction-->commit seataGlobalTransaction 事务提交失败:%w", seataErr)
