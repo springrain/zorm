@@ -187,12 +187,16 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if funcSeataTx != nil {
 		var seataErr error
 		//获取Seata XID
-		seataXID := ""
+		//seataXID := ""
 		ctxXIDval := ctx.Value("XID")
-		if ctxXIDval != nil { //如果本地ctx中XID有值
-			seataXID, _ = ctxXIDval.(string)
+		if ctxXIDval != nil { //如果本地ctx中有XID
+			seataXID, _ := ctxXIDval.(string)
 			//不知道为什么需要两个Key,还需要请教seata-golang团队
+			//seataContext Bind 需要 TX_XID
 			ctx = context.WithValue(ctx, "TX_XID", seataXID)
+
+		} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方
+			seataTxOpen = true
 		}
 		seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
 		if seataErr != nil {
@@ -209,9 +213,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		//else { //尝试从seata的context中获取XID
 		//	seataXID = seataGlobalTransaction.SeataTransactionXID(ctx)
 		//}
-		if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
-			seataTxOpen = true
-		}
+		//if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
+		//	seataTxOpen = true
+		//}
 	}
 
 	//如果没有事务,并且事务没有被禁用,开启事务
