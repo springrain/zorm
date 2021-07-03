@@ -185,6 +185,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	funcSeataTx := dbConnection.config.FuncSeataGlobalTransaction
 	//实现ISeataGlobalTransaction接口的事务对象
 	var seataGlobalTransaction ISeataGlobalTransaction
+	//seata分布式事务的异常
 	var seataErr error
 	if funcSeataTx != nil {
 
