@@ -646,19 +646,19 @@ type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// FuncSeataGlobalTransaction zorm的全局事务函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
-func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+// zorm.FuncSeataGlobalTransaction zorm的全局事务函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (ISeataGlobalTransaction, context.Context, error) {
 	//获取seata的rootContext
 	rootContext := seataContext.NewRootContext(ctx)
 	//创建seata事务
 	seataTx := tm.GetCurrentOrCreate(rootContext)
-	//使用ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
+	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
 	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
 
 	return seataGlobalTransaction, rootContext, nil
 }
 
-//实现ISeataGlobalTransaction接口
+//实现zorm.ISeataGlobalTransaction接口
 func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
 	rootContext := ctx.(*seataContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
@@ -678,7 +678,6 @@ func (gtx ZormSeataGlobalTransaction) SeataTransactionXID(ctx context.Context) s
 	rootContext := ctx.(*seataContext.RootContext)
 	return rootContext.GetXID()
 }
-
 ```
 
 ##  性能压测
