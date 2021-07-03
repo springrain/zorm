@@ -186,6 +186,14 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	var seataGlobalTransaction ISeataGlobalTransaction
 	if funcSeataTx != nil {
 		var seataErr error
+		//获取Seata XID
+		seataXID := ""
+		ctxXIDval := ctx.Value("XID")
+		if ctxXIDval != nil { //如果本地ctx中XID有值
+			seataXID, _ = ctxXIDval.(string)
+			//不知道为什么需要两个Key,还需要请教seata-golang团队
+			ctx = context.WithValue(ctx, "TX_XID", seataXID)
+		}
 		seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
 		if seataErr != nil {
 			seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
@@ -198,14 +206,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			return nil, seataErr
 		}
 
-		//获取Seata XID
-		seataXID := ""
-		ctxXIDval := ctx.Value("XID")
-		if ctxXIDval != nil { //如果本地ctx中XID有值
-			seataXID, _ = ctxXIDval.(string)
-		} else { //尝试从seata的context中获取XID
-			seataXID = seataGlobalTransaction.SeataTransactionXID(ctx)
-		}
+		//else { //尝试从seata的context中获取XID
+		//	seataXID = seataGlobalTransaction.SeataTransactionXID(ctx)
+		//}
 		if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
 			seataTxOpen = true
 		}
