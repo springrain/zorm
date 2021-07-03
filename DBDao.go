@@ -300,10 +300,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			FuncLogError(commitError)
 
 			//本地分支事务提交失败,整体回滚分布式事务
-			seataErr := seataGlobalTransaction.SeataRollback(ctx)
-			if seataErr != nil {
-				seataErr = fmt.Errorf("Transaction-->commit失败,然后回滚seataGlobalTransaction事务也失败:%w", seataErr)
-				FuncLogError(seataErr)
+			if seataGlobalTransaction != nil {
+				seataErr := seataGlobalTransaction.SeataRollback(ctx)
+				if seataErr != nil {
+					seataErr = fmt.Errorf("Transaction-->commit失败,然后回滚seataGlobalTransaction事务也失败:%w", seataErr)
+					FuncLogError(seataErr)
+				}
 			}
 
 			return info, commitError
