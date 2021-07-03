@@ -170,6 +170,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
 	txOpen := false
+	//是否是seata全局事务的开启方.如果ctx中没有xid,认为是开启方
+	seataTxOpen := false
 	//如果dbConnection不存在,则会用默认的datasource开启事务
 	// If db Connection does not exist, the default datasource will be used to start the transaction
 	var checkerr error
@@ -178,9 +180,37 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if checkerr != nil {
 		return nil, checkerr
 	}
+
+	//seata的事务函数
+	funcSeataTx := dbConnection.config.FuncSeataGlobalTransaction
+	var seataGlobalTransaction ISeataGlobalTransaction
+	if funcSeataTx != nil {
+		var seataErr error
+		seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
+		if seataErr != nil {
+			seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
+			FuncLogError(seataErr)
+			return nil, seataErr
+		}
+		if seataGlobalTransaction == nil {
+			seataErr = errors.New("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
+			FuncLogError(seataErr)
+			return nil, seataErr
+		}
+
+		//获取Seata XID
+		seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
+		if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
+			seataTxOpen = true
+		}
+	}
+
 	//如果没有事务,并且事务没有被禁用,开启事务
 	//if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
 	if dbConnection.tx == nil {
+		if seataGlobalTransaction != nil {
+			seataGlobalTransaction.SeataBegin(ctx)
+		}
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("Transaction 事务开启失败:%w ", beginerr)
@@ -216,6 +246,13 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 				rberr = fmt.Errorf("recover内事务回滚失败:%w", rberr)
 				FuncLogError(rberr)
 			}
+			if seataGlobalTransaction != nil {
+				seataErr := seataGlobalTransaction.SeataRollback(ctx)
+				if seataErr != nil {
+					seataErr = fmt.Errorf("recover内seataGlobalTransaction事务回滚失败:%w", seataErr)
+					FuncLogError(seataErr)
+				}
+			}
 
 		}
 	}()
@@ -237,17 +274,33 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			rberr = fmt.Errorf("Transaction-->rollback事务回滚失败:%w", rberr)
 			FuncLogError(rberr)
 		}
+		if seataGlobalTransaction != nil {
+			seataErr := seataGlobalTransaction.SeataRollback(ctx)
+			if seataErr != nil {
+				seataErr = fmt.Errorf("Transaction-->rollback seataGlobalTransaction事务回滚失败:%w", seataErr)
+				FuncLogError(seataErr)
+			}
+		}
 		return info, err
 	}
 	//如果是事务开启方,提交事务
 	//If it is the transaction opener, commit the transaction
 	if txOpen {
 		commitError := dbConnection.commit()
+		//如果是全局事务的开启方
+		if seataTxOpen {
+			seataErr := seataGlobalTransaction.SeataCommit(ctx)
+			if seataErr != nil {
+				seataErr = fmt.Errorf("Transaction-->commit seataGlobalTransaction 事务提交失败:%w", seataErr)
+				FuncLogError(seataErr)
+			}
+		}
 		if commitError != nil {
 			commitError = fmt.Errorf("Transaction-->commit事务提交失败:%w", commitError)
 			FuncLogError(commitError)
 			return info, commitError
 		}
+
 	}
 
 	return nil, nil

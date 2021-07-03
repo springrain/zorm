@@ -52,6 +52,8 @@ type DataSourceConfig struct {
 	//db, mock, err := sqlmock.New()
 	//MockSQLDB *sql.DB
 
+	//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+	FuncSeataGlobalTransaction func(ctx context.Context) (ISeataGlobalTransaction, context.Context, error)
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
