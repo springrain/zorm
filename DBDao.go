@@ -187,7 +187,6 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if funcSeataTx != nil {
 		var seataErr error
 		//获取Seata XID
-		//seataXID := ""
 		ctxXIDval := ctx.Value("XID")
 		if ctxXIDval != nil { //如果本地ctx中有XID
 			seataXID, _ := ctxXIDval.(string)
