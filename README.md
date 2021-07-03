@@ -633,7 +633,7 @@ rootContext := ctx.(*seataContext.RootContext)
 ctx =context.WithValue(ctx,mysql.XID,xid)
 ```
 
-### 无proxy模式
+### 全局托管模式
 
 ```golang
 
@@ -641,13 +641,13 @@ ctx =context.WithValue(ctx,mysql.XID,xid)
 //tm.Implement(svc.ProxySvc)
 
 
-// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现ISeataGlobalTransaction接口
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
 type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// FuncSeataGlobalTransaction zorm的全局事务函数,配置DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
-func MyFuncSeataGlobalTransaction(ctx context.Context) (ISeataGlobalTransaction, context.Context, error) {
+// FuncSeataGlobalTransaction zorm的全局事务函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
 	//获取seata的rootContext
 	rootContext := seataContext.NewRootContext(ctx)
 	//创建seata事务

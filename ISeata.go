@@ -5,13 +5,13 @@ import "context"
 // ISeataGlobalTransaction seata-golang的包装接口,隔离seata-golang的依赖
 // 声明一个struct,实现这个接口,并配置实现 FuncSeataGlobalTransaction 函数
 /**
-// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现ISeataGlobalTransaction接口
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
 type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// FuncSeataGlobalTransaction zorm的全局事务函数,配置DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
-func MyFuncSeataGlobalTransaction(ctx context.Context) (ISeataGlobalTransaction, context.Context, error) {
+// FuncSeataGlobalTransaction zorm的全局事务函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
 	//获取seata的rootContext
 	rootContext := seataContext.NewRootContext(ctx)
 	//创建seata事务
