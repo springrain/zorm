@@ -199,7 +199,13 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		}
 
 		//获取Seata XID
-		seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
+		seataXID := ""
+		ctxXIDval := ctx.Value("XID")
+		if ctxXIDval != nil { //如果本地ctx中XID有值
+			seataXID, _ = ctxXIDval.(string)
+		} else { //尝试从seata的context中获取XID
+			seataXID = seataGlobalTransaction.SeataTransactionXID(ctx)
+		}
 		if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
 			seataTxOpen = true
 		}
