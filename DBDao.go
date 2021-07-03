@@ -181,7 +181,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		return nil, checkerr
 	}
 
-	//seata的事务函数
+	//适配seata分布式事务的函数
 	funcSeataTx := dbConnection.config.FuncSeataGlobalTransaction
 	var seataGlobalTransaction ISeataGlobalTransaction
 	if funcSeataTx != nil {
