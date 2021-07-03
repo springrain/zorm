@@ -637,7 +637,7 @@ ctx =context.WithValue(ctx,mysql.XID,xid)
 
 ```golang
 
-//tm注册事务服务,参照官方例子. 不使用proxy模式,全局托管分布式事务
+//不使用proxy模式,全局托管分布式事务,不需要proxy代理,不修改业务代码,实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
 
