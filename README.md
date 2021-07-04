@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
+go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -14,7 +14,7 @@ go get gitee.com/chunanyong/zorm
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
-* 支持使用seata-golang实现分布式事务,支持全局托管分布式事务,不修改业务代码,零侵入实现分布式事务
+* 集成seata-golang,支持全局托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
