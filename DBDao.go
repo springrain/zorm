@@ -152,7 +152,7 @@ Transaction 的示例代码
 // 如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 // return的error如果不为nil,事务就会回滚
 // 如果使用了分布式事务,需要设置分布式事务函数zorm.DataSourceConfig.FuncSeataGlobalTransaction,实现ISeataGlobalTransaction接口
-// 如果是分布式事务开启方,需要在本地事务前开启分布事务,开启之后获取XID,设值到ctx的XID和TX_XID.XID是seata MySQL驱动需要,TX_XID是tm NewRootContext需要
+// 如果是分布式事务开启方,需要在本地事务前开启分布事务,开启之后获取XID,设值到ctx的XID和TX_XID.XID是seata MySQL驱动需要,TX_XID是seataContext NewRootContext需要
 // 分布式事务需要传递XID,接收方context.WithValue(ctx, "XID", XID)绑定到ctx
 // 如果分支事务出现异常或者回滚,会立即回滚分布式事务
 // Transaction method, isolate db Connection related API. This method must be used for transaction processing and unified transaction mode
@@ -204,7 +204,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if ctxXIDval != nil { //如果本地ctx中有XID
 				seataXID, _ := ctxXIDval.(string)
 				//不知道为什么需要两个Key,还需要请教seata-golang团队
-				//Seata mysql驱动需要 XID,seataContext tm NewRootContext 需要 TX_XID
+				//Seata mysql驱动需要 XID,seataContext seataContext NewRootContext 需要 TX_XID
 				ctx = context.WithValue(ctx, "TX_XID", seataXID)
 
 			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
@@ -233,7 +233,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			}
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
-			//Seata mysql驱动需要 XID,seataContext tm NewRootContext 需要 TX_XID
+			//Seata mysql驱动需要 XID,seataContext seataContext NewRootContext 需要 TX_XID
 			seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
 			if len(seataXID) < 1 {
 				seataErr = errors.New("seataGlobalTransaction.SeataBegin无异常开启后,获取的XID为空")
