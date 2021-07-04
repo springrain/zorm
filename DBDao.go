@@ -169,7 +169,7 @@ Transaction 的示例代码
 func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
 	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
-	txOpen := false
+	localTxOpen := false
 	//是否是seata全局事务的开启方.如果ctx中没有xid,认为是开启方
 	seataTxOpen := false
 	//如果dbConnection不存在,则会用默认的datasource开启事务
@@ -206,7 +206,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
 				seataTxOpen = true
 			}
-			//获取seata事务实现对象,用于控制事务提交和回滚.
+			//获取seata事务实现对象,用于控制事务提交和回滚.需要ctx中TX_XID有值,将分支事务关联到主事务
 			seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
 			if seataErr != nil {
 				seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
@@ -233,8 +233,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
 			ctx = context.WithValue(ctx, "XID", seataXID)
 			ctx = context.WithValue(ctx, "TX_XID", seataXID)
-
 		}
+
+		//开启本地事务/分支事务
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("Transaction 事务开启失败:%w ", beginerr)
@@ -243,7 +244,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		}
 		//本方法开启的事务,由本方法提交
 		//The transaction opened by this method is submitted by this method
-		txOpen = true
+		localTxOpen = true
 	}
 
 	defer func() {
@@ -311,7 +312,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	}
 	//如果是事务开启方,提交事务
 	//If it is the transaction opener, commit the transaction
-	if txOpen {
+	if localTxOpen {
 		commitError := dbConnection.commit()
 		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
 		if commitError == nil && seataTxOpen {
