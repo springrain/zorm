@@ -38,7 +38,7 @@ func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
 	return gtx.SeataRollback(rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) SeataTransactionXID(ctx context.Context) string {
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 	rootContext := ctx.(*seataContext.RootContext)
 	return rootContext.GetXID()
 }
@@ -55,5 +55,5 @@ type ISeataGlobalTransaction interface {
 	SeataRollback(ctx context.Context) error
 
 	//获取seata事务的XID
-	SeataTransactionXID(ctx context.Context) string
+	GetSeataXID(ctx context.Context) string
 }

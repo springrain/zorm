@@ -234,7 +234,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
 			//Seata mysql驱动需要 XID,seataContext.NewRootContext 需要 TX_XID
-			seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
+			seataXID := seataGlobalTransaction.GetSeataXID(ctx)
 			if len(seataXID) < 1 {
 				seataErr = errors.New("seataGlobalTransaction.SeataBegin无异常开启后,获取的XID为空")
 				FuncLogError(seataErr)
