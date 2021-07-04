@@ -187,51 +187,53 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	var seataGlobalTransaction ISeataGlobalTransaction
 	//seata分布式事务的异常
 	var seataErr error
-	if funcSeataTx != nil {
-
-		//获取Seata XID
-		ctxXIDval := ctx.Value("XID")
-		if ctxXIDval != nil { //如果本地ctx中有XID
-			seataXID, _ := ctxXIDval.(string)
-			//不知道为什么需要两个Key,还需要请教seata-golang团队
-			//seataContext Bind 需要 TX_XID
-			ctx = context.WithValue(ctx, "TX_XID", seataXID)
-
-		} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方
-			seataTxOpen = true
-		}
-		//获取seata事务实现对象,用于控制事务提交和回滚.
-		seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
-		if seataErr != nil {
-			seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
-			FuncLogError(seataErr)
-			return nil, seataErr
-		}
-		if seataGlobalTransaction == nil {
-			seataErr = errors.New("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
-			FuncLogError(seataErr)
-			return nil, seataErr
-		}
-
-		//else { //尝试从seata的context中获取XID
-		//	seataXID = seataGlobalTransaction.SeataTransactionXID(ctx)
-		//}
-		//if len(seataXID) < 1 { //如果不存在XID,认为是seata分布式事务的开启方
-		//	seataTxOpen = true
-		//}
-	}
 
 	//如果没有事务,并且事务没有被禁用,开启事务
+	//开启本地事务前,需要拿到分布式事务对象
 	//if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
 	if dbConnection.tx == nil {
 
-		if seataGlobalTransaction != nil && seataTxOpen { //如果是分布事务开启方,启动分布式事务
+		//需要开启分布式事务,初始化分布式事务对象,判断是否是分布式事务入口
+		if funcSeataTx != nil {
+			//获取Seata XID
+			ctxXIDval := ctx.Value("XID")
+			if ctxXIDval != nil { //如果本地ctx中有XID
+				seataXID, _ := ctxXIDval.(string)
+				//不知道为什么需要两个Key,还需要请教seata-golang团队
+				//Seata mysql驱动需要 XID,seataContext tm Bind 需要 TX_XID
+				ctx = context.WithValue(ctx, "TX_XID", seataXID)
+
+			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
+				seataTxOpen = true
+			}
+			//获取seata事务实现对象,用于控制事务提交和回滚.
+			seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
+			if seataErr != nil {
+				seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
+				FuncLogError(seataErr)
+				return nil, seataErr
+			}
+			if seataGlobalTransaction == nil {
+				seataErr = errors.New("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
+				FuncLogError(seataErr)
+				return nil, seataErr
+			}
+
+		}
+		if seataTxOpen { //如果是分布事务开启方,启动分布式事务
 			seataErr = seataGlobalTransaction.SeataBegin(ctx)
 			if seataErr != nil {
 				seataErr = fmt.Errorf("Transaction 分布式事务开启失败:%w ", seataErr)
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
+
+			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
+			//Seata mysql驱动需要 XID,seataContext tm Bind 需要 TX_XID
+			seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
+			ctx = context.WithValue(ctx, "XID", seataXID)
+			ctx = context.WithValue(ctx, "TX_XID", seataXID)
+
 		}
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
