@@ -151,6 +151,10 @@ Transaction 的示例代码
 // bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
 // 如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
 // return的error如果不为nil,事务就会回滚
+// 如果使用了分布式事务,需要设置分布式事务函数zorm.DataSourceConfig.FuncSeataGlobalTransaction,实现ISeataGlobalTransaction接口
+// 如果是分布式事务开启方,需要在本地事务前开启分布事务,开启之后获取XID,设值到ctx的XID和TX_XID.XID是seata MySQL驱动需要,TX_XID是tm Bind需要
+// 分布式事务需要传递XID,接收方context.WithValue(ctx, "XID", XID)绑定到ctx
+// 如果分支事务出现异常或者回滚,会立即回滚分布式事务
 // Transaction method, isolate db Connection related API. This method must be used for transaction processing and unified transaction mode
 // If there is no db Connection in the input ctx, use default Dao to start the transaction and submit it finally
 // If the input ctx has db Connection and no transaction, call db Connection.begin() to start the transaction and finally commit
@@ -206,7 +210,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
 				seataTxOpen = true
 			}
-			//获取seata事务实现对象,用于控制事务提交和回滚.需要ctx中TX_XID有值,将分支事务关联到主事务
+			//获取seata事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
 			seataGlobalTransaction, ctx, seataErr = funcSeataTx(ctx)
 			if seataErr != nil {
 				seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
