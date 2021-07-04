@@ -204,7 +204,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if ctxXIDval != nil { //如果本地ctx中有XID
 				seataXID, _ := ctxXIDval.(string)
 				//不知道为什么需要两个Key,还需要请教seata-golang团队
-				//Seata mysql驱动需要 XID,seataContext seataContext.NewRootContext 需要 TX_XID
+				//Seata mysql驱动需要 XID,seataContext.NewRootContext 需要 TX_XID
 				ctx = context.WithValue(ctx, "TX_XID", seataXID)
 
 			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
@@ -233,7 +233,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			}
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
-			//Seata mysql驱动需要 XID,seataContext seataContext.NewRootContext 需要 TX_XID
+			//Seata mysql驱动需要 XID,seataContext.NewRootContext 需要 TX_XID
 			seataXID := seataGlobalTransaction.SeataTransactionXID(ctx)
 			if len(seataXID) < 1 {
 				seataErr = errors.New("seataGlobalTransaction.SeataBegin无异常开启后,获取的XID为空")
