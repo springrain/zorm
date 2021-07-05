@@ -592,7 +592,7 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-// 引入依赖包
+// 引入V2版本的依赖包,V1的参考官方例子
 import (
 	"github.com/opentrx/mysql/v2"
 	"github.com/opentrx/seata-golang/v2/pkg/client"
@@ -616,7 +616,7 @@ mysql.RegisterResource(config.GetATConfig().DSN)
 
 //后续正常初始化zorm
 
-//tm注册事务服务,参照官方例子
+//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
 tm.Implement(svc.ProxySvc)
 
 //................//
