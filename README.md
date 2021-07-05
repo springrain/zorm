@@ -592,45 +592,56 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-// 引入V2版本的依赖包,V1的参考官方例子
+// 引入V1版本的依赖包,V2的参考官方例子
 import (
-	"github.com/opentrx/mysql/v2"
-	"github.com/opentrx/seata-golang/v2/pkg/client"
-	"github.com/opentrx/seata-golang/v2/pkg/client/config"
-	"github.com/opentrx/seata-golang/v2/pkg/client/rm"
-	"github.com/opentrx/seata-golang/v2/pkg/client/tm"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	seataContext "github.com/opentrx/seata-golang/v2/pkg/client/base/context"
+	"github.com/opentrx/mysql"
+	"github.com/opentrx/seata-golang/pkg/client"
+	"github.com/opentrx/seata-golang/pkg/client/config"
+	"github.com/opentrx/seata-golang/pkg/client/rm"
+	"github.com/opentrx/seata-golang/pkg/client/tm"
+	seataContext "github.com/opentrx/seata-golang/pkg/client/context"
 )
 
-//读取配置文件
-configPath := os.Getenv("ConfigPath")
-conf := config.InitConfiguration(configPath)
-//设置日志
-log.Init(conf.Log.LogPath, conf.Log.LogLevel)
-//初始化配置
-client.Init(conf)
-//注册mysql驱动
-rm.RegisterTransactionServiceServer(mysql.GetDataSourceManager())
-mysql.RegisterResource(config.GetATConfig().DSN)
+//配置文件路径
+var configPath = "/Users/scottlewis/dksl/temp/seata-samples/http/aggregation_svc/conf/client.yml"
 
-//后续正常初始化zorm
+func main() {
 
-//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
-tm.Implement(svc.ProxySvc)
+	//初始化配置
+	conf := config.InitConf(configPath)
+	//初始化RPC客户端
+	client.NewRpcClient()
+	//注册mysql驱动
+	mysql.InitDataResourceManager()
+	mysql.RegisterResource(config.GetATConfig().DSN)
+	sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
 
-//................//
+	//后续正常初始化zorm
 
-//ctx传递事务 XID
+	//................//
+	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	tm.Implement(svc.ProxySvc)
+	//................//
 
-//通过seataContext获取XID
-rootContext := ctx.(*seataContext.RootContext)
 
-//获取XID.可以通过gin的header传递,或者其他方式传递
- xid:=rootContext.GetXID()
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//rootContext := ctx.(*seataContext.RootContext)
 
-// xid绑定到ctx,后续正常使用zorm传递ctx即可
-ctx =context.WithValue(ctx,mysql.XID,xid)
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+
+	//开始事务
+	seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+
+	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
+	xid:=rootContext.GetXID()
+
+	// 接受传递过来的XID,绑定到本地ctx
+	ctx =context.WithValue(ctx,mysql.XID,xid)
+
+
+}
 ```
 
 ### 全局托管模式
