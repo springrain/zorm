@@ -592,7 +592,7 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-//注册mysql驱动
+// 引入依赖包
 import (
 	"github.com/opentrx/mysql/v2"
 	"github.com/opentrx/seata-golang/v2/pkg/client"
