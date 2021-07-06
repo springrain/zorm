@@ -208,7 +208,7 @@ func init() {
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
-	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction
+	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
@@ -652,43 +652,36 @@ func main() {
 //tm.Implement(svc.ProxySvc)
 
 
-// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
-type ZormSeataGlobalTransaction struct {
-	*tm.DefaultGlobalTransaction
-}
-
-// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
-func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
-	//获取seata的rootContext
-	rootContext := seataContext.NewRootContext(ctx)
-	//创建seata事务
-	seataTx := tm.GetCurrentOrCreate(rootContext)
-	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
-	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
-
-	return seataGlobalTransaction, rootContext, nil
-}
-
 //实现zorm.ISeataGlobalTransaction接口
 func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
+	rootContext, ok := ctx.(*seataContext.RootContext)
+	if !ok {
+		rootContext = seataContext.NewRootContext(ctx)
+	}
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
+	rootContext, ok := ctx.(*seataContext.RootContext)
+	if !ok {
+		rootContext = seataContext.NewRootContext(ctx)
+	}
 	return gtx.Commit(rootContext)
 }
 
 func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
-	return gtx.SeataRollback(rootContext)
+	rootContext, ok := ctx.(*seataContext.RootContext)
+	if !ok {
+		rootContext = seataContext.NewRootContext(ctx)
+	}
+	return gtx.Rollback(rootContext)
 }
 
 func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 	rootContext := ctx.(*seataContext.RootContext)
 	return rootContext.GetXID()
 }
+
 ```
 
 ##  性能压测
