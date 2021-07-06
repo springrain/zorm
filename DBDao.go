@@ -293,9 +293,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	}()
 
 	//强制转换context的类型,不然执行事务会报异常
-	if seataGlobalTransaction != nil {
-		ctx = context.WithValue(ctx, "zorm", "")
-	}
+	//if seataGlobalTransaction != nil {
+	//ctx = context.WithValue(ctx, "zorm", "")
+	//}
 	info, err := doTransaction(ctx)
 	if err != nil {
 		err = fmt.Errorf("Transaction-->doTransaction事务执行失败:%w", err)
