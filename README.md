@@ -595,15 +595,15 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 // 引入V1版本的依赖包,V2的参考官方例子
 import (
 	"github.com/opentrx/mysql"
-	"github.com/opentrx/seata-golang/pkg/client"
-	"github.com/opentrx/seata-golang/pkg/client/config"
-	"github.com/opentrx/seata-golang/pkg/client/rm"
-	"github.com/opentrx/seata-golang/pkg/client/tm"
-	seataContext "github.com/opentrx/seata-golang/pkg/client/context"
+	"github.com/transaction-wg/seata-golang/pkg/client"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+	"github.com/transaction-wg/seata-golang/pkg/client/rm"
+	"github.com/transaction-wg/seata-golang/pkg/client/tm"
+	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
 )
 
 //配置文件路径
-var configPath = "/Users/scottlewis/dksl/temp/seata-samples/http/aggregation_svc/conf/client.yml"
+var configPath = "./conf/client.yml"
 
 func main() {
 
