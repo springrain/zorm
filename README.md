@@ -654,6 +654,7 @@ func main() {
 //tm.Implement(svc.ProxySvc)
 
 // 建议以下代码放到单独的文件里
+//................//
 
 // ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
 type ZormSeataGlobalTransaction struct {
@@ -693,6 +694,7 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 	return rootContext.GetXID()
 }
 
+//................//
 ```
 
 ##  性能压测
