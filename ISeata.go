@@ -6,7 +6,7 @@ import "context"
 // 声明一个struct,实现这个接口,并配置实现 FuncSeataGlobalTransaction 函数
 /**
 // 建议以下代码放到单独的文件里
-
+//................//
 // ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
 type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
@@ -43,6 +43,7 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 	rootContext := ctx.(*seataContext.RootContext)
 	return rootContext.GetXID()
 }
+//................//
 **/
 
 type ISeataGlobalTransaction interface {
