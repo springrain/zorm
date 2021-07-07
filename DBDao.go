@@ -189,7 +189,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	funcSeataTx := dbConnection.config.FuncSeataGlobalTransaction
 	//实现ISeataGlobalTransaction接口的事务对象
 	var seataGlobalTransaction ISeataGlobalTransaction
-	//seata分布式事务的 rootContext
+	//seata分布式事务的 rootContext,和业务的ctx区别开来,如果业务ctx使用WithValue,就会出现差异
 	var seataRootContext context.Context
 	//seata分布式事务的异常
 	var seataErr error
