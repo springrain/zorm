@@ -617,7 +617,7 @@ func main() {
 	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
 
 
-	//后续正常初始化zorm,zorm的初始化一定要放到seata mysql 初始化后面
+	//后续正常初始化zorm,一定要放到seata mysql 初始化后面!!!
 
 	//................//
 	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
