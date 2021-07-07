@@ -205,6 +205,7 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 		//DefaultTxOptions: nil,
+		//如果是使用seata-golang分布式事务,建议使用默认配置
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
@@ -586,7 +587,7 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 ##  分布式事务
-基于seata-golang实现分布式事务. 
+基于seata-golang实现分布式事务.目前seata-golang提供的tc服务端还不稳定,建议使用java的tc-server.  
 ### proxy模式 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
