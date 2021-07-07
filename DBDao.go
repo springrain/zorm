@@ -214,12 +214,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//获取seata事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
 			seataGlobalTransaction, seataRootContext, seataErr = funcSeataTx(ctx)
 			if seataErr != nil {
-				seataErr = fmt.Errorf("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
+				seataErr = fmt.Errorf("seata:Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口实现失败:%w ", seataErr)
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
 			if seataGlobalTransaction == nil || seataRootContext == nil {
-				seataErr = errors.New("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
+				seataErr = errors.New("seata:Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
@@ -228,7 +228,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		if seataTxOpen { //如果是分布事务开启方,启动分布式事务
 			seataErr = seataGlobalTransaction.SeataBegin(seataRootContext)
 			if seataErr != nil {
-				seataErr = fmt.Errorf("Transaction 分布式事务开启失败:%w ", seataErr)
+				seataErr = fmt.Errorf("seata:Transaction 分布式事务开启失败:%w ", seataErr)
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
@@ -237,7 +237,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//Seata mysql驱动需要 XID,seataContext.NewRootContext 需要 TX_XID
 			seataXID := seataGlobalTransaction.GetSeataXID(seataRootContext)
 			if len(seataXID) < 1 {
-				seataErr = errors.New("seataGlobalTransaction.SeataBegin无异常开启后,获取的XID为空")
+				seataErr = errors.New("seata:seataGlobalTransaction.SeataBegin无异常开启后,获取的XID为空")
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
@@ -285,7 +285,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if seataGlobalTransaction != nil {
 				seataErr = seataGlobalTransaction.SeataRollback(seataRootContext)
 				if seataErr != nil {
-					seataErr = fmt.Errorf("recover内seataGlobalTransaction事务回滚失败:%w", seataErr)
+					seataErr = fmt.Errorf("seata:recover内seataGlobalTransaction事务回滚失败:%w", seataErr)
 					FuncLogError(seataErr)
 				}
 			}
@@ -293,11 +293,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		}
 	}()
 
-	//强制转换context的类型,不然执行事务会报异常
-	//if seataGlobalTransaction != nil {
-	//ctx = context.WithValue(ctx, "zorm", "")
-	//}
+	//执行业务的事务函数
 	info, err := doTransaction(ctx)
+
 	if err != nil {
 		err = fmt.Errorf("Transaction-->doTransaction事务执行失败:%w", err)
 		FuncLogError(err)
@@ -318,7 +316,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		if seataGlobalTransaction != nil {
 			seataErr = seataGlobalTransaction.SeataRollback(seataRootContext)
 			if seataErr != nil {
-				seataErr = fmt.Errorf("Transaction-->rollback seataGlobalTransaction事务回滚失败:%w", seataErr)
+				seataErr = fmt.Errorf("seata:Transaction-->rollback seataGlobalTransaction事务回滚失败:%w", seataErr)
 				FuncLogError(seataErr)
 			}
 		}
@@ -332,7 +330,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		if commitError == nil && seataTxOpen {
 			seataErr = seataGlobalTransaction.SeataCommit(seataRootContext)
 			if seataErr != nil {
-				seataErr = fmt.Errorf("Transaction-->commit seataGlobalTransaction 事务提交失败:%w", seataErr)
+				seataErr = fmt.Errorf("seata:Transaction-->commit seataGlobalTransaction 事务提交失败:%w", seataErr)
 				FuncLogError(seataErr)
 			}
 		}
@@ -344,7 +342,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if seataGlobalTransaction != nil {
 				seataErr = seataGlobalTransaction.SeataRollback(seataRootContext)
 				if seataErr != nil {
-					seataErr = fmt.Errorf("Transaction-->commit失败,然后回滚seataGlobalTransaction事务也失败:%w", seataErr)
+					seataErr = fmt.Errorf("seata:Transaction-->commit失败,然后回滚seataGlobalTransaction事务也失败:%w", seataErr)
 					FuncLogError(seataErr)
 				}
 			}
