@@ -218,7 +218,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 				FuncLogError(seataErr)
 				return nil, seataErr
 			}
-			if seataGlobalTransaction == nil {
+			if seataGlobalTransaction == nil || seataRootContext == nil {
 				seataErr = errors.New("Transaction FuncSeataGlobalTransaction获取ISeataGlobalTransaction接口的实现为nil ")
 				FuncLogError(seataErr)
 				return nil, seataErr
