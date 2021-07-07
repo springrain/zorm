@@ -63,5 +63,6 @@ type ISeataGlobalTransaction interface {
 
 	//重新包装为seata的context.RootContext
 	//context.RootContext 如果后续使用了 context.WithValue,类型就是context.valueCtx 就会造成无法再类型断言为 context.RootContext
+	//所以DBDao里使用了 seataRootContext变量,区分业务的ctx和seata的RootContext
 	//SeataNewRootContext(ctx context.Context) context.Context
 }
