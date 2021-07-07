@@ -19,26 +19,17 @@ func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransac
 }
 //实现zorm.ISeataGlobalTransaction接口
 func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
-	rootContext, ok := ctx.(*seataContext.RootContext)
-	if !ok {
-		rootContext = seataContext.NewRootContext(ctx)
-	}
+	rootContext := ctx.(*seataContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
-	rootContext, ok := ctx.(*seataContext.RootContext)
-	if !ok {
-		rootContext = seataContext.NewRootContext(ctx)
-	}
+	rootContext := ctx.(*seataContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
-	rootContext, ok := ctx.(*seataContext.RootContext)
-	if !ok {
-		rootContext = seataContext.NewRootContext(ctx)
-	}
+	rootContext := ctx.(*seataContext.RootContext)
 	return gtx.Rollback(rootContext)
 }
 
