@@ -654,10 +654,10 @@ func main() {
 //tm.Implement(svc.ProxySvc)
 
 // 业务代码中获取当前分布式事务的XID
-// xid:=ctx.Value("XID").(string)
+// xid := ctx.Value("XID").(string)
 
 // 接受传递过来的XID,绑定到本地ctx
-// ctx =context.WithValue(ctx,"XID",xid)
+// ctx = context.WithValue(ctx,"XID",xid)
 
 // 建议以下代码放到单独的文件里
 //................//
