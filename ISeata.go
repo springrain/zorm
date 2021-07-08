@@ -5,8 +5,16 @@ import "context"
 // ISeataGlobalTransaction seata-golang的包装接口,隔离seata-golang的依赖
 // 声明一个struct,实现这个接口,并配置实现 FuncSeataGlobalTransaction 函数
 /**
+
+//不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
+//tm.Implement(svc.ProxySvc)
+
+// 业务代码中获取当前分布式事务的XID
+//   ctx.Value("XID")
+
 // 建议以下代码放到单独的文件里
 //................//
+
 // ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
 type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction

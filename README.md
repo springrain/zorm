@@ -627,20 +627,20 @@ func main() {
 
 
 	//获取seata的rootContext
-	rootContext := seataContext.NewRootContext(ctx)
+	//rootContext := seataContext.NewRootContext(ctx)
 	//rootContext := ctx.(*seataContext.RootContext)
 
 	//创建seata事务
-	seataTx := tm.GetCurrentOrCreate(rootContext)
+	//seataTx := tm.GetCurrentOrCreate(rootContext)
 
 	//开始事务
-	seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+	//seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
 
 	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
-	xid:=rootContext.GetXID()
+	//xid:=rootContext.GetXID()
 
 	// 接受传递过来的XID,绑定到本地ctx
-	ctx =context.WithValue(ctx,mysql.XID,xid)
+	//ctx =context.WithValue(ctx,mysql.XID,xid)
 
 
 }
@@ -652,6 +652,9 @@ func main() {
 
 //不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
+
+// 业务代码中获取当前分布式事务的XID
+//   ctx.Value("XID")
 
 // 建议以下代码放到单独的文件里
 //................//
