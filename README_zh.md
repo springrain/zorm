@@ -1,5 +1,5 @@
 ## 介绍
-go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite数据库.  
+go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
 源码地址:https://gitee.com/chunanyong/zorm  
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
@@ -7,12 +7,15 @@ go(golang)轻量级ORM,零依赖,支持达梦(dm),金仓(kingbase),神通(shento
 go get gitee.com/chunanyong/zorm 
 ```  
 * 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
-* [自带代码生成器](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* 代码精简,主体2500行,零依赖4200行,注释详细,方便定制修改.  
+* [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
+* 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通)
+* 支持mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),clickhouse数据库
 * 支持多库和读写分离
-* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍  
+* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快一倍
+* 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
+* 集成seata-golang,支持全局托管,不修改业务代码,零侵入分布式事务
+* 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
@@ -52,7 +55,7 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 ## 数据库脚本和实体类
 https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
-生成实体类或手动编写,建议使用代码生成器 https://gitee.com/chunanyong/readygo/tree/master/codegenerator
+生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/wsgt
 ```go 
 
 package testzorm
@@ -112,12 +115,18 @@ type demoStruct struct {
 }
 
 //GetTableName 获取表名称
+//IEntityStruct 接口的方法,实体类需要实现!!!
 func (entity *demoStruct) GetTableName() string {
 	return demoStructTableName
 }
 
-//GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称.
+//GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称
+//不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)
+//如果没有主键,也需要实现这个方法, return "" 即可
+//IEntityStruct 接口的方法,实体类需要实现!!!
 func (entity *demoStruct) GetPKColumnName() string {
+	//如果没有主键
+	//return ""
 	return "id"
 }
 
@@ -182,9 +191,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
@@ -196,7 +205,11 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 		//DefaultTxOptions: nil,
-		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
+		//如果是使用seata-golang分布式事务,建议使用默认配置
+		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
@@ -207,7 +220,8 @@ func init() {
 func TestInsert(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个demo对象
 		demo := newDemoStruct()
@@ -229,7 +243,8 @@ func TestInsert(t *testing.T) {
 func TestInsertSlice(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
@@ -260,7 +275,8 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -301,19 +317,16 @@ func TestQueryRow(t *testing.T) {
 	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
 	//执行查询
-	has,err := zorm.QueryRow(ctx, finder, demo)
+	_, err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
 	}
-
-	if has { //数据库存在数据
-		//打印结果
-		fmt.Println(demo)
-	}
+	//打印结果
+	fmt.Println(demo)
 }
 
 //TestQueryRowMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
@@ -322,7 +335,7 @@ func TestQueryRowMap(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 	//执行查询
 	resultMap, err := zorm.QueryRowMap(ctx, finder)
 
@@ -342,10 +355,10 @@ func TestQuery(t *testing.T) {
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-	page.PageNo = 1    //查询第1页,默认是1
-	page.PageSize = 20 //每页20条,默认是20
+	page.PageNo = 2   //查询第1页,默认是1
+	page.PageSize = 2 //每页20条,默认是20
 
-	//执行查询.如果不想分页,查询所有数据,page传入nil
+	//执行查询
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -361,8 +374,9 @@ func TestQueryMap(t *testing.T) {
 
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-
-	//执行查询.如果不想分页,查询所有数据,page传入nil
+	page.PageNo = 1   //查询第1页,默认是1
+	page.PageSize = 2 //每页20条,默认是20
+	//执行查询
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -375,11 +389,12 @@ func TestQueryMap(t *testing.T) {
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
@@ -398,12 +413,13 @@ func TestUpdateNotZeroValue(t *testing.T) {
 func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//声明一个对象的指针,用于更新数据
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "TestUpdate"
 
 		_, err := zorm.Update(ctx, demo)
@@ -419,12 +435,13 @@ func TestUpdate(t *testing.T) {
 //TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
-		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
 		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateFinder(ctx, finder)
@@ -441,14 +458,15 @@ func TestUpdateFinder(t *testing.T) {
 //TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//创建一个EntityMap,需要传入表名
 		entityMap := zorm.NewEntityMap(demoStructTableName)
 		//设置主键名称
 		entityMap.PkColumnName = "id"
 		//Set 设置数据库的字段值,主键必须有值
-		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("userName", "TestUpdateEntityMap")
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
@@ -465,10 +483,11 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
-	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
+	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
-		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
+		demo.Id = "20210630163227149563000042432429"
 
 		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
 		_, err := zorm.Delete(ctx, demo)
@@ -539,19 +558,144 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 //如果无法获取到structFieldType,例如Map查询,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
-	dmClob, _ := tempDriverValue.(*dm.DmClob)
-	dmlen, _ := dmClob.GetLength()
+	//类型转换
+	dmClob, isok := tempDriverValue.(*dm.DmClob)
+	if !isok {
+		return tempDriverValue, errors.New("转换至*dm.DmClob类型失败")
+	}
+
+	//获取长度
+	dmlen, errLength := dmClob.GetLength()
+	if errLength != nil {
+		return dmClob, errLength
+	}
+
+	//int64转成int类型
 	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, _ := strconv.Atoi(strInt64)
-	str, _ := dmClob.ReadString(1, dmlenInt)
-	return &str, nil
+	dmlenInt, errAtoi := strconv.Atoi(strInt64)
+	if errAtoi != nil {
+		return dmClob, errAtoi
+	}
+
+	//读取字符串
+	str, errReadString := dmClob.ReadString(1, dmlenInt)
+	return &str, errReadString
 }
 //CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
 //一般是放到init方法里进行添加
 zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
+##  分布式事务
+基于seata-golang实现分布式事务.    
+### proxy模式 
+```golang
+//DataSourceConfig 配置  DefaultTxOptions
+//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
+// 引入V1版本的依赖包,V2的参考官方例子
+import (
+	"github.com/opentrx/mysql"
+	"github.com/transaction-wg/seata-golang/pkg/client"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+	"github.com/transaction-wg/seata-golang/pkg/client/rm"
+	"github.com/transaction-wg/seata-golang/pkg/client/tm"
+	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+)
+
+//配置文件路径
+var configPath = "./conf/client.yml"
+
+func main() {
+
+	//初始化配置
+	conf := config.InitConf(configPath)
+	//初始化RPC客户端
+	client.NewRpcClient()
+	//注册mysql驱动
+	mysql.InitDataResourceManager()
+	mysql.RegisterResource(config.GetATConfig().DSN)
+	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+
+
+	//后续正常初始化zorm,一定要放到seata mysql 初始化后面!!!
+
+	//................//
+	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	tm.Implement(svc.ProxySvc)
+	//................//
+
+
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//rootContext := ctx.(*seataContext.RootContext)
+
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+
+	//开始事务
+	seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+
+	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
+	xid:=rootContext.GetXID()
+
+	// 接受传递过来的XID,绑定到本地ctx
+	ctx =context.WithValue(ctx,mysql.XID,xid)
+
+
+}
+```
+
+### 全局托管模式
+
+```golang
+
+//不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
+//tm.Implement(svc.ProxySvc)
+
+// 建议以下代码放到单独的文件里
+//................//
+
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
+type ZormSeataGlobalTransaction struct {
+	*tm.DefaultGlobalTransaction
+}
+
+// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
+	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+
+	return seataGlobalTransaction, rootContext, nil
+}
+
+//实现zorm.ISeataGlobalTransaction接口
+func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.BeginWithTimeout(int32(6000), rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Commit(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Rollback(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
+	rootContext := ctx.(*seataContext.RootContext)
+	return rootContext.GetXID()
+}
+
+//................//
+```
 
 ##  性能压测
 
