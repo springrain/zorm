@@ -667,7 +667,8 @@ type ZormSeataGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数
+// 重要!!!!需要配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction 重要!!!
 func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
 	//获取seata的rootContext
 	rootContext := seataContext.NewRootContext(ctx)
