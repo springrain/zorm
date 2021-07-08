@@ -1,5 +1,6 @@
 ## Introduction [中文](./README_zh.md)
-This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite databases.
+## Introduction
+This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,mysql,postgresql,oracle,mssql,sqlite,clickhouse databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
 Author blog:[https://www.jiagou.com](https://www.jiagou.com)  
@@ -10,11 +11,15 @@ go get gitee.com/chunanyong/zorm
 
 * Written based on native SQL statements,It is the streamlining and optimization of [springrain](https://gitee.com/chunanyong/springrain).
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
-* The code is streamlined, main part 2500 lines, zero dependency 4200 lines, detailed comments, convenient for customization and modification. 
+* The code is streamlined, main part 2500 lines, zero dependency 4000 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
-* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
+* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang),clickhouse
 * Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
+* Does not support joint primary keys, alternatively thinks that there is no primary key, and business control is implemented (difficult choice)  
+* Integrate seata-golang, support global hosting, do not modify business code, and zero intrusive distributed transactions
+* Support clickhouse, update and delete statements use SQL92 standard syntax. The official clickhouse-go driver does not support batch insert syntax, it is recommended to use https://github.com/mailru/go-clickhouse
+
 zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## Support domestic database  
@@ -180,11 +185,11 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN: Database connection string
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3, 
+		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3,clickhouse, 
         // dm, kingbase and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
-		// Database type (based on dialect judgment): mysql, postgresql, 
-        // oracle, mssql, sqlite, dm, kingbase and DriverName correspond to multiple drivers for processing databases
+		// Database type (based on dialect judgment): mysql, postgresql,oracle, mssql, sqlite, clickhouse,
+        // dm, kingbase and DriverName correspond to multiple drivers for processing databases
 		DBType: "mysql",
 		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,
@@ -197,7 +202,11 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
-		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault},
+		//如果是使用seata-golang分布式事务,建议使用默认配置
+		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
@@ -210,7 +219,7 @@ func TestInsert(t *testing.T) {
 
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//Create a demo object
 		demo := newDemoStruct()
@@ -234,7 +243,7 @@ func TestInsertSlice(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
@@ -266,7 +275,7 @@ func TestInsertSlice(t *testing.T) {
 func TestInsertEntityMap(t *testing.T) {
 
 	// You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -408,7 +417,7 @@ func TestUpdate(t *testing.T) {
 
 	// You need to manually start the transaction. 
     // If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//Declare a pointer to an object to update data.
@@ -431,7 +440,7 @@ func TestUpdate(t *testing.T) {
 // or even manually write insert statement
 func TestUpdateFinder(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
@@ -454,7 +463,7 @@ func TestUpdateFinder(t *testing.T) {
 func TestUpdateEntityMap(t *testing.T) {
 	//You need to manually start the transaction. 
     //If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//To create an Entity Map, you need to pass in the table name.
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -479,7 +488,7 @@ func TestUpdateEntityMap(t *testing.T) {
 //TestDelete 13.To delete a struct object, the primary key must have a value.
 func TestDelete(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
-	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions(Isolation: sql.LevelDefault)), if txOptions is nil , Use the global DefaultTxOptions
+	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
 		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
@@ -556,12 +565,28 @@ func (dmtext CustomDMText) GetDriverValue(columnType *sql.ColumnType, structFiel
 
 //ConverDriverValue database column type, entity class field type, GetDriverValue returned driver.Value New value, return the pointer according to the receiving type value, pointer, pointer!!!!
 func (dmtext CustomDMText) ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
-	dm, _ := tempDriverValue.(*dm.DmClob)
-	dmlen, _ := dm.GetLength()
+	//Type conversion
+	dmClob, isok := tempDriverValue.(*dm.DmClob)
+	if !isok {
+		return tempDriverValue, errors.New("Conversion to *dm.DmClob type failed")
+	}
+
+	//Get the length
+	dmlen, errLength := dmClob.GetLength()
+	if errLength != nil {
+		return dmClob, errLength
+	}
+
+	//Convert int64 to int type
 	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, _ := strconv.Atoi(strInt64)
-	str, _ := dm.ReadString(1, dmlenInt)
-	return &str, nil
+	dmlenInt, errAtoi := strconv.Atoi(strInt64)
+	if errAtoi != nil {
+		return dmClob, errAtoi
+	}
+
+	//Read string
+	str, errReadString := dmClob.ReadString(1, dmlenInt)
+	return &str, errReadString
 }
 //zorm.CustomDriverValueMap for configuration driver.Value and the corresponding processing relationship, key is the string of drier.Value. For example *dm.DmClob
 //It is usually added in the init method
@@ -569,6 +594,116 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 
 ```  
+## Distributed transaction
+Implement distributed transactions based on seata-golang.
+### Proxy mode
+```golang
+//DataSourceConfig configuration DefaultTxOptions
+//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+// Introduce the dependency package of the V1 version, refer to the official example of V2
+import (
+"github.com/opentrx/mysql"
+"github.com/transaction-wg/seata-golang/pkg/client"
+"github.com/transaction-wg/seata-golang/pkg/client/config"
+"github.com/transaction-wg/seata-golang/pkg/client/rm"
+"github.com/transaction-wg/seata-golang/pkg/client/tm"
+seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+)
+
+//Configuration file path
+var configPath = "./conf/client.yml"
+
+func main() {
+
+//Initial configuration
+conf := config.InitConf(configPath)
+//Initialize the RPC client
+client.NewRpcClient()
+//Register mysql driver
+mysql.InitDataResourceManager()
+mysql.RegisterResource(config.GetATConfig().DSN)
+//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+
+
+//Subsequent normal initialization of zorm must be placed after the initialization of seata mysql!!!
+
+//................//
+//tm registration transaction service, refer to the official example. (Global hosting is mainly to remove the proxy, zero intrusion to the business)
+tm.Implement(svc.ProxySvc)
+//................//
+
+
+//Get the rootContext of seata
+rootContext := seataContext.NewRootContext(ctx)
+//rootContext := ctx.(*seataContext.RootContext)
+
+//Create seata transaction
+seataTx := tm.GetCurrentOrCreate(rootContext)
+
+//Start transaction
+seataTx.BeginWithTimeoutAndName(int32(6000), "transaction name", rootContext)
+
+//Get the XID after the transaction is opened. It can be passed through the header of gin, or passed in other ways
+xid:=rootContext.GetXID()
+
+// Accept the passed XID and bind it to the local ctx
+ctx =context.WithValue(ctx,mysql.XID,xid)
+
+
+}
+```
+
+### Global hosting mode
+
+```golang
+
+//Do not use proxy mode, global hosting, do not modify business code, zero intrusion to achieve distributed transactions
+//tm.Implement(svc.ProxySvc)
+
+// It is recommended to put the following code in a separate file
+//................//
+
+// ZormSeataGlobalTransaction wraps *tm.DefaultGlobalTransaction of seata, and implements the zorm.ISeataGlobalTransaction interface
+type ZormSeataGlobalTransaction struct {
+*tm.DefaultGlobalTransaction
+}
+
+// MyFuncSeataGlobalTransaction zorm adapts the function of seata distributed transaction, configure zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+//Get the rootContext of seata
+rootContext := seataContext.NewRootContext(ctx)
+//Create seata transaction
+seataTx := tm.GetCurrentOrCreate(rootContext)
+//Use the zorm.ISeataGlobalTransaction interface object to wrap the seata transaction and isolate the seata-golang dependency
+seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+
+return seataGlobalTransaction, rootContext, nil
+}
+
+//Implement the zorm.ISeataGlobalTransaction interface
+func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
+rootContext := ctx.(*seataContext.RootContext)
+return gtx.BeginWithTimeout(int32(6000), rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
+rootContext := ctx.(*seataContext.RootContext)
+return gtx.Commit(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
+rootContext := ctx.(*seataContext.RootContext)
+return gtx.Rollback(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
+rootContext := ctx.(*seataContext.RootContext)
+return rootContext.GetXID()
+}
+
+//................//
+```
 
 
 ##  Performance stress test
