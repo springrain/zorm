@@ -12,9 +12,13 @@ go get gitee.com/chunanyong/zorm
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * The code is streamlined, main part 2500 lines, zero dependency 4000 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
-* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang)
+* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang),clickhouse
 * Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
+* 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
+* 集成seata-golang,支持全局托管,不修改业务代码,零侵入分布式事务
+* 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
+
 zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## Support domestic database  
@@ -197,7 +201,11 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
+		//如果是使用seata-golang分布式事务,建议使用默认配置
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
@@ -585,6 +593,116 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 
 ```  
+##  分布式事务
+基于seata-golang实现分布式事务.    
+### proxy模式 
+```golang
+//DataSourceConfig 配置  DefaultTxOptions
+//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+// 引入V1版本的依赖包,V2的参考官方例子
+import (
+	"github.com/opentrx/mysql"
+	"github.com/transaction-wg/seata-golang/pkg/client"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+	"github.com/transaction-wg/seata-golang/pkg/client/rm"
+	"github.com/transaction-wg/seata-golang/pkg/client/tm"
+	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+)
+
+//配置文件路径
+var configPath = "./conf/client.yml"
+
+func main() {
+
+	//初始化配置
+	conf := config.InitConf(configPath)
+	//初始化RPC客户端
+	client.NewRpcClient()
+	//注册mysql驱动
+	mysql.InitDataResourceManager()
+	mysql.RegisterResource(config.GetATConfig().DSN)
+	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+
+
+	//后续正常初始化zorm,一定要放到seata mysql 初始化后面!!!
+
+	//................//
+	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	tm.Implement(svc.ProxySvc)
+	//................//
+
+
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//rootContext := ctx.(*seataContext.RootContext)
+
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+
+	//开始事务
+	seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+
+	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
+	xid:=rootContext.GetXID()
+
+	// 接受传递过来的XID,绑定到本地ctx
+	ctx =context.WithValue(ctx,mysql.XID,xid)
+
+
+}
+```
+
+### 全局托管模式
+
+```golang
+
+//不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
+//tm.Implement(svc.ProxySvc)
+
+// 建议以下代码放到单独的文件里
+//................//
+
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
+type ZormSeataGlobalTransaction struct {
+	*tm.DefaultGlobalTransaction
+}
+
+// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
+	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+
+	return seataGlobalTransaction, rootContext, nil
+}
+
+//实现zorm.ISeataGlobalTransaction接口
+func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.BeginWithTimeout(int32(6000), rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Commit(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Rollback(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
+	rootContext := ctx.(*seataContext.RootContext)
+	return rootContext.GetXID()
+}
+
+//................//
+```
 
 
 ##  Performance stress test

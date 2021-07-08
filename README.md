@@ -587,7 +587,7 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 ##  分布式事务
-基于seata-golang实现分布式事务.目前seata-golang提供的tc-server还不稳定,建议使用java版tc-server.  
+基于seata-golang实现分布式事务.    
 ### proxy模式 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
