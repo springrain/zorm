@@ -693,6 +693,10 @@ func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
 
 func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
 	rootContext := ctx.(*seataContext.RootContext)
+	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
+	if gtx.Role == tm.Participant {
+		gtx.Role = tm.Launcher
+	}
 	return gtx.Rollback(rootContext)
 }
 
@@ -849,6 +853,10 @@ func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
 
 func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
 	rootContext := ctx.(*seataContext.RootContext)
+	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
+	if gtx.Role == tm.Participant {
+		gtx.Role = tm.Launcher
+	}
 	return gtx.Rollback(rootContext)
 }
 
@@ -989,6 +997,10 @@ func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
 
 func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
 	rootContext := ctx.(*seataContext.RootContext)
+	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
+	if gtx.Role == tm.Participant {
+		gtx.Role = tm.Launcher
+	}
 	return gtx.Rollback(rootContext)
 }
 
