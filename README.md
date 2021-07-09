@@ -704,6 +704,287 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 //................//
 ```
 
+以下是基于 https://github.com/opentrx/seata-go-samples/tree/main/http 改造的代码,order_svc 调用 product_svc  
+
+先执行 https://github.com/opentrx/seata-go-samples/tree/main/http/scripts 创建库,  
+再执行测试脚本,seata_order 和 seata_product两个库都执行    
+```sql
+DROP TABLE IF EXISTS `testinsert`;
+CREATE TABLE `testinsert` (
+  `id` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+改造 https://github.com/opentrx/seata-go-samples/blob/main/http/order_svc/main.go  
+```golang
+
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"gitee.com/chunanyong/zorm"
+	"github.com/opentrx/mysql"
+	"github.com/transaction-wg/seata-golang/pkg/client"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+	"github.com/transaction-wg/seata-golang/pkg/client/tm"
+)
+
+// ctx默认应该有 web层传入,例如gin的c.Request.Context().这里只是模拟
+var ctx = context.Background()
+
+//dbDao 代表一个数据库,如果有多个数据库,就对应声明多个DBDao
+var dbDao *zorm.DBDao
+
+//01.初始化DBDao
+func init() {
+
+	config.InitConf(configPath)
+	client.NewRpcClient()
+	mysql.InitDataResourceManager()
+	mysql.RegisterResource(config.GetATConfig().DSN)
+
+	// zorm的初始化,放到seata-golang mysql初始化的后面 !!!!
+	dbDaoConfig := zorm.DataSourceConfig{
+		//DSN 数据库的连接字符串
+		DSN: config.GetATConfig().DSN,
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
+		DriverName: "mysql",
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
+		DBType: "mysql",
+		//MaxOpenConns 数据库最大连接数 默认50
+		MaxOpenConns: 50,
+		//MaxIdleConns 数据库最大空闲连接数 默认50
+		MaxIdleConns: 50,
+		//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+		ConnMaxLifetimeSecond: 600,
+		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
+		PrintSQL: true,
+		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+		//DefaultTxOptions: nil,
+		DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+		FuncSeataGlobalTransaction: MyFuncSeataGlobalTransaction,
+	}
+
+	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
+	dbDao, _ = zorm.NewDBDao(&dbDaoConfig)
+}
+
+const configPath = "./conf/client.yml"
+
+func main() {
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+		finder := zorm.NewFinder()
+		finder.Append("INSERT INTO testinsert (id) values(?)", time.Now().Format("2006-01-02 15:04:05"))
+		_, err := zorm.UpdateFinder(ctx, finder)
+		if err != nil {
+			return nil, err
+		}
+		client := &http.Client{}
+		req, err := http.NewRequest("POST", "http://127.0.0.1:8001/allocateInventory", nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		//获取分布式事务内的XID
+		xid := ctx.Value("XID").(string)
+		req.Header.Set("XID", xid)
+
+		result, err2 := client.Do(req)
+		if err2 != nil {
+			return nil, err2
+		}
+
+		if result.StatusCode == 400 {
+			return nil, errors.New("err")
+		}
+
+		//如果返回的err不是nil,本地事务和全局事务就会回滚
+		return nil, nil
+	})
+
+	fmt.Println("err:", err)
+
+}
+
+// 建议以下代码放到单独的文件里
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
+type ZormSeataGlobalTransaction struct {
+	*tm.DefaultGlobalTransaction
+}
+
+// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
+	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+
+	return seataGlobalTransaction, rootContext, nil
+}
+
+//实现zorm.ISeataGlobalTransaction接口
+func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.BeginWithTimeout(int32(6000), rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Commit(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Rollback(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
+	rootContext := ctx.(*seataContext.RootContext)
+	return rootContext.GetXID()
+}
+
+```
+
+
+改造 https://github.com/opentrx/seata-go-samples/blob/main/http/product_svc/main.go  
+```golang
+package main
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
+
+	"gitee.com/chunanyong/zorm"
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/mysql"
+	"github.com/transaction-wg/seata-golang/pkg/client"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+	"github.com/transaction-wg/seata-golang/pkg/client/tm"
+)
+
+const configPath = "./conf/client.yml"
+
+//dbDao 代表一个数据库,如果有多个数据库,就对应声明多个DBDao
+var dbDao *zorm.DBDao
+
+//01.初始化DBDao
+func init() {
+
+	config.InitConf(configPath)
+	client.NewRpcClient()
+	mysql.InitDataResourceManager()
+	mysql.RegisterResource(config.GetATConfig().DSN)
+
+    // zorm的初始化,放到seata-golang mysql初始化的后面 !!!!
+	dbDaoConfig := zorm.DataSourceConfig{
+		//DSN 数据库的连接字符串
+		DSN: config.GetATConfig().DSN,
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
+		DriverName: "mysql",
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
+		DBType: "mysql",
+		//MaxOpenConns 数据库最大连接数 默认50
+		MaxOpenConns: 50,
+		//MaxIdleConns 数据库最大空闲连接数 默认50
+		MaxIdleConns: 50,
+		//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+		ConnMaxLifetimeSecond: 600,
+		//PrintSQL 打印SQL.会使用FuncPrintSQL记录SQL
+		PrintSQL: true,
+		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+		//DefaultTxOptions: nil,
+		DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
+		FuncSeataGlobalTransaction: MyFuncSeataGlobalTransaction,
+	}
+
+	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
+	dbDao, _ = zorm.NewDBDao(&dbDaoConfig)
+}
+
+func main() {
+	r := gin.Default()
+
+	r.POST("/allocateInventory", func(c *gin.Context) {
+		//获取传递过来的XID
+		xid := c.Request.Header.Get("XID")
+		ctx := c.Request.Context()
+         //绑定到本的ctx
+		ctx = context.WithValue(ctx, "XID", xid)
+
+		//执行事务
+		_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+			finder := zorm.NewFinder()
+			finder.Append("INSERT INTO testinsert (id) values(?) ", time.Now().Format("2006-01-02 15:04:05"))
+			_, err := zorm.UpdateFinder(ctx, finder)
+
+			//如果返回的err不是nil,本地事务和全局事务就会回滚
+			return nil, err
+		})
+		fmt.Println("err:", err)
+	})
+
+	r.Run(":8001")
+}
+
+// 建议以下代码放到单独的文件里
+// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
+type ZormSeataGlobalTransaction struct {
+	*tm.DefaultGlobalTransaction
+}
+
+// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数,配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
+func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+	//获取seata的rootContext
+	rootContext := seataContext.NewRootContext(ctx)
+	//创建seata事务
+	seataTx := tm.GetCurrentOrCreate(rootContext)
+	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
+	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+
+	return seataGlobalTransaction, rootContext, nil
+}
+
+//实现zorm.ISeataGlobalTransaction接口
+func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.BeginWithTimeout(int32(6000), rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Commit(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
+	rootContext := ctx.(*seataContext.RootContext)
+	return gtx.Rollback(rootContext)
+}
+
+func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
+	rootContext := ctx.(*seataContext.RootContext)
+	return rootContext.GetXID()
+}
+```
+
+
 ##  性能压测
 
    测试代码:https://github.com/alphayan/goormbenchmark
