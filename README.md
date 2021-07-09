@@ -940,6 +940,19 @@ func main() {
 			return nil, err
 		})
 		fmt.Println("err:", err)
+		
+		if err != nil {
+			c.JSON(400, gin.H{
+				"success": false,
+				"message": "fail",
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"success": true,
+				"message": "success",
+			})
+		}
+
 	})
 
 	r.Run(":8001")
