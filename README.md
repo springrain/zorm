@@ -639,6 +639,9 @@ func main() {
 	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
 	//xid:=rootContext.GetXID()
 
+	// 如果使用的gin框架,获取到ctx
+	// ctx := c.Request.Context()
+
 	// 接受传递过来的XID,绑定到本地ctx
 	//ctx =context.WithValue(ctx,mysql.XID,xid)
 
@@ -655,6 +658,9 @@ func main() {
 
 // 业务代码中获取当前分布式事务的XID
 // xid := ctx.Value("XID").(string)
+
+// 如果使用的gin框架,获取到ctx
+// ctx := c.Request.Context()
 
 // 接受传递过来的XID,绑定到本地ctx
 // ctx = context.WithValue(ctx,"XID",xid)
