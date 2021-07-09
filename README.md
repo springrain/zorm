@@ -703,6 +703,7 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 
 //................//
 ```
+### 全局托管示例代码   
 
 以下是基于 https://github.com/opentrx/seata-go-samples/tree/main/http 改造的代码,order_svc 调用 product_svc  
 
