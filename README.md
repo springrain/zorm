@@ -656,14 +656,40 @@ func main() {
 //不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
-// 业务代码中获取当前分布式事务的XID
-// xid := ctx.Value("XID").(string)
 
-// 如果使用的gin框架,获取到ctx
-// ctx := c.Request.Context()
+// 分布式事务示例代码
+_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+    // 获取当前分布式事务的XID.不用考虑怎么来的,如果是分布式事务环境,会自动设置值
+    // xid := ctx.Value("XID").(string)
+
+	// 把xid传递到第三方应用
+	// req.Header.Set("xid", rootContext.GetXID())
+
+	// 如果返回的err不是nil,本地事务和分布式事务就会回滚
+	return nil, err
+})
+
+///----------第三方应用-------///
+
+// 第三方应用开启事务前,ctx需要绑定XID
 
 // 接受传递过来的XID,绑定到本地ctx
+//  xid:=c.Request.Header.Get("XID")
+// 如果使用的gin框架,获取到ctx
+// ctx := c.Request.Context()
 // ctx = context.WithValue(ctx,"XID",xid)
+
+// ctx绑定XID之后,调用业务事务
+_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+    // 业务代码......
+
+	// 如果返回的err不是nil,本地事务和分布式事务就会回滚
+	return nil, err
+})
+
+
 
 // 建议以下代码放到单独的文件里
 //................//
