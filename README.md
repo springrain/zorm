@@ -672,11 +672,11 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 ///----------第三方应用-------///
 
-// 第三方应用开启事务前,ctx需要绑定XID
+// 第三方应用开启事务前,ctx需要绑定XID,例如使用了gin框架
 
 // 接受传递过来的XID,绑定到本地ctx
-//  xid:=c.Request.Header.Get("XID")
-// 如果使用的gin框架,获取到ctx
+// xid:=c.Request.Header.Get("XID")
+// 获取到ctx
 // ctx := c.Request.Context()
 // ctx = context.WithValue(ctx,"XID",xid)
 
