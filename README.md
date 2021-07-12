@@ -664,7 +664,7 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
     // xid := ctx.Value("XID").(string)
 
 	// 把xid传递到第三方应用
-	// req.Header.Set("XID", rootContext.GetXID())
+	// req.Header.Set("XID", xid)
 
 	// 如果返回的err不是nil,本地事务和分布式事务就会回滚
 	return nil, err
