@@ -45,7 +45,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	} else {
-		return "", errors.New("wrapPageSQL()-->不支持的数据库")
+		return "", errors.New("wrapPageSQL()-->不支持的数据库类型:" + dbType)
 	}
 	sqlstr = sqlbuilder.String()
 	return reBindSQL(dbType, sqlstr)
