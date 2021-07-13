@@ -1,10 +1,8 @@
 package zorm
 
 import (
-	"bytes"
 	"database/sql"
 	"database/sql/driver"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -47,9 +45,9 @@ const (
 	dbColumnNamePrefix = "_dbColumnName_"
 
 	//field对应的column的tag值 缓存的前缀
-	structFieldTagPrefix = "_structFieldTag_"
+	//structFieldTagPrefix = "_structFieldTag_"
 	//数据库主键  缓存的前缀
-	dbPKNamePrefix = "_dbPKName_"
+	//dbPKNamePrefix = "_dbPKName_"
 )
 
 //cacheStructFieldInfoMap 用于缓存反射的信息,sync.Map内部处理了并发锁
@@ -252,6 +250,7 @@ func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 }
 
+/*
 //deepCopy 深度拷贝对象.golang没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
 func deepCopy(dst, src interface{}) error {
 	var buf bytes.Buffer
@@ -260,6 +259,7 @@ func deepCopy(dst, src interface{}) error {
 	}
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
+*/
 
 //getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
 func getDBColumnExportFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
@@ -292,6 +292,9 @@ func getCacheStructFieldInfoMap(typeOf reflect.Type, keyPrefix string) (map[stri
 		}
 		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
 		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
+		if !dbOk {
+			return dbColumnFieldMap, errors.New("getCacheStructFieldInfoMap()-->获取数据库字段dbColumnFieldMap异常")
+		}
 	}
 
 	/*

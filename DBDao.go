@@ -412,13 +412,13 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	//根据语句和参数查询
 	//Query based on statements and parameters
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	defer rows.Close()
-
 	if e != nil {
 		e = fmt.Errorf("QueryRow-->queryContext查询数据库错误:%w", e)
 		FuncLogError(e)
 		return has, e
 	}
+	//先判断error 再关闭
+	defer rows.Close()
 
 	//typeOf := reflect.TypeOf(entity).Elem()
 
@@ -634,12 +634,14 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	//根据语句和参数查询
 	//Query based on statements and parameters
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("Query-->queryContext查询rows异常:%w", e)
 		FuncLogError(e)
 		return e
 	}
+	//先判断error 再关闭
+	defer rows.Close()
+
 	//数据库返回的字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
@@ -872,12 +874,13 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	//根据语句和参数查询
 	//Query based on statements and parameters
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	defer rows.Close()
 	if e != nil {
 		e = fmt.Errorf("QueryMap-->queryContext查询rows错误:%w", e)
 		FuncLogError(e)
 		return nil, e
 	}
+	//先判断error 再关闭
+	defer rows.Close()
 
 	//数据库返回的列类型
 	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
@@ -1088,7 +1091,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
-		return affected, errors.New("Insert没有tag信息,请检查struct中 column 的tag")
+		return affected, errors.New(" Insert没有tag信息,请检查struct中 column 的tag")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -1327,7 +1330,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	values := make([]interface{}, 1, 1)
+	values := make([]interface{}, 1)
 	values[0] = value
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {

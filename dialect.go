@@ -44,10 +44,8 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
-	} else if dbType == "db2" { //db2
-
-		//先不写啦
-		//bug(springrain) 还需要其他的数据库分页语句
+	} else {
+		return "", errors.New("wrapPageSQL()-->不支持的数据库")
 	}
 	sqlstr = sqlbuilder.String()
 	return reBindSQL(dbType, sqlstr)

@@ -1,16 +1,184 @@
 package zorm
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
-	"math"
 	"strconv"
 	"time"
 
 	"gitee.com/chunanyong/zorm/decimal"
 )
 
+func typeConvertFloat32(i interface{}) float32 {
+	if i == nil {
+		return 0
+	}
+	if v, ok := i.(float32); ok {
+		return v
+	}
+	v, _ := strconv.ParseFloat(typeConvertString(i), 32)
+	return float32(v)
+}
+
+func typeConvertFloat64(i interface{}) float64 {
+	if i == nil {
+		return 0
+	}
+	if v, ok := i.(float64); ok {
+		return v
+	}
+	v, _ := strconv.ParseFloat(typeConvertString(i), 64)
+	return v
+}
+
+func typeConvertDecimal(i interface{}) decimal.Decimal {
+	if i == nil {
+		return decimal.Zero
+	}
+	if v, ok := i.(decimal.Decimal); ok {
+		return v
+	}
+	v, _ := decimal.NewFromString(typeConvertString(i))
+	return v
+}
+
+func typeConvertInt64toInt(from int64) (int, error) {
+	//int64 转 int
+	strInt64 := strconv.FormatInt(from, 10)
+	to, err := strconv.Atoi(strInt64)
+	if err != nil {
+		return -1, err
+	}
+	return to, err
+}
+
+func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location) time.Time {
+	s := typeConvertString(i)
+	t, _ := typeConvertStrToTime(s, format, TZLocation...)
+	return t
+}
+
+func typeConvertStrToTime(str string, format string, TZLocation ...*time.Location) (time.Time, error) {
+	if len(TZLocation) > 0 {
+		t, err := time.ParseInLocation(format, str, TZLocation[0])
+		if err == nil {
+			return t, nil
+		}
+		return time.Time{}, err
+
+	}
+	t, err := time.ParseInLocation(format, str, time.Local)
+	if err == nil {
+		return t, nil
+	}
+	return time.Time{}, err
+
+}
+
+func typeConvertInt64(i interface{}) int64 {
+	if i == nil {
+		return 0
+	}
+	if v, ok := i.(int64); ok {
+		return v
+	}
+	return int64(typeConvertInt(i))
+}
+
+func typeConvertString(i interface{}) string {
+	if i == nil {
+		return ""
+	}
+	switch value := i.(type) {
+	case int:
+		return strconv.Itoa(value)
+	case int8:
+		return strconv.Itoa(int(value))
+	case int16:
+		return strconv.Itoa(int(value))
+	case int32:
+		return strconv.Itoa(int(value))
+	case int64:
+		return strconv.Itoa(int(value))
+	case uint:
+		return strconv.FormatUint(uint64(value), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(value), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(value), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(value), 10)
+	case uint64:
+		return strconv.FormatUint(uint64(value), 10)
+	case float32:
+		return strconv.FormatFloat(float64(value), 'f', -1, 32)
+	case float64:
+		return strconv.FormatFloat(value, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(value)
+	case string:
+		return value
+	case []byte:
+		return string(value)
+	default:
+		return fmt.Sprintf("%v", value)
+	}
+}
+
+//false: "", 0, false, off
+func typeConvertBool(i interface{}) bool {
+	if i == nil {
+		return false
+	}
+	if v, ok := i.(bool); ok {
+		return v
+	}
+	if s := typeConvertString(i); s != "" && s != "0" && s != "false" && s != "off" {
+		return true
+	}
+	return false
+}
+
+func typeConvertInt(i interface{}) int {
+	if i == nil {
+		return 0
+	}
+	switch value := i.(type) {
+	case int:
+		return value
+	case int8:
+		return int(value)
+	case int16:
+		return int(value)
+	case int32:
+		return int(value)
+	case int64:
+		return int(value)
+	case uint:
+		return int(value)
+	case uint8:
+		return int(value)
+	case uint16:
+		return int(value)
+	case uint32:
+		return int(value)
+	case uint64:
+		return int(value)
+	case float32:
+		return int(value)
+	case float64:
+		return int(value)
+	case bool:
+		if value {
+			return 1
+		}
+		return 0
+	default:
+		v, _ := strconv.Atoi(typeConvertString(value))
+		return v
+	}
+}
+
+/*
 func encodeString(s string) []byte {
 	return []byte(s)
 }
@@ -160,30 +328,6 @@ func isNumeric(s string) bool {
 	}
 	return true
 }
-
-func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location) time.Time {
-	s := typeConvertString(i)
-	t, _ := typeConvertStrToTime(s, format, TZLocation...)
-	return t
-}
-
-func typeConvertStrToTime(str string, format string, TZLocation ...*time.Location) (time.Time, error) {
-	if len(TZLocation) > 0 {
-		t, err := time.ParseInLocation(format, str, TZLocation[0])
-		if err == nil {
-			return t, nil
-		}
-		return time.Time{}, err
-
-	}
-	t, err := time.ParseInLocation(format, str, time.Local)
-	if err == nil {
-		return t, nil
-	}
-	return time.Time{}, err
-
-}
-
 func typeConvertTimeDuration(i interface{}) time.Duration {
 	return time.Duration(typeConvertInt64(i))
 }
@@ -197,46 +341,6 @@ func typeConvertBytes(i interface{}) []byte {
 	}
 	return encode(i)
 
-}
-
-func typeConvertString(i interface{}) string {
-	if i == nil {
-		return ""
-	}
-	switch value := i.(type) {
-	case int:
-		return strconv.Itoa(value)
-	case int8:
-		return strconv.Itoa(int(value))
-	case int16:
-		return strconv.Itoa(int(value))
-	case int32:
-		return strconv.Itoa(int(value))
-	case int64:
-		return strconv.Itoa(int(value))
-	case uint:
-		return strconv.FormatUint(uint64(value), 10)
-	case uint8:
-		return strconv.FormatUint(uint64(value), 10)
-	case uint16:
-		return strconv.FormatUint(uint64(value), 10)
-	case uint32:
-		return strconv.FormatUint(uint64(value), 10)
-	case uint64:
-		return strconv.FormatUint(uint64(value), 10)
-	case float32:
-		return strconv.FormatFloat(float64(value), 'f', -1, 32)
-	case float64:
-		return strconv.FormatFloat(value, 'f', -1, 64)
-	case bool:
-		return strconv.FormatBool(value)
-	case string:
-		return value
-	case []byte:
-		return string(value)
-	default:
-		return fmt.Sprintf("%v", value)
-	}
 }
 
 func typeConvertStrings(i interface{}) []string {
@@ -253,60 +357,6 @@ func typeConvertStrings(i interface{}) []string {
 		return strs
 	}
 	return []string{fmt.Sprintf("%v", i)}
-}
-
-//false: "", 0, false, off
-func typeConvertBool(i interface{}) bool {
-	if i == nil {
-		return false
-	}
-	if v, ok := i.(bool); ok {
-		return v
-	}
-	if s := typeConvertString(i); s != "" && s != "0" && s != "false" && s != "off" {
-		return true
-	}
-	return false
-}
-
-func typeConvertInt(i interface{}) int {
-	if i == nil {
-		return 0
-	}
-	switch value := i.(type) {
-	case int:
-		return value
-	case int8:
-		return int(value)
-	case int16:
-		return int(value)
-	case int32:
-		return int(value)
-	case int64:
-		return int(value)
-	case uint:
-		return int(value)
-	case uint8:
-		return int(value)
-	case uint16:
-		return int(value)
-	case uint32:
-		return int(value)
-	case uint64:
-		return int(value)
-	case float32:
-		return int(value)
-	case float64:
-		return int(value)
-	case bool:
-		if value {
-			return 1
-		}
-		return 0
-	default:
-		v, _ := strconv.Atoi(typeConvertString(value))
-		return v
-	}
 }
 
 func typeConvertInt8(i interface{}) int8 {
@@ -337,16 +387,6 @@ func typeConvertInt32(i interface{}) int32 {
 		return v
 	}
 	return int32(typeConvertInt(i))
-}
-
-func typeConvertInt64(i interface{}) int64 {
-	if i == nil {
-		return 0
-	}
-	if v, ok := i.(int64); ok {
-		return v
-	}
-	return int64(typeConvertInt(i))
 }
 
 func typeConvertUint(i interface{}) uint {
@@ -428,46 +468,4 @@ func typeConvertUint64(i interface{}) uint64 {
 	}
 	return uint64(typeConvertUint(i))
 }
-
-func typeConvertFloat32(i interface{}) float32 {
-	if i == nil {
-		return 0
-	}
-	if v, ok := i.(float32); ok {
-		return v
-	}
-	v, _ := strconv.ParseFloat(typeConvertString(i), 32)
-	return float32(v)
-}
-
-func typeConvertFloat64(i interface{}) float64 {
-	if i == nil {
-		return 0
-	}
-	if v, ok := i.(float64); ok {
-		return v
-	}
-	v, _ := strconv.ParseFloat(typeConvertString(i), 64)
-	return v
-}
-
-func typeConvertDecimal(i interface{}) decimal.Decimal {
-	if i == nil {
-		return decimal.Zero
-	}
-	if v, ok := i.(decimal.Decimal); ok {
-		return v
-	}
-	v, _ := decimal.NewFromString(typeConvertString(i))
-	return v
-}
-
-func typeConvertInt64toInt(from int64) (int, error) {
-	//int64 转 int
-	strInt64 := strconv.FormatInt(from, 10)
-	to, err := strconv.Atoi(strInt64)
-	if err != nil {
-		return -1, err
-	}
-	return to, err
-}
+*/

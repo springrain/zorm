@@ -239,6 +239,7 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 	return dbConnection.db.QueryContext(ctx, *query, args...)
 }
 
+/*
 // prepareContext 预执行,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // prepareContext Pre-execution,If the transaction has been opened,it will be executed in transaction mode,if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query *string) (*sql.Stmt, error) {
@@ -255,3 +256,4 @@ func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, quer
 
 	return dbConnection.db.PrepareContext(ctx, *query)
 }
+*/
