@@ -1330,7 +1330,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	values := make([]interface{}, 1)
+	values := make([]interface{}, 1, 1)
 	values[0] = value
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
