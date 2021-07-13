@@ -297,7 +297,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	info, err := doTransaction(ctx)
 
 	if err != nil {
-		err = fmt.Errorf("Transaction-->doTransaction事务执行失败:%w", err)
+		err = fmt.Errorf("Transaction-->doTransaction业务执行异常:%w", err)
 		FuncLogError(err)
 
 		//如果全局禁用了事务
