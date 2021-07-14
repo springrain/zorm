@@ -1091,7 +1091,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
-		return affected, errors.New(" Insert没有tag信息,请检查struct中 column 的tag")
+		return affected, errors.New("Insert没有tag信息,请检查struct中 column 的tag")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
