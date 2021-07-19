@@ -19,8 +19,8 @@ var LogCallDepth = 4
 //FuncLogError Record error log
 var FuncLogError func(err error) = defaultLogError
 
-//FuncLogPanic  记录panic日志,默认使用"ZormErrorLog"实现
-//FuncLogPanic Record panic log, using "Zorm Error Log" by default
+//FuncLogPanic  记录panic日志,默认使用"defaultLogError"实现
+//FuncLogPanic Record panic log, using "defaultLogError" by default
 var FuncLogPanic func(err error) = defaultLogPanic
 
 //FuncPrintSQL 打印sql语句和参数

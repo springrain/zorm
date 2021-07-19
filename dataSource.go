@@ -145,7 +145,6 @@ func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 		tx, err := dbConnection.db.BeginTx(ctx, txOptions)
 		if err != nil {
 			err = fmt.Errorf("beginTx事务开启失败:%w", err)
-			//ZormErrorLog(err)
 			return err
 		}
 		dbConnection.tx = tx
@@ -164,7 +163,6 @@ func (dbConnection *dataBaseConnection) rollback() error {
 		err := dbConnection.tx.Rollback()
 		if err != nil {
 			err = fmt.Errorf("rollback事务回滚失败:%w", err)
-			//ZormErrorLog(err)
 			return err
 		}
 		dbConnection.tx = nil
