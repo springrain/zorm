@@ -5,7 +5,7 @@ go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金�
 
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
-交流微信：[LAUV927]() 添加进入 社区群聊 问题交流 技术探讨.
+交流微信：[LAUV927]() 添加进入社区群聊,问题交流,技术探讨(负责人是八块腹肌的单身小伙 @zhou-a-xing).
 
 ``` 
 go get gitee.com/chunanyong/zorm 
