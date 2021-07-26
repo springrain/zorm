@@ -1,7 +1,6 @@
 ## 介绍
 go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
-源码地址:https://gitee.com/chunanyong/zorm  
-源码地址:https://gitee.com/chunanyong/zorm  
+源码地址:https://gitee.com/chunanyong/zorm    
 
 作者博客:[https://www.jiagou.com](https://www.jiagou.com)  
 
