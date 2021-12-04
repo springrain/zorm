@@ -609,6 +609,7 @@ func findGroupByIndex(strsql string) []int {
 	return loc
 }
 
+/*
 //查询 from 在sql中出现的开始位置和结束位置
 //Query the start position and end position of 'from' in sql
 var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
@@ -625,6 +626,29 @@ func findSelectFromIndex(strsql string) []int {
 	//最后的FROM前推4位字符串
 	loc[0] = loc[1] - 4
 	return loc
+}
+*/
+
+var fromExpr = `\(([\s\S]+?)\)`
+var fromRegexp, _ = regexp.Compile(fromExpr)
+
+//查询 from 在sql中出现的开始位置
+//Query the start position of 'from' in sql
+func findSelectFromIndex(strsql string) int {
+	sql := strings.ToLower(strsql)
+	m := fromRegexp.FindAllString(sql, -1)
+	for i := 0; i < len(m); i++ {
+		str := m[i]
+		strnofrom := strings.ReplaceAll(str, " from ", " zorm ")
+		sql = strings.Replace(sql, str, strnofrom, -1)
+	}
+	fromIndex := strings.LastIndex(sql, " from ")
+	if fromIndex < 0 {
+		return fromIndex
+	}
+	//补上一个空格
+	fromIndex = fromIndex + 1
+	return fromIndex
 }
 
 // 从更新语句中获取表名
