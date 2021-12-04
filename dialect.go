@@ -640,7 +640,7 @@ func findSelectFromIndex(strsql string) int {
 	for i := 0; i < len(m); i++ {
 		str := m[i]
 		strnofrom := strings.ReplaceAll(str, " from ", " zorm ")
-		sql = strings.Replace(sql, str, strnofrom, -1)
+		sql = strings.ReplaceAll(sql, str, strnofrom)
 	}
 	fromIndex := strings.LastIndex(sql, " from ")
 	if fromIndex < 0 {
