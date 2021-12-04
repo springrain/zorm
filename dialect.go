@@ -612,7 +612,7 @@ func findGroupByIndex(strsql string) []int {
 //查询 from 在sql中出现的开始位置和结束位置
 //Query the start position and end position of 'from' in sql
 //var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
-//感谢@奔跑提供的正则,排除不在括号内的from,已经满足绝大部分场景,
+//感谢奔跑(@zeqjone)提供的正则,排除不在括号内的from,已经满足绝大部分场景,
 //select id1,(select (id2) from t1 where id=2) _s FROM table select的子查询 _s中的 id2还有括号,才会出现问题,建议使用CountFinder处理分页语句
 var fromExpr = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?(from)"
 var fromRegexp, _ = regexp.Compile(fromExpr)
