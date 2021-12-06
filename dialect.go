@@ -142,7 +142,8 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 			if autoIncrement == 2 { //如果是序列自增 | If it is a sequence increment
 				//拼接字符串 | Concatenated string
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-				sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
+				sqlBuilder.WriteString(getFieldTagName(dbType, field))
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(sequence)
 				valueSQLBuilder.WriteString(",")
