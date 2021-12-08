@@ -59,6 +59,15 @@ type DataSourceConfig struct {
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
+	if config.DSN == "" {
+		return nil, errors.New("DSN cannot be empty")
+	}
+	if config.DriverName == "" {
+		return nil, errors.New("DriverName cannot be empty")
+	}
+	if config.DBType == "" {
+		return nil, errors.New("DBType cannot be empty")
+	}
 	var db *sql.DB
 	var errSQLOpen error
 	//if config.MockSQLDB == nil {
