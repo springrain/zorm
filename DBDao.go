@@ -442,12 +442,8 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	}
 
 	//反射获取 []driver.Value的值
-	var driverValue reflect.Value
-	//判断是否有自定义扩展,避免无意义的反射
-	if len(CustomDriverValueMap) > 0 {
-		driverValue = reflect.Indirect(reflect.ValueOf(rows))
-		driverValue = driverValue.FieldByName("lastcols")
-	}
+	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
 
 	//就查询一个字段
 	//If it is a basic type, query a field
@@ -533,8 +529,8 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	}
 
 	//反射获取 []driver.Value的值
-	driverValue = reflect.Indirect(reflect.ValueOf(rows))
-	driverValue = driverValue.FieldByName("lastcols")
+	//driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	//driverValue = driverValue.FieldByName("lastcols")
 
 	//循环遍历结果集
 	//Loop through the result set
