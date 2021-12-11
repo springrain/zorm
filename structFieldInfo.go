@@ -464,7 +464,12 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 			//字段的反射值
 			fieldValue := valueOf.FieldByName(field.Name)
 			//根据接收的类型,获取到类型转换的接口实现
-			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			var converFunc CustomDriverValueConver
+			var converOK = false
+			if len(CustomDriverValueMap) > 0 {
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
+
 			//类型转换的临时值
 			var tempDriverValue driver.Value
 			var errGetDriverValue error
