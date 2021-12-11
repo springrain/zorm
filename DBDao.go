@@ -445,6 +445,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
+	cdvMapZeroBool := len(CustomDriverValueMap) > 0
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
@@ -463,7 +464,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			}
 			var scanerr error
 			//判断是否有自定义扩展,避免无意义的反射
-			if len(CustomDriverValueMap) > 0 {
+			if cdvMapZeroBool {
 				dv := driverValue.Index(0)
 				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
@@ -889,8 +890,9 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	}
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
+	cdvMapZeroBool := len(CustomDriverValueMap) > 0
 	//判断是否有自定义扩展,避免无意义的反射
-	if len(CustomDriverValueMap) > 0 {
+	if cdvMapZeroBool {
 		driverValue = reflect.Indirect(reflect.ValueOf(rows))
 		driverValue = driverValue.FieldByName("lastcols")
 	}
@@ -919,7 +921,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 			//类型转换的临时值
 			var tempDriverValue driver.Value
 			//判断是否有自定义扩展,避免无意义的反射
-			if len(CustomDriverValueMap) > 0 {
+			if cdvMapZeroBool {
 				dv := driverValue.Index(i)
 				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
