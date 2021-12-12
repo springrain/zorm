@@ -542,7 +542,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		}
 
 		//接收对象设置值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf, finder)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf, finder, cdvMapZeroBool)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -651,6 +651,8 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
+	cdvMapZeroBool := len(CustomDriverValueMap) > 0
+
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[sliceElementType.Kind()] {
@@ -673,9 +675,16 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 				}
 				continue
 			}
+			//类型转换的接口实现
+			var converFunc CustomDriverValueConver
+			//是否需要类型转换
+			var converOK bool = false
 
 			//根据接收的类型,获取到类型转换的接口实现
-			converFunc, converOK := CustomDriverValueMap[dv.Elem().Type().String()]
+			if cdvMapZeroBool {
+				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+			}
+
 			//类型转换的临时值
 			var tempDriverValue driver.Value
 			var errGetDriverValue error
@@ -759,7 +768,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		//设置接收值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv, finder)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv, finder, cdvMapZeroBool)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
