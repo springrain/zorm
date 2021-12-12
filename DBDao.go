@@ -445,7 +445,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	cdvMapZeroBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(CustomDriverValueMap) > 0
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
@@ -464,7 +464,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			}
 			var scanerr error
 			//判断是否有自定义扩展,避免无意义的反射
-			if cdvMapZeroBool {
+			if cdvMapHasBool {
 				dv := driverValue.Index(0)
 				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
@@ -542,7 +542,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		}
 
 		//接收对象设置值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf, finder, cdvMapZeroBool)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, valueOf, finder, cdvMapHasBool)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(scanerr)
@@ -651,7 +651,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	cdvMapZeroBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(CustomDriverValueMap) > 0
 
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
@@ -681,7 +681,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			var converOK bool = false
 
 			//根据接收的类型,获取到类型转换的接口实现
-			if cdvMapZeroBool {
+			if cdvMapHasBool {
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
 			}
 
@@ -768,7 +768,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		//设置接收值
-		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv, finder, cdvMapZeroBool)
+		scanerr := sqlRowsValues(rows, driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, pv, finder, cdvMapHasBool)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
@@ -899,9 +899,9 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	}
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
-	cdvMapZeroBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(CustomDriverValueMap) > 0
 	//判断是否有自定义扩展,避免无意义的反射
-	if cdvMapZeroBool {
+	if cdvMapHasBool {
 		driverValue = reflect.Indirect(reflect.ValueOf(rows))
 		driverValue = driverValue.FieldByName("lastcols")
 	}
@@ -930,7 +930,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 			//类型转换的临时值
 			var tempDriverValue driver.Value
 			//判断是否有自定义扩展,避免无意义的反射
-			if cdvMapZeroBool {
+			if cdvMapHasBool {
 				dv := driverValue.Index(i)
 				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
