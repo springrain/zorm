@@ -429,7 +429,10 @@ func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql
 	values := make([]interface{}, len(columnTypes))
 
 	//记录需要类型转换的字段信息
-	fieldTempDriverValueMap := make(map[reflect.Value]*driverValueInfo)
+	var fieldTempDriverValueMap map[reflect.Value]*driverValueInfo
+	if cdvMapHasBool {
+		fieldTempDriverValueMap = make(map[reflect.Value]*driverValueInfo)
+	}
 
 	//反射获取 []driver.Value的值
 	//driverValue := reflect.Indirect(reflect.ValueOf(rows))

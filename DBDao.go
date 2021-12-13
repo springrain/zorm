@@ -917,7 +917,10 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		result := make(map[string]interface{})
 
 		//记录需要类型转换的字段信息
-		fieldTempDriverValueMap := make(map[int]*driverValueInfo)
+		var fieldTempDriverValueMap map[int]*driverValueInfo
+		if cdvMapHasBool {
+			fieldTempDriverValueMap = make(map[int]*driverValueInfo)
+		}
 
 		//给数据赋值初始化变量
 		//Initialize variables by assigning values ​​to data
