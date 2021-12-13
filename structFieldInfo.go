@@ -423,7 +423,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
-func sqlRowsValues(rows *sql.Rows, driverValue reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf reflect.Value, finder *Finder, cdvMapHasBool bool) error {
+func sqlRowsValues(rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf *reflect.Value, finder *Finder, cdvMapHasBool bool) error {
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, len(columnTypes))
