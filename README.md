@@ -747,7 +747,7 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 ##  性能压测
 
    测试代码:https://github.com/springrain/goormbenchmark  
-   zorm 1.2.x 版本实现了基础功能,读性能比gorm和xorm快一倍.随着持续增加,造成性能下降,目前读性能只快了50%.  
+   zorm 1.2.x 版本实现了基础功能,读性能比gorm和xorm快一倍.随着功能持续增加,造成性能下降,目前读性能只快了50%.  
    zorm会持续优化改进性能.  
 
 
