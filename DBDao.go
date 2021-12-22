@@ -441,7 +441,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		return has, cte
 	}
 
-	//反射获取 []driver.Value的值
+	//反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
@@ -462,10 +462,14 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			if i > 0 {
 				return has, errors.New("QueryRow查询出多条数据")
 			}
+
+			dv := driverValue.Index(0)
+			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,不再处理,使用默认值
+				return has, nil
+			}
 			var scanerr error
 			//判断是否有自定义扩展,避免无意义的反射
 			if cdvMapHasBool {
-				dv := driverValue.Index(0)
 				//根据接收的类型,获取到类型转换的接口实现
 				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
 			}
