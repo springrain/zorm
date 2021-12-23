@@ -143,7 +143,8 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 				//拼接字符串 | Concatenated string
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-				sqlBuilder.WriteString(getFieldTagName(dbType, field))
+				colName := getFieldTagName(dbType, &field)
+				sqlBuilder.WriteString(colName)
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(sequence)
 				valueSQLBuilder.WriteString(",")
@@ -183,7 +184,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 		//Concatenated string.
 		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 		// sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-		colName := getFieldTagName(dbType, field)
+		colName := getFieldTagName(dbType, &field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString(",")
 		valueSQLBuilder.WriteString("?,")
@@ -349,7 +350,7 @@ func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 		}
 		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 		// sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-		colName := getFieldTagName(dbType, field)
+		colName := getFieldTagName(dbType, &field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString("=?,")
 
@@ -772,7 +773,7 @@ func generateStringID() string {
 */
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
-func getFieldTagName(dbType string, field reflect.StructField) string {
+func getFieldTagName(dbType string, field *reflect.StructField) string {
 	colName := field.Tag.Get(tagColumnName)
 	if dbType == "kingbase" {
 		// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错
