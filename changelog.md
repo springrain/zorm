@@ -1,6 +1,7 @@
 v1.5.4
 更新内容：
  - QueryRow如果查询一个字段,而且这个字段数据库为null,会有异常,没有赋为默认值 
+ - reflect.Type 类型的参数,修改为 *reflect.Type 指针,包括CustomDriverValueConver接口的参数
  - 完善文档,注释
 
 v1.5.3

@@ -59,13 +59,13 @@ var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
 //structFieldInfo 获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型
 //第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
-func structFieldInfo(typeOf reflect.Type) error {
+func structFieldInfo(typeOf *reflect.Type) error {
 
 	if typeOf == nil {
 		return errors.New("structFieldInfo数据为空")
 	}
 
-	entityName := typeOf.String()
+	entityName := (*typeOf).String()
 
 	//缓存的key
 	//所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
@@ -84,7 +84,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 		return nil
 	}
 	//获取字段长度
-	fieldNum := typeOf.NumField()
+	fieldNum := (*typeOf).NumField()
 	//如果没有字段
 	if fieldNum < 1 {
 		return errors.New("structFieldInfo-->NumField entity没有属性")
@@ -96,7 +96,7 @@ func structFieldInfo(typeOf reflect.Type) error {
 
 	//遍历所有字段,记录匿名属性
 	for i := 0; i < fieldNum; i++ {
-		field := typeOf.Field(i)
+		field := (*typeOf).Field(i)
 		if _, ok := allFieldMap.Load(field.Name); !ok {
 			allFieldMap.Store(field.Name, field)
 		}
@@ -209,7 +209,7 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 		valueOf = valueOf.Elem()
 	}
 
-	dbMap, err := getDBColumnFieldMap(typeOf)
+	dbMap, err := getDBColumnFieldMap(&typeOf)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func deepCopy(dst, src interface{}) error {
 */
 
 //getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
-func getDBColumnExportFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
+func getDBColumnExportFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
 	dbColumnFieldMap, err := getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 	if err != nil {
 		return nil, nil, err
@@ -272,16 +272,16 @@ func getDBColumnExportFieldMap(typeOf reflect.Type) (map[string]reflect.StructFi
 }
 
 //getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
-func getDBColumnFieldMap(typeOf reflect.Type) (map[string]reflect.StructField, error) {
+func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, error) {
 	return getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 }
 
 //getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
-func getCacheStructFieldInfoMap(typeOf reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
+func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
 	if typeOf == nil {
 		return nil, errors.New("getCacheStructFieldInfoMap-->typeOf不能为空")
 	}
-	key := keyPrefix + typeOf.String()
+	key := keyPrefix + (*typeOf).String()
 	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
 	if !dbOk { //缓存不存在
@@ -338,7 +338,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	//先从本地缓存中查找
 	//typeOf := reflect.TypeOf(entity).Elem()
 
-	dbMap, err := getDBColumnFieldMap(typeOf)
+	dbMap, err := getDBColumnFieldMap(&typeOf)
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
@@ -383,7 +383,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 }
 
 //entityPKFieldName 获取实体类主键属性名称
-func entityPKFieldName(entity IEntityStruct, typeOf reflect.Type) (string, error) {
+func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, error) {
 
 	//检查是否是指针对象
 	//typeOf, checkerr := checkEntityKind(entity)
@@ -479,7 +479,8 @@ func sqlRowsValues(rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sq
 			//如果需要类型转换
 			if converOK {
 				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, fieldValue.Type(), finder)
+				typeOf := fieldValue.Type()
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, &typeOf, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("sqlRowsValues-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -516,7 +517,8 @@ func sqlRowsValues(rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sq
 	//循环需要替换的值
 	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, fieldValue.Type(), driverValueInfo.tempDriverValue, finder)
+		typeOf := fieldValue.Type()
+		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, &typeOf, driverValueInfo.tempDriverValue, finder)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("sqlRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(errConverDriverValue)
@@ -703,12 +705,12 @@ type CustomDriverValueConver interface {
 	//GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
 	//如果无法获取到structFieldType,例如Map查询,会传入nil
 	//如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-	GetDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, finder *Finder) (driver.Value, error)
+	GetDriverValue(columnType *sql.ColumnType, structFieldType *reflect.Type, finder *Finder) (driver.Value, error)
 
 	//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,Finder对象
 	//如果无法获取到structFieldType,例如Map查询,会传入nil
 	//返回符合接收类型值的指针,指针,指针!!!!
-	ConverDriverValue(columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *Finder) (interface{}, error)
+	ConverDriverValue(columnType *sql.ColumnType, structFieldType *reflect.Type, tempDriverValue driver.Value, finder *Finder) (interface{}, error)
 }
 type driverValueInfo struct {
 	converFunc      CustomDriverValueConver

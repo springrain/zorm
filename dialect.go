@@ -55,7 +55,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
+func wrapInsertSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	if err != nil {
 		return sqlstr, autoIncrement, pktype, err
@@ -68,7 +68,7 @@ func wrapInsertSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, col
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 //Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
+func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 
 	//自增类型  0(不自增),1(普通自增),2(序列自增),3(触发器自增)
 	//Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment),3(Trigger increment)
@@ -210,7 +210,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf reflect.Type, entity IEntitySt
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
+func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
 		return "", 0, errors.New("wrapInsertSliceSQL对象数组不能为空")
@@ -303,7 +303,7 @@ func wrapInsertSliceSQL(dbType string, typeOf reflect.Type, entityStructSlice []
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapUpdateSQL Package update Struct statement
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapUpdateSQL(dbType string, typeOf reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	//SQL statement constructor

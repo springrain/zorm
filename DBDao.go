@@ -477,7 +477,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			var errGetDriverValue error
 			if converOK { //如果有类型需要转换
 				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], typeOf, finder)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], &typeOf, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryRow-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -505,7 +505,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		//如果需要类型转换,需要把临时值转换成需要接收的类型值
 		if converOK && tempDriverValue != nil {
 			//根据接收的临时值,返回需要接收值的指针
-			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], typeOf, tempDriverValue, finder)
+			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], &typeOf, tempDriverValue, finder)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryRow-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(errConverDriverValue)
@@ -526,7 +526,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	valueOf := reflect.ValueOf(entity).Elem()
 	//获取到类型的字段缓存
 	//Get the type field cache
-	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(typeOf)
+	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(&typeOf)
 	if dbe != nil {
 		dbe = fmt.Errorf("QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
@@ -695,7 +695,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			//如果需要转换
 			if converOK {
 				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], sliceElementType, finder)
+				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], &sliceElementType, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("Query-->conver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(errGetDriverValue)
@@ -719,7 +719,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			//如果需要类型转换,需要把临时值转换成需要接收的类型值
 			if converOK && tempDriverValue != nil {
 				//根据接收的临时值,返回需要接收值的指针
-				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], sliceElementType, tempDriverValue, finder)
+				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], &sliceElementType, tempDriverValue, finder)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
 					FuncLogError(errConverDriverValue)
@@ -756,7 +756,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 	//获取到类型的字段缓存
 	//Get the type field cache
-	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(sliceElementType)
+	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(&sliceElementType)
 	if dbe != nil {
 		dbe = fmt.Errorf("Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
 		FuncLogError(dbe)
@@ -1131,7 +1131,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//SQL语句
 	//SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(dbType, typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(dbType, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
@@ -1257,7 +1257,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	}
 
 	//SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(dbType, typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(dbType, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(err)
@@ -1306,7 +1306,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, checkerr
 	}
 
-	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
+	pkName, pkNameErr := entityPKFieldName(entity, &typeOf)
 
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("Delete-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
@@ -1546,7 +1546,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	//SQL语句
 	//SQL statement
-	sqlstr, err := wrapUpdateSQL(dbType, typeOf, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateSQL(dbType, &typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return affected, err
 	}
