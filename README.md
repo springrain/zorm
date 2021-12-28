@@ -23,9 +23,9 @@ go get gitee.com/chunanyong/zorm
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
-## 关于源码仓库说明
-大部分开源项目,我主导的项目主库基本都放到了gitee,github上有项目说明,这样也造成了项目的star数量增长缓慢,毕竟github社区更加强大.  
-<font size=4 color=red>开源没有国界,开发者却有自己的祖国.</font>  
+## 源码仓库说明
+我主导的开源项目主库都放到了gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目的star数量增长缓慢,毕竟github社区更加强大.  
+**开源没有国界,开发者却有自己的祖国.**   
 严格意义上,github是受美国法律管辖的 https://www.infoq.cn/article/SA72SsSeZBpUSH_ZH8XB  
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
 
