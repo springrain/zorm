@@ -325,6 +325,7 @@ func TestQueryRow(t *testing.T) {
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
 	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+	//finder默认启用了sql注入检查,禁止语句中拼接 ' 单引号,可以设置 finder.InjectionCheck = false 解开限制
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
