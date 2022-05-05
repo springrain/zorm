@@ -130,6 +130,15 @@ func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.
 	return ctx, nil
 }
 
+// CloseDB 关闭所有数据库连接
+//请谨慎调用这个方法,会关闭所有数据库连接,用于处理特殊场景,正常使用无需手动关闭数据库连接
+func (dbDao *DBDao) CloseDB() error {
+	if dbDao == nil || dbDao.dataSource == nil {
+		return errors.New("请不要自己创建dbDao,使用NewDBDao方法进行创建")
+	}
+	return dbDao.dataSource.Close()
+}
+
 /*
 Transaction 的示例代码
   //匿名函数return的error如果不为nil,事务就会回滚
