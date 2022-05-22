@@ -57,7 +57,7 @@ https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go
 // zorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
-// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
+// zorm的事务操作需要显式使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 ``` 
 
 
@@ -163,7 +163,7 @@ func newDemoStruct() demoStruct {
 // testzorm 使用原生的sql语句,没有对sql语法做限制.语句使用Finder作为载体
 // 占位符统一使用?,zorm会根据数据库类型,自动替换占位符,例如postgresql数据库把?替换成$1,$2...
 // zorm使用 ctx context.Context 参数实现事务传播,ctx从web层传递进来即可,例如gin的c.Request.Context()
-// zorm的事务操作需要显示使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
+// zorm的事务操作需要显式使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启
 package testzorm
 
 import (
