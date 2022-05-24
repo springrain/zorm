@@ -155,7 +155,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 				i = i - 1
 				continue
 
-			} else if (pktype == "string") && (pkValue.(string) == "") { //主键是字符串类型,并且值为"",赋值id
+			} else if (pktype == "string") && reflect.ValueOf(pkValue).IsZero() { //主键是字符串类型,并且值为"",赋值id
 				//生成主键字符串
 				//Generate primary key string
 				id := FuncGenerateStringID()
@@ -168,7 +168,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 				//If it is a number type and the value is 0,
 				//it is considered to be a database self-increment,
 				//delete the primary key information from the array, and let the database generate itself.
-			} else if (pktype == "int" && pkValue.(int) == 0) || (pktype == "int64" && pkValue.(int64) == 0) {
+			} else if (pktype == "int" || pktype == "int64") && reflect.ValueOf(pkValue).IsZero() {
 				//标记是自增主键
 				//Mark is auto-incrementing primary key
 				autoIncrement = 1

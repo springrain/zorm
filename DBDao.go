@@ -278,6 +278,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if errOk {
 				err = fmt.Errorf("recover异常:%w", err)
 				FuncLogPanic(err)
+			} else {
+				FuncLogPanic(fmt.Errorf("recover异常:%v", r))
 			}
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
