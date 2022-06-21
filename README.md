@@ -330,8 +330,8 @@ func TestQueryRow(t *testing.T) {
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
-	//执行查询
-	_, err := zorm.QueryRow(ctx, finder, demo)
+	//执行查询,has为true表示数据库有数据
+	has, err := zorm.QueryRow(ctx, finder, demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
