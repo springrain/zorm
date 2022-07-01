@@ -328,6 +328,7 @@ func TestQueryRow(t *testing.T) {
 	//finder默认启用了sql注入检查,禁止语句中拼接 ' 单引号,可以设置 finder.InjectionCheck = false 解开限制
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	//in (?) 参数必须有()括号,不能 in ?
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
 	//执行查询,has为true表示数据库有数据
@@ -346,6 +347,7 @@ func TestQueryRowMap(t *testing.T) {
 	//构造查询用的finder
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
+	//in (?) 参数必须有()括号,不能 in ?
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 	//执行查询
 	resultMap, err := zorm.QueryRowMap(ctx, finder)
