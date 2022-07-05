@@ -208,7 +208,7 @@ func init() {
 	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 
 		//使用现有的数据库连接,优先级高于DSN
-	    //SQLDB *sql.DB,
+	    //SQLDB : nil,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
