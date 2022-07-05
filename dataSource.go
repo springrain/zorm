@@ -63,6 +63,10 @@ type DataSourceConfig struct {
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
+	if config == nil {
+		return nil, errors.New("config cannot be empty")
+	}
+
 	if config.DriverName == "" {
 		return nil, errors.New("DriverName cannot be empty")
 	}
