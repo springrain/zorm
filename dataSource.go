@@ -54,14 +54,15 @@ type DataSourceConfig struct {
 
 	//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
 	FuncSeataGlobalTransaction func(ctx context.Context) (ISeataGlobalTransaction, context.Context, error)
+
+	//使用现有的数据库连接,优先级高于DSN
+	SQLDB *sql.DB
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
-	if config.DSN == "" {
-		return nil, errors.New("DSN cannot be empty")
-	}
+
 	if config.DriverName == "" {
 		return nil, errors.New("DriverName cannot be empty")
 	}
@@ -70,16 +71,20 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	}
 	var db *sql.DB
 	var errSQLOpen error
-	//if config.MockSQLDB == nil {
-	db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
-	if errSQLOpen != nil {
-		errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
-		FuncLogError(errSQLOpen)
-		return nil, errSQLOpen
+
+	if config.SQLDB == nil { //没有已经存在的数据库连接,使用DSN初始化
+		if config.DSN == "" {
+			return nil, errors.New("DSN cannot be empty")
+		}
+		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
+		if errSQLOpen != nil {
+			errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
+			FuncLogError(errSQLOpen)
+			return nil, errSQLOpen
+		}
+	} else { //使用已经存在的数据库连接
+		db = config.SQLDB
 	}
-	//	} else {
-	//		db = config.MockSQLDB
-	//	}
 
 	if config.MaxOpenConns == 0 {
 		config.MaxOpenConns = 50

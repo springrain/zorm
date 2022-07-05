@@ -206,6 +206,9 @@ func init() {
 
 		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
 	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
+
+		//使用现有的数据库连接,优先级高于DSN
+	    //SQLDB *sql.DB,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,

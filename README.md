@@ -220,6 +220,9 @@ func init() {
 
 		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
 	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
+
+		//使用现有的数据库连接,优先级高于DSN
+	    //SQLDB *sql.DB,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
