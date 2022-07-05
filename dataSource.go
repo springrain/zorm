@@ -64,7 +64,7 @@ type DataSourceConfig struct {
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
 	if config == nil {
-		return nil, errors.New("config cannot be empty")
+		return nil, errors.New("config cannot be nil")
 	}
 
 	if config.DriverName == "" {
