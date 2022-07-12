@@ -364,7 +364,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 	}
 
-	return nil, nil
+	return info, err
 }
 
 // QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个slice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
