@@ -121,8 +121,6 @@ type demoStruct struct {
 
 	//模拟自定义的字段Active
 	Active int
-
-
 }
 
 //GetTableName 获取表名称
