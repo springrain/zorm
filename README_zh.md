@@ -220,8 +220,13 @@ func init() {
 		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
 	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
 
-		//使用现有的数据库连接,优先级高于DSN
+	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
+
+
+	    //全局禁用事务,默认false.为了处理某些数据库不支持事务,比如TDengine等
+	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
+	    //DisableTransaction :false,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao

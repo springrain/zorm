@@ -210,6 +210,12 @@ func init() {
 
 		//使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
+
+		
+
+	    //全局禁用事务,默认false.为了处理某些数据库不支持事务,比如TDengine等
+	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
+	    //DisableTransaction :false,
 	}
 
 	// Create dbDao according to dbDaoConfig, a database is executed only once,
