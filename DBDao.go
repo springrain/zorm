@@ -1754,3 +1754,21 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	}
 	return res, errAffected
 }
+
+// context WithValue的key,不能是基础类型,例如字符串,包装一下
+//把sql hint放到context里使用的key
+const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
+
+// BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句. parent不能为空
+// hint 是完整的sql片段, 例如: hint:="/*+ XID('gs/aggregationSvc/2612341069705662465') */"
+func BindContextSQLHint(parent context.Context, hint string) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("BindContextSQLHint context的parent不能为nil")
+	}
+	if len(hint) < 1 {
+		return nil, errors.New("BindContextSQLHint hint不能为空")
+	}
+
+	ctx := context.WithValue(parent, contextSQLHintValueKey, hint)
+	return ctx, nil
+}

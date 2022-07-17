@@ -1,6 +1,7 @@
 package zorm
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"errors"
@@ -781,4 +782,26 @@ func getFieldTagName(dbType string, field *reflect.StructField) string {
 		colName = fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
 	}
 	return colName
+}
+
+// wrapSQLHint 在sql语句中增加hint
+func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
+	//获取hint
+	contextValue := ctx.Value(contextSQLHintValueKey)
+	if contextValue == nil { //如果没有设置hint
+		return sqlstr, nil
+	}
+	hint := contextValue.(string)
+	if len(hint) < 1 {
+		return sqlstr, nil
+	}
+	//sql去空格
+	sqlTrim := strings.TrimSpace(*sqlstr)
+	sqlIndex := strings.Index(sqlTrim, " ")
+	if sqlIndex < 0 {
+		return sqlstr, nil
+	}
+	sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
+	sqlstr = &sql
+	return sqlstr, nil
 }
