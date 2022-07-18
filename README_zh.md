@@ -607,8 +607,8 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 ##  分布式事务
-基于seata-golang实现分布式事务.    
-### proxy模式 
+### 基于seata-golang实现分布式事务  
+#### proxy模式 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
@@ -669,7 +669,7 @@ func main() {
 }
 ```
 
-### 全局托管模式
+#### 全局托管模式
 
 ```golang
 
@@ -759,6 +759,31 @@ func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
 
 //................//
 ```
+
+### 基于dbpack实现分布式事务  
+```dbpack``` 文档:https://cectc.github.io/dbpack-doc/#/README  
+使用 Mesh 方式部署,对应用集成比较简单,只需要获取xid,放到sql语句的hint就可以了
+```golang
+// 开启dbpack事务前,ctx需要绑定sql hint,例如使用gin框架获取header传递过来的xid
+xid := c.Request.Header.Get("xid")
+// 使用xid生成sql的hint内容,然后将hint绑定到ctx
+hint := := fmt.Sprintf("/*+ XID('%s') */", xid)
+// 获取到ctx
+ctx := c.Request.Context()
+// 将hint绑定到ctx
+ctx,_ = zorm.BindContextSQLHint(ctx,hint)
+
+// ctx绑定sql hint之后,调用业务事务,传递ctx实现分布式事务的传播
+_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+    // 业务代码......
+
+	// 如果返回的err不是nil,本地事务和分布式事务就会回滚
+	return nil, err
+})
+
+```
+
 
 ##  性能压测
 
