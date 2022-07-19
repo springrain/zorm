@@ -1,6 +1,6 @@
 v1.5.7
 更新内容：
- - 支持dbpack分布式事务
+ - 增加hptx和dbpack分布式事务的支持
  - DisableTransaction用于全局禁用数据库事务,用于不支持事务的数据库驱动.
  - 完善文档,注释
 

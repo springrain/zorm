@@ -17,7 +17,7 @@ go get gitee.com/chunanyong/zorm
 * Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
 * Does not support joint primary keys, alternatively thinks that there is no primary key, and business control is implemented (difficult choice)  
-* Integrate seata-golang, support global hosting, do not modify business code, and zero intrusive distributed transactions
+* Integrate seata-golang, support global hosting, do not modify business code, and zero intrusive global transactions
 * Support clickhouse, update and delete statements use SQL92 standard syntax. The official clickhouse-go driver does not support batch insert syntax, it is recommended to use https://github.com/mailru/go-clickhouse
 
 zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
@@ -202,11 +202,11 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
-		//如果是使用seata-golang分布式事务,建议使用默认配置
+		//如果是使用分布式事务,建议使用默认配置
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
-	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
+		//FuncGlobalTransaction 分布式事务的适配函数,返回IGlobalTransaction接口的实现
+	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
 		//使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
@@ -603,8 +603,8 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 
 ```  
-## Distributed transaction
-Implement distributed transactions based on seata-golang.
+## Global transaction
+Implement global transactions based on seata-golang.
 ### Proxy mode
 ```golang
 //DataSourceConfig configuration DefaultTxOptions
@@ -617,7 +617,7 @@ import (
 "github.com/transaction-wg/seata-golang/pkg/client/config"
 "github.com/transaction-wg/seata-golang/pkg/client/rm"
 "github.com/transaction-wg/seata-golang/pkg/client/tm"
-seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+gtxContext "github.com/transaction-wg/seata-golang/pkg/client/context"
 )
 
 //Configuration file path
@@ -644,14 +644,14 @@ tm.Implement(svc.ProxySvc)
 
 
 //Get the rootContext of seata
-rootContext := seataContext.NewRootContext(ctx)
-//rootContext := ctx.(*seataContext.RootContext)
+rootContext := gtxContext.NewRootContext(ctx)
+//rootContext := ctx.(*gtxContext.RootContext)
 
 //Create seata transaction
-seataTx := tm.GetCurrentOrCreate(rootContext)
+globalTx := tm.GetCurrentOrCreate(rootContext)
 
 //Start transaction
-seataTx.BeginWithTimeoutAndName(int32(6000), "transaction name", rootContext)
+globalTx.BeginWithTimeoutAndName(int32(6000), "transaction name", rootContext)
 
 //Get the XID after the transaction is opened. It can be passed through the header of gin, or passed in other ways
 xid:=rootContext.GetXID()
@@ -667,47 +667,47 @@ ctx =context.WithValue(ctx,mysql.XID,xid)
 
 ```golang
 
-//Do not use proxy mode, global hosting, do not modify business code, zero intrusion to achieve distributed transactions
+//Do not use proxy mode, global hosting, do not modify business code, zero intrusion to achieve global transactions
 //tm.Implement(svc.ProxySvc)
 
 // It is recommended to put the following code in a separate file
 //................//
 
-// ZormSeataGlobalTransaction wraps *tm.DefaultGlobalTransaction of seata, and implements the zorm.ISeataGlobalTransaction interface
-type ZormSeataGlobalTransaction struct {
+// ZormGlobalTransaction wraps *tm.DefaultGlobalTransaction of seata, and implements the zorm.IGlobalTransaction interface
+type ZormGlobalTransaction struct {
 *tm.DefaultGlobalTransaction
 }
 
-// MyFuncSeataGlobalTransaction zorm adapts the function of seata distributed transaction, configure zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction
-func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
+// MyFuncGlobalTransaction zorm adapts the function of seata global transaction, configure zorm.DataSourceConfig.FuncGlobalTransaction=MyFuncGlobalTransaction
+func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, error) {
 //Get the rootContext of seata
-rootContext := seataContext.NewRootContext(ctx)
+rootContext := gtxContext.NewRootContext(ctx)
 //Create seata transaction
-seataTx := tm.GetCurrentOrCreate(rootContext)
-//Use the zorm.ISeataGlobalTransaction interface object to wrap the seata transaction and isolate the seata-golang dependency
-seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+globalTx := tm.GetCurrentOrCreate(rootContext)
+//Use the zorm.IGlobalTransaction interface object to wrap the seata transaction and isolate the seata-golang dependency
+globalTransaction := ZormGlobalTransaction{globalTx}
 
-return seataGlobalTransaction, rootContext, nil
+return globalTransaction, rootContext, nil
 }
 
-//Implement the zorm.ISeataGlobalTransaction interface
-func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
-rootContext := ctx.(*seataContext.RootContext)
+//Implement the zorm.IGlobalTransaction interface
+func (gtx ZormGlobalTransaction) Begin(ctx context.Context) error {
+rootContext := ctx.(*gtxContext.RootContext)
 return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
-rootContext := ctx.(*seataContext.RootContext)
+func (gtx ZormGlobalTransaction) Commit(ctx context.Context) error {
+rootContext := ctx.(*gtxContext.RootContext)
 return gtx.Commit(rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
-rootContext := ctx.(*seataContext.RootContext)
+func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
+rootContext := ctx.(*gtxContext.RootContext)
 return gtx.Rollback(rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
-rootContext := ctx.(*seataContext.RootContext)
+func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
+rootContext := ctx.(*gtxContext.RootContext)
 return rootContext.GetXID()
 }
 

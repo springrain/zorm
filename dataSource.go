@@ -52,8 +52,8 @@ type DataSourceConfig struct {
 	//db, mock, err := sqlmock.New()
 	//MockSQLDB *sql.DB
 
-	//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
-	FuncSeataGlobalTransaction func(ctx context.Context) (ISeataGlobalTransaction, context.Context, error)
+	//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
+	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, error)
 
 	//使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB

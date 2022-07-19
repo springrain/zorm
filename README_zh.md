@@ -19,7 +19,7 @@ go get gitee.com/chunanyong/zorm
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
-* 集成seata-golang,支持全局托管,不修改业务代码,零侵入分布式事务
+* 支持seata,hptx,dbpack分布式事务,支持全局托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
@@ -214,11 +214,11 @@ func init() {
 		PrintSQL: true,
 		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 		//DefaultTxOptions: nil,
-		//如果是使用seata-golang分布式事务,建议使用默认配置
+		//如果是使用分布式事务,建议使用默认配置
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-		//FuncSeataGlobalTransaction seata-golang分布式的适配函数,返回ISeataGlobalTransaction接口的实现
-	    //FuncSeataGlobalTransaction : MyFuncSeataGlobalTransaction,
+		//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
+	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
 	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
@@ -607,20 +607,20 @@ zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
 
 ```  
 ##  分布式事务
-### 基于seata-golang实现分布式事务  
-#### proxy模式 
+### 基于seata/hptx实现分布式事务  
+#### seata proxy模式 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-// 引入V1版本的依赖包,V2的参考官方例子
+// 引入seata-golang V1版本的依赖包
 import (
 	"github.com/opentrx/mysql"
 	"github.com/transaction-wg/seata-golang/pkg/client"
 	"github.com/transaction-wg/seata-golang/pkg/client/config"
 	"github.com/transaction-wg/seata-golang/pkg/client/rm"
 	"github.com/transaction-wg/seata-golang/pkg/client/tm"
-	seataContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+	gtxContext "github.com/transaction-wg/seata-golang/pkg/client/context"
 )
 
 //配置文件路径
@@ -647,14 +647,14 @@ func main() {
 
 
 	//获取seata的rootContext
-	//rootContext := seataContext.NewRootContext(ctx)
-	//rootContext := ctx.(*seataContext.RootContext)
+	//rootContext := gtxContext.NewRootContext(ctx)
+	//rootContext := ctx.(*gtxContext.RootContext)
 
 	//创建seata事务
-	//seataTx := tm.GetCurrentOrCreate(rootContext)
+	//globalTx := tm.GetCurrentOrCreate(rootContext)
 
 	//开始事务
-	//seataTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+	//globalTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
 
 	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
 	//xid:=rootContext.GetXID()
@@ -669,7 +669,71 @@ func main() {
 }
 ```
 
-#### 全局托管模式
+#### hptx proxy模式 
+```golang
+//DataSourceConfig 配置  DefaultTxOptions
+//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+
+// 引入hptx 依赖包
+import (
+	"github.com/cectc/hptx"
+	"github.com/cectc/hptx/pkg/config"
+	"github.com/cectc/hptx/pkg/resource"
+	"github.com/cectc/mysql"
+	"github.com/cectc/hptx/pkg/tm"
+
+	gtxContext "github.com/cectc/hptx/pkg/base/context"
+)
+
+//配置文件路径
+var configPath = "./conf/client.yml"
+
+func main() {
+
+	//初始化配置
+	hptx.InitFromFile(configPath)
+	
+	//注册mysql驱动
+    mysql.RegisterResource(config.GetATConfig().DSN)
+	resource.InitATBranchResource(mysql.GetDataSourceManager())
+	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+
+
+	//后续正常初始化zorm,一定要放到hptx mysql 初始化后面!!!
+
+	//................//
+	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	tm.Implement(svc.ProxySvc)
+	//................//
+
+
+	//获取hptx的rootContext
+	//rootContext := gtxContext.NewRootContext(ctx)
+	//rootContext := ctx.(*gtxContext.RootContext)
+
+	//创建hptx事务
+	//globalTx := tm.GetCurrentOrCreate(rootContext)
+
+	//开始事务
+	//globalTx.BeginWithTimeoutAndName(int32(6000), "事务名称", rootContext)
+
+	//事务开启之后获取XID.可以通过gin的header传递,或者其他方式传递
+	//xid:=rootContext.GetXID()
+
+	// 如果使用的gin框架,获取到ctx
+	// ctx := c.Request.Context()
+
+	// 接受传递过来的XID,绑定到本地ctx
+	//ctx =context.WithValue(ctx,mysql.XID,xid)
+}
+```
+
+
+
+
+#### seata/hptx 全局托管模式
+
+```seata-golang``` 和 ```hptx```实现方式一致,只是实现的包不同
 
 ```golang
 
@@ -714,46 +778,50 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 // 建议以下代码放到单独的文件里
 //................//
 
-// ZormSeataGlobalTransaction 包装seata的*tm.DefaultGlobalTransaction,实现zorm.ISeataGlobalTransaction接口
-type ZormSeataGlobalTransaction struct {
+// ZormGlobalTransaction 包装seata/hptx的*tm.DefaultGlobalTransaction,实现zorm.IGlobalTransaction接口
+type ZormGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// MyFuncSeataGlobalTransaction zorm适配seata分布式事务的函数
-// 重要!!!!需要配置zorm.DataSourceConfig.FuncSeataGlobalTransaction=MyFuncSeataGlobalTransaction 重要!!!
-func MyFuncSeataGlobalTransaction(ctx context.Context) (zorm.ISeataGlobalTransaction, context.Context, error) {
-	//获取seata的rootContext
-	rootContext := seataContext.NewRootContext(ctx)
-	//创建seata事务
-	seataTx := tm.GetCurrentOrCreate(rootContext)
-	//使用zorm.ISeataGlobalTransaction接口对象包装seata事务,隔离seata-golang依赖
-	seataGlobalTransaction := ZormSeataGlobalTransaction{seataTx}
+// MyFuncGlobalTransaction zorm适配seata/hptx 全局分布式事务的函数
+// 重要!!!!需要配置zorm.DataSourceConfig.FuncGlobalTransaction=MyFuncGlobalTransaction 重要!!!
+func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, error) {
+	//获取seata/hptx的rootContext
+	rootContext := gtxContext.NewRootContext(ctx)
+	//创建seata/hptx事务
+	globalTx := tm.GetCurrentOrCreate(rootContext)
+	//使用zorm.IGlobalTransaction接口对象包装分布式事务,隔离seata/hptx依赖
+	globalTransaction := ZormGlobalTransaction{globalTx}
 
-	return seataGlobalTransaction, rootContext, nil
+	return globalTransaction, rootContext, nil
 }
 
-//实现zorm.ISeataGlobalTransaction接口
-func (gtx ZormSeataGlobalTransaction) SeataBegin(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
+
+//实现zorm.IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
+// Begin 开启全局分布式事务
+func (gtx ZormGlobalTransaction) Begin(ctx context.Context) error {
+	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) SeataCommit(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
+// Commit 提交全局分布式事务
+func (gtx ZormGlobalTransaction) Commit(ctx context.Context) error {
+	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
-func (gtx ZormSeataGlobalTransaction) SeataRollback(ctx context.Context) error {
-	rootContext := ctx.(*seataContext.RootContext)
+// Rollback 回滚全局分布式事务
+func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
+	rootContext := ctx.(*gtxContext.RootContext)
 	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
 	if gtx.Role != tm.Launcher {
 		gtx.Role = tm.Launcher
 	}
 	return gtx.Rollback(rootContext)
 }
-
-func (gtx ZormSeataGlobalTransaction) GetSeataXID(ctx context.Context) string {
-	rootContext := ctx.(*seataContext.RootContext)
+// GetXID 获取全局分布式事务的XID
+func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
+	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }
 
