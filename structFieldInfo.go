@@ -294,18 +294,17 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
 		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 		if !dbOk {
-			return dbColumnFieldMap.(map[string]reflect.StructField), errors.New("getCacheStructFieldInfoMap()-->获取数据库字段dbColumnFieldMap异常")
+			return nil, errors.New("getCacheStructFieldInfoMap()-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
 		}
 	}
 
-	/*
-		dbMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
-		if !efOK {
-			return nil, errors.New("缓存数据库字段异常")
-		}
-		return dbMap, nil
-	*/
-	return dbColumnFieldMap.(map[string]reflect.StructField), nil
+	dbcfMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
+	if !efOK {
+		return dbcfMap, errors.New("getCacheStructFieldInfoMap()-->dbColumnFieldMap取值转map[string]reflect.StructField类型异常")
+	}
+	return dbcfMap, nil
+
+	//return dbColumnFieldMap, nil
 }
 
 /*
