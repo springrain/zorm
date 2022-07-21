@@ -195,8 +195,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		return nil, checkerr
 	}
 
-	//适配分布式事务的函数
+	//适配全局事务的函数
 	funcGlobalTx := dbConnection.config.FuncGlobalTransaction
+
 	//实现IGlobalTransaction接口的事务对象
 	var globalTransaction IGlobalTransaction
 	//分布式事务的 rootContext,和业务的ctx区别开来,如果业务ctx使用WithValue,就会出现差异
@@ -209,8 +210,19 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
 		//if dbConnection.tx == nil {
 
+		//是否使用分布式事务
+		enableGlobalTransaction := funcGlobalTx != nil
+		if enableGlobalTransaction { // 判断ctx里是否有绑定 enableGlobalTransaction
+			ctxGTXval := ctx.Value(contextEnableGlobalTransactionValueKey)
+			if ctxGTXval != nil { //如果有值
+				enableGlobalTransaction = ctxGTXval.(bool)
+			} else { //如果ctx没有值,就取值DisableAutoGlobalTransaction
+				enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
+			}
+		}
+
 		//需要开启分布式事务,初始化分布式事务对象,判断是否是分布式事务入口
-		if funcGlobalTx != nil {
+		if enableGlobalTransaction {
 			//获取分布式事务的XID
 			ctxXIDval := ctx.Value("XID")
 			if ctxXIDval != nil { //如果本地ctx中有XID
@@ -1755,11 +1767,10 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	return res, errAffected
 }
 
-// context WithValue的key,不能是基础类型,例如字符串,包装一下
-//把sql hint放到context里使用的key
+//contextSQLHintValueKey 把sql hint放到context里使用的key
 const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
 
-// BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句. parent不能为空
+// BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句
 // hint 是完整的sql片段, 例如: hint:="/*+ XID('gs/aggregationSvc/2612341069705662465') */"
 func BindContextSQLHint(parent context.Context, hint string) (context.Context, error) {
 	if parent == nil {
@@ -1770,5 +1781,17 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 	}
 
 	ctx := context.WithValue(parent, contextSQLHintValueKey, hint)
+	return ctx, nil
+}
+
+//contextEnableGlobalTransactionValueKey 是否使用分布式事务放到context里使用的key
+const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
+
+// BindContextEnableGlobalTransaction context中绑定是否使用分布式事务的值,如果没有绑定,会取值DisableAutoGlobalTransaction
+func BindContextEnableGlobalTransaction(parent context.Context, openGlobalTransaction bool) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("BindContextEnableGlobalTransaction context的parent不能为nil")
+	}
+	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, openGlobalTransaction)
 	return ctx, nil
 }

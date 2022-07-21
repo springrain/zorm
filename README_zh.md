@@ -25,7 +25,7 @@ go get gitee.com/chunanyong/zorm
 zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
 
 ## 源码仓库说明
-我主导的开源项目主库都在gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目star增长缓慢,毕竟github社区更加强大.  
+我主导的开源项目主库都在gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目star增长缓慢,毕竟github用户多些.  
 **开源没有国界,开发者却有自己的祖国.**   
 严格意义上,github是受美国法律管辖的 https://www.infoq.cn/article/SA72SsSeZBpUSH_ZH8XB  
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
@@ -220,9 +220,13 @@ func init() {
 		//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
 	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
+        //DisableAutoGlobalTransaction  禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
+		//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
+        //DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
+        //DisableAutoGlobalTransaction:false,
+
 	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
-
 
 	    //全局禁用事务,默认false.为了处理某些数据库不支持事务,比如TDengine等
 	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
@@ -686,7 +690,7 @@ import (
 )
 
 //配置文件路径
-var configPath = "./conf/client.yml"
+var configPath = "./conf/config.yml"
 
 func main() {
 
@@ -740,6 +744,8 @@ func main() {
 //不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
+//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
+//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
 
 // 分布式事务示例代码
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -791,7 +797,7 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	//创建seata/hptx事务
 	globalTx := tm.GetCurrentOrCreate(rootContext)
 	//使用zorm.IGlobalTransaction接口对象包装分布式事务,隔离seata/hptx依赖
-	globalTransaction := ZormGlobalTransaction{globalTx}
+	globalTransaction := &ZormGlobalTransaction{globalTx}
 
 	return globalTransaction, rootContext, nil
 }
@@ -799,19 +805,19 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 
 //实现zorm.IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
 // Begin 开启全局分布式事务
-func (gtx ZormGlobalTransaction) Begin(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Begin(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // Commit 提交全局分布式事务
-func (gtx ZormGlobalTransaction) Commit(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Commit(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // Rollback 回滚全局分布式事务
-func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Rollback(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
 	if gtx.Role != tm.Launcher {
@@ -820,7 +826,7 @@ func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
 	return gtx.Rollback(rootContext)
 }
 // GetXID 获取全局分布式事务的XID
-func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
+func (gtx *ZormGlobalTransaction) GetXID(ctx context.Context) string {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }
@@ -835,7 +841,7 @@ func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
 // 开启dbpack事务前,ctx需要绑定sql hint,例如使用gin框架获取header传递过来的xid
 xid := c.Request.Header.Get("xid")
 // 使用xid生成sql的hint内容,然后将hint绑定到ctx
-hint := := fmt.Sprintf("/*+ XID('%s') */", xid)
+hint := fmt.Sprintf("/*+ XID('%s') */", xid)
 // 获取到ctx
 ctx := c.Request.Context()
 // 将hint绑定到ctx

@@ -685,28 +685,28 @@ rootContext := gtxContext.NewRootContext(ctx)
 //Create seata transaction
 globalTx := tm.GetCurrentOrCreate(rootContext)
 //Use the zorm.IGlobalTransaction interface object to wrap the seata transaction and isolate the seata-golang dependency
-globalTransaction := ZormGlobalTransaction{globalTx}
+globalTransaction := &ZormGlobalTransaction{globalTx}
 
 return globalTransaction, rootContext, nil
 }
 
 //Implement the zorm.IGlobalTransaction interface
-func (gtx ZormGlobalTransaction) Begin(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Begin(ctx context.Context) error {
 rootContext := ctx.(*gtxContext.RootContext)
 return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
-func (gtx ZormGlobalTransaction) Commit(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Commit(ctx context.Context) error {
 rootContext := ctx.(*gtxContext.RootContext)
 return gtx.Commit(rootContext)
 }
 
-func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Rollback(ctx context.Context) error {
 rootContext := ctx.(*gtxContext.RootContext)
 return gtx.Rollback(rootContext)
 }
 
-func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
+func (gtx *ZormGlobalTransaction) GetXID(ctx context.Context) string {
 rootContext := ctx.(*gtxContext.RootContext)
 return rootContext.GetXID()
 }

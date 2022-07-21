@@ -59,7 +59,7 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	//创建seata/hptx事务
 	globalTx := tm.GetCurrentOrCreate(rootContext)
 	//使用zorm.IGlobalTransaction接口对象包装分布式事务,隔离seata/hptx依赖
-	globalTransaction := ZormGlobalTransaction{globalTx}
+	globalTransaction := &ZormGlobalTransaction{globalTx}
 
 	return globalTransaction, rootContext, nil
 }
@@ -67,19 +67,19 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 
 //实现zorm.IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
 // Begin 开启全局分布式事务
-func (gtx ZormGlobalTransaction) Begin(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Begin(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // Commit 提交全局分布式事务
-func (gtx ZormGlobalTransaction) Commit(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Commit(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // Rollback 回滚全局分布式事务
-func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
+func (gtx *ZormGlobalTransaction) Rollback(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
 	if gtx.Role != tm.Launcher {
@@ -88,7 +88,7 @@ func (gtx ZormGlobalTransaction) Rollback(ctx context.Context) error {
 	return gtx.Rollback(rootContext)
 }
 // GetXID 获取全局分布式事务的XID
-func (gtx ZormGlobalTransaction) GetXID(ctx context.Context) string {
+func (gtx *ZormGlobalTransaction) GetXID(ctx context.Context) string {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }

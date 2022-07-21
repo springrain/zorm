@@ -53,7 +53,12 @@ type DataSourceConfig struct {
 	//MockSQLDB *sql.DB
 
 	//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
+	//可以配合DisableAutoGlobalTransaction和BindContextEnableGlobalTransaction灵活控制分布式事务是否开启
 	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, error)
+	//DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
+	//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
+	//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
+	DisableAutoGlobalTransaction bool
 
 	//使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
