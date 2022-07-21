@@ -51,8 +51,9 @@ const (
 )
 
 //cacheStructFieldInfoMap 用于缓存反射的信息,sync.Map内部处理了并发锁
-//var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
-var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
+var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
+
+//var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
 //用于缓存field对应的column的tag值
 //var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
@@ -77,8 +78,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	//structFieldTagCacheKey := structFieldTagPrefix + entityName
 	//dbPKNameCacheKey := dbPKNamePrefix + entityName
 	//缓存的数据库主键值
-	//_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
-	_, exportOk := cacheStructFieldInfoMap[exportCacheKey]
+	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
+	//_, exportOk := cacheStructFieldInfoMap[exportCacheKey]
 	//如果存在值,认为缓存中有所有的信息,不再处理
 	if exportOk {
 		return nil
@@ -140,13 +141,13 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	allFieldMap.Range(f)
 
 	//加入缓存
-	//cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
-	//cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
-	//cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
+	cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
+	cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
+	cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
+	//cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
+	//cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
+	//cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 
-	cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
-	cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
-	cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
 	return nil
 }
@@ -282,18 +283,18 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 		return nil, errors.New("getCacheStructFieldInfoMap-->typeOf不能为空")
 	}
 	key := keyPrefix + (*typeOf).String()
-	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
-	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
+	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
+	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
 	if !dbOk { //缓存不存在
 		//获取实体类的输出字段和私有 字段
 		err := structFieldInfo(typeOf)
 		if err != nil {
 			return nil, err
 		}
-		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
-		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
+		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
+		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 		if !dbOk {
-			return dbColumnFieldMap, errors.New("getCacheStructFieldInfoMap()-->获取数据库字段dbColumnFieldMap异常")
+			return dbColumnFieldMap.(map[string]reflect.StructField), errors.New("getCacheStructFieldInfoMap()-->获取数据库字段dbColumnFieldMap异常")
 		}
 	}
 
@@ -304,7 +305,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 		}
 		return dbMap, nil
 	*/
-	return dbColumnFieldMap, nil
+	return dbColumnFieldMap.(map[string]reflect.StructField), nil
 }
 
 /*
