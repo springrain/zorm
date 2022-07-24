@@ -50,8 +50,8 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
 ### TDengine  
-使用mysql语法  
-配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful ,DBType:mysql  
+使用mysql语法,因为TDengine驱动支持事务,需要设置DisableTransaction=true  
+配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:mysql  
 
 
 ## 测试用例  
@@ -231,7 +231,7 @@ func init() {
 	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
 
-	    //全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine等
+	    //全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine
 	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
 	    //DisableTransaction :false,
 	}
