@@ -13,7 +13,7 @@ go get gitee.com/chunanyong/zorm
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * The code is streamlined, main part 2500 lines, zero dependency 4000 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
-* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang),clickhouse
+* Support mysql, postgresql, oracle, mssql, sqlite, dm (Da Meng), kingbase (Ren Da Jincang),TDengine,clickhouse
 * Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
 * Does not support joint primary keys, alternatively thinks that there is no primary key, and business control is implemented (difficult choice)  
