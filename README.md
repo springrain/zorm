@@ -186,10 +186,10 @@ func init() {
 		// DSN: Database connection string
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3,clickhouse, 
-        // dm, kingbase and DBType correspond, there are multiple drivers for processing databases
+        // dm, kingbase,taosSql|taosRestful and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
 		// Database type (based on dialect judgment): mysql, postgresql,oracle, mssql, sqlite, clickhouse,
-        // dm, kingbase and DriverName correspond to multiple drivers for processing databases
+        // dm, kingbase,mysql and DriverName correspond to multiple drivers for processing databases
 		DBType: "mysql",
 		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,

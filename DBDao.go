@@ -151,7 +151,7 @@ Transaction 的示例代码
       return nil, nil
   })
 */
-// 事务方法,隔离dbConnection相关的API.必须通过这个方法进行事务处理,统一事务方式
+// 事务方法,隔离dbConnection相关的API.必须通过这个方法进行事务处理,统一事务方式.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 // 如果入参ctx中没有dbConnection,使用defaultDao开启事务并最后提交
 // 如果入参ctx有dbConnection且没有事务,调用dbConnection.begin()开启事务并最后提交
 // 如果入参ctx有dbConnection且有事务,只使用不提交,有开启方提交事务

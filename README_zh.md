@@ -200,9 +200,9 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci 和DBType对应,处理数据库有多个驱动
+		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
@@ -228,7 +228,7 @@ func init() {
 	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
 
-	    //全局禁用事务,默认false.为了处理某些数据库不支持事务,比如TDengine等
+	    //全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine等
 	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
 	    //DisableTransaction :false,
 	}
@@ -240,7 +240,7 @@ func init() {
 //TestInsert 02.测试保存Struct对象
 func TestInsert(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -263,7 +263,7 @@ func TestInsert(t *testing.T) {
 //如果是自增主键,无法对Struct对象里的主键属性赋值
 func TestInsertSlice(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -295,7 +295,7 @@ func TestInsertSlice(t *testing.T) {
 //TestInsertEntityMap 04.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
 func TestInsertEntityMap(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -412,7 +412,7 @@ func TestQueryMap(t *testing.T) {
 //TestUpdateNotZeroValue 09.更新struct对象,只更新不为零值的字段.主键必须有值
 func TestUpdateNotZeroValue(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -436,7 +436,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 //TestUpdate 10.更新struct对象,更新所有字段.主键必须有值
 func TestUpdate(t *testing.T) {
 
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -458,7 +458,7 @@ func TestUpdate(t *testing.T) {
 
 //TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -481,7 +481,7 @@ func TestUpdateFinder(t *testing.T) {
 
 //TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
@@ -506,7 +506,7 @@ func TestUpdateEntityMap(t *testing.T) {
 
 //TestDelete 13.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
-	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚
+	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {

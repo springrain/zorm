@@ -21,11 +21,11 @@ type DataSourceConfig struct {
 	//DSN dataSourceName 连接字符串
 	//DSN DataSourceName Database connection string
 	DSN string
-	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase 和DBType对应,处理数据库有多个驱动
-	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase corresponds to DBType,A database may have multiple drivers
+	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
+	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to DBType,A database may have multiple drivers
 	DriverName string
-	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase 和 DriverName 对应,处理数据库有多个驱动
-	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase corresponds to DriverName,A database may have multiple drivers
+	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql 和 DriverName 对应,处理数据库有多个驱动
+	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql corresponds to DriverName,A database may have multiple drivers
 	DBType string
 	//PrintSQL 是否打印SQL语句.使用zorm.PrintSQL记录SQL
 	//PrintSQL Whether to print SQL, use zorm.PrintSQL record sql
@@ -44,7 +44,7 @@ type DataSourceConfig struct {
 	//事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
-	//全局禁用事务,默认false.为了处理某些数据库不支持事务,比如clickhouse,TDengine等
+	//全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如clickhouse,TDengine等
 	//禁用事务应该有驱动伪造事务API,不应该由orm实现
 	DisableTransaction bool
 
