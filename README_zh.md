@@ -50,7 +50,7 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
 ### TDengine  
-使用mysql语法,因为TDengine驱动支持事务,需要设置DisableTransaction=true  
+使用mysql语法,因TDengine驱动不支持事务,需要设置DisableTransaction=true
 配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:mysql  
 
 
