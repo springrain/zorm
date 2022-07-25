@@ -189,7 +189,7 @@ func init() {
         // dm, kingbase,taosSql|taosRestful and DBType correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
 		// Database type (based on dialect judgment): mysql, postgresql,oracle, mssql, sqlite, clickhouse,
-        // dm, kingbase,mysql and DriverName correspond to multiple drivers for processing databases
+        // dm, kingbase,tdengine and DriverName correspond to multiple drivers for processing databases
 		DBType: "mysql",
 		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,

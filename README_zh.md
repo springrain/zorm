@@ -1,6 +1,6 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
+go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,TDengine,clickhouse数据库.  
 源码地址:https://gitee.com/chunanyong/zorm    
 
 官网:[https://zorm.cn](https://zorm.cn)  
@@ -50,8 +50,8 @@ zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyon
 暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
 ### TDengine  
-使用mysql语法,因TDengine驱动不支持事务,需要设置DisableTransaction=true
-配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:mysql  
+因TDengine驱动不支持事务,需要设置DisableTransaction=true
+配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:tdengine  
 
 
 ## 测试用例  
@@ -205,7 +205,7 @@ func init() {
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql 和 DriverName 对应,处理数据库有多个驱动
+		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
 		DBType: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,

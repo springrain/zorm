@@ -24,8 +24,8 @@ type DataSourceConfig struct {
 	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
 	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to DBType,A database may have multiple drivers
 	DriverName string
-	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql 和 DriverName 对应,处理数据库有多个驱动
-	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,mysql corresponds to DriverName,A database may have multiple drivers
+	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
+	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName,A database may have multiple drivers
 	DBType string
 	//PrintSQL 是否打印SQL语句.使用zorm.PrintSQL记录SQL
 	//PrintSQL Whether to print SQL, use zorm.PrintSQL record sql

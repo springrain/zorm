@@ -28,7 +28,7 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" { //MySQL,sqlite3,dm数据库,南大通用,clickhouse
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" || dbType == "tdengine" { //MySQL,sqlite3,dm数据库,南大通用,clickhouse,TDengine
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
@@ -532,7 +532,7 @@ func wrapQuerySQL(dbType string, finder *Finder, page *Page) (string, error) {
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 //reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dbType string, sqlstr string) (string, error) {
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" {
+	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" || dbType == "tdengine" {
 		return sqlstr, nil
 	}
 
