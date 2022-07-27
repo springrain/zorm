@@ -326,7 +326,7 @@ func TestQueryRow(t *testing.T) {
 
 	// finder.Append： The first parameter is the statement, and the following parameters are the corresponding values.
     // The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
 	//Execute query
 	has,err := zorm.QueryRow(ctx, finder, demo)
@@ -348,7 +348,7 @@ func TestQueryRowMap(t *testing.T) {
 	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder.Append: The first parameter is the statement, and the following parameters are the corresponding values. 
     //The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
-	finder.Append("WHERE id=? and active in(?)", "41b2aa4f-379a-4319-8af9-08472b6e514e", []int{0, 1})
+	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 	//Execute query
 	resultMap, err := zorm.QueryRowMap(ctx, finder)
 
@@ -405,10 +405,10 @@ func TestUpdateNotZeroValue(t *testing.T) {
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//Declare a pointer to an object to update data
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
-		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
 		_, err := zorm.UpdateNotZeroValue(ctx, demo)
 
 		//If the returned err is not nil, the transaction will be rolled back.
@@ -431,7 +431,7 @@ func TestUpdate(t *testing.T) {
 
 		//Declare a pointer to an object to update data.
 		demo := &demoStruct{}
-		demo.Id = "41b2aa4f-379a-4319-8af9-08472b6e514e"
+		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "TestUpdate"
 
 		_, err := zorm.Update(ctx, demo)
@@ -454,9 +454,9 @@ func TestUpdateFinder(t *testing.T) {
 		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
-		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
-		//Update "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]
 		_, err := zorm.UpdateFinder(ctx, finder)
 
 		//If the returned err is not nil, the transaction will be rolled back.
@@ -479,9 +479,9 @@ func TestUpdateEntityMap(t *testing.T) {
 		//Set the primary key name.
 		entityMap.PkColumnName = "id"
 		//Set： Set the field value of the database, the primary key must have a value.
-		entityMap.Set("id", "41b2aa4f-379a-4319-8af9-08472b6e514e")
+		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("userName", "TestUpdateEntityMap")
-		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//Update "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","20210630163227149563000042432429"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
 		//If the returned err is not nil, the transaction will be rolled back.
@@ -500,9 +500,9 @@ func TestDelete(t *testing.T) {
 	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := &demoStruct{}
-		demo.Id = "ae9987ac-0467-4fe2-a260-516c89292684"
+		demo.Id = "20210630163227149563000042432429"
 
-		//delete： "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
+		//delete： "sql":"DELETE FROM t_demo WHERE id=?","args":["20210630163227149563000042432429"]
 		_, err := zorm.Delete(ctx, demo)
 
 		//If the returned err is not nil, the transaction will be rolled back.

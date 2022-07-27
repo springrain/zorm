@@ -424,7 +424,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
-		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
 		_, err := zorm.UpdateNotZeroValue(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
@@ -470,7 +470,7 @@ func TestUpdateFinder(t *testing.T) {
 		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
-		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]
 		_, err := zorm.UpdateFinder(ctx, finder)
 
 		//如果返回的err不是nil,事务就会回滚
@@ -495,7 +495,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		//Set 设置数据库的字段值,主键必须有值
 		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("userName", "TestUpdateEntityMap")
-		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","41b2aa4f-379a-4319-8af9-08472b6e514e"]
+		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","20210630163227149563000042432429"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
 		//如果返回的err不是nil,事务就会回滚
@@ -516,7 +516,7 @@ func TestDelete(t *testing.T) {
 		demo := &demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
 
-		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["ae9987ac-0467-4fe2-a260-516c89292684"]
+		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["20210630163227149563000042432429"]
 		_, err := zorm.Delete(ctx, demo)
 
 		//如果返回的err不是nil,事务就会回滚
