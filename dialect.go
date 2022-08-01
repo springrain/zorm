@@ -875,13 +875,18 @@ func reTDengineSQL(dbType string, sqlstr *string, args []interface{}) (*string, 
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
 	for i := 0; i < len(args); i++ {
-		pre := strings.TrimSpace(strs[i])
-		after := strings.TrimSpace(strs[i+1])
-		if strings.HasSuffix(pre, "'") && strings.HasPrefix(after, "'") { //用户手动拼接了 '?'
-			sqlBuilder.WriteString("?")
-			sqlBuilder.WriteString(strs[i+1])
-			continue
-		}
+
+		//不应该允许再手动拼接 '?' 单引号了,强制统一使用zorm实现,保证书写统一
+		/*
+			pre := strings.TrimSpace(strs[i])
+			after := strings.TrimSpace(strs[i+1])
+			if strings.HasSuffix(pre, "'") && strings.HasPrefix(after, "'") { //用户手动拼接了 '?'
+				sqlBuilder.WriteString("?")
+				sqlBuilder.WriteString(strs[i+1])
+				continue
+			}
+		*/
+
 		typeOf := reflect.TypeOf(args[i])
 		if typeOf.Kind() == reflect.Ptr {
 			//获取指针下的类型
