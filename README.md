@@ -38,23 +38,15 @@ gbase(GENERAL DATA)
 Use odbc driver for the time being,DriverName:odbc ,DBType:gbase
 
 ## Test case  
-https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/BaseDao_test.go  
-
-```go  
-// Zorm uses native SQL statements and does not impose restrictions on SQL syntax. Statements use Finder as the carrier.
-// Use "?" as a placeholder. , Zorm automatically replaces placeholders based on the database type, 
-// such as "?" in a PostgreSQL database, Replaced with $1, $2...
-// Zorm uses the ctx context. context parameter to propagate the transaction, and ctx is passed in from the web layer, such as gin's c.retest.context ().
-// The transaction operation of zorm needs to be displayed using zorm.Transaction(ctx, func(ctx context.Context) (interface(), error) ()) to open
-``` 
+https://gitee.com/wuxiangege/zorm-examples 
 
 
 
-## Database scripts and entity classes
-https://gitee.com/chunanyong/readygo/blob/master/test/testzorm/demoStruct.go
 
+
+## Database scripts and entity classes  
 Generate entity classes or write manually, it is recommended to use a code generator ： 
-https://gitee.com/chunanyong/readygo/tree/master/codegenerator
+https://gitee.com/zhou-a-xing/wsgt
 ```go 
 
 package testzorm
