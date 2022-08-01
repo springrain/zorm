@@ -1,6 +1,6 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),mysql,postgresql,oracle,mssql,sqlite,TDengine,clickhouse数据库.  
+go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
 源码地址:https://gitee.com/chunanyong/zorm    
 
 官网:[https://zorm.cn](https://zorm.cn)  
@@ -15,7 +15,7 @@ go get gitee.com/chunanyong/zorm
 * [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
 * 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,clickhouse数据库
+* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
