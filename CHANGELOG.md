@@ -1,3 +1,10 @@
+
+v1.5.8
+更新内容：
+ - 吐槽很久的switch代替if else
+ - TDengine不允许再手动拼接 '?' 单引号了,强制统一使用?,书写统一
+ - 完善文档,注释
+  
 v1.5.7
 更新内容：
  - 感谢 @小口天 的辛苦付出,https://gitee.com/wuxiangege/zorm-examples 测试用例已经非常完善.

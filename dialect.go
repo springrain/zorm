@@ -28,25 +28,27 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
-	if dbType == "mysql" || dbType == "sqlite" || dbType == "dm" || dbType == "gbase" || dbType == "clickhouse" || dbType == "tdengine" { //MySQL,sqlite3,dm数据库,南大通用,clickhouse,TDengine
+	switch dbType {
+	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine": //MySQL,sqlite3,dm数据库,南大通用,clickhouse,TDengine
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	} else if dbType == "postgresql" || dbType == "kingbase" || dbType == "shentong" { //postgresql,kingbase,神通数据库
+	case "postgresql", "kingbase", "shentong": //postgresql,kingbase,神通数据库
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	} else if dbType == "mssql" || dbType == "oracle" { //sqlserver 2012+,oracle 12c+
+	case "mssql", "oracle": //sqlserver 2012+,oracle 12c+
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
-	} else {
+	default:
 		return "", errors.New("wrapPageSQL()-->不支持的数据库类型:" + dbType)
+
 	}
 	sqlstr = sqlbuilder.String()
 	return reBindSQL(dbType, sqlstr)
@@ -876,7 +878,7 @@ func reTDengineSQL(dbType string, sqlstr *string, args []interface{}) (*string, 
 	sqlBuilder.WriteString(strs[0])
 	for i := 0; i < len(args); i++ {
 
-		//不应该允许再手动拼接 '?' 单引号了,强制统一使用zorm实现,保证书写统一
+		//不允许再手动拼接 '?' 单引号了,强制统一使用?,书写统一
 		/*
 			pre := strings.TrimSpace(strs[i])
 			after := strings.TrimSpace(strs[i+1])
