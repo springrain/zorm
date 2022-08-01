@@ -112,8 +112,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	//遍历sync.Map,要求输入一个func作为参数
 	//这个函数的入参、出参的类型都已经固定,不能修改
 	//可以在函数体内编写自己的代码,调用map中的k,v
-	var funcMapKV func(k, v interface{}) bool
-	funcMapKV = func(k, v interface{}) bool {
+	//var funcMapKV func(k, v interface{}) bool
+	funcMapKV := func(k, v interface{}) bool {
 		field := v.(reflect.StructField)
 		fieldName := field.Name
 		if ast.IsExported(fieldName) { //如果是可以输出的,不区分大小写
@@ -135,7 +135,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 		return true
 	}
-	// 并发锁,用于处理slice并发操作
+	// 并发锁,用于处理slice并发append
 	var lock sync.Mutex
 	//funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
 	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous []reflect.StructField)
