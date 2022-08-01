@@ -468,7 +468,7 @@ func wrapInsertValueEntityMapSQL(dbType string, entity IEntityMap) (string, stri
 	//是否Set了主键
 	//Whether the primary key is set.
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
-	if !hasPK { //如果没有设置主键,认为是自增或者序列 | If the primary key is not set, it is considered to be auto-increment or sequence
+	if entity.GetPKColumnName() != "" && !hasPK { //如果有主键字段,却没值,认为是自增或者序列 | If the primary key is not set, it is considered to be auto-increment or sequence
 		autoIncrement = true
 		if sequence, ok := entity.GetPkSequence()[dbType]; ok { //如果是序列 | If it is a sequence.
 			sqlBuilder.WriteString(entity.GetPKColumnName())
