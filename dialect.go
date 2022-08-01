@@ -846,7 +846,10 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 	if contextValue == nil { //如果没有设置hint
 		return sqlstr, nil
 	}
-	hint := contextValue.(string)
+	hint, ok := contextValue.(string)
+	if !ok {
+		return sqlstr, errors.New("wrapSQLHint()-->contextValue转换string失败")
+	}
 	if len(hint) < 1 {
 		return sqlstr, nil
 	}
