@@ -135,7 +135,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 		return true
 	}
-
+	// 并发锁,用于处理slice并发操作
+	var lock sync.Mutex
 	//funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
 	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous []reflect.StructField)
 	funcRecursiveAnonymous = func(allFieldMap *sync.Map, anonymous []reflect.StructField) {
@@ -162,7 +163,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 			// 匿名struct里自身又有匿名struct
 			anonymousField := make([]reflect.StructField, 0)
-
 			//遍历所有字段
 			for i := 0; i < fieldNum; i++ {
 				field := typeOf.Field(i)
@@ -170,11 +170,15 @@ func structFieldInfo(typeOf *reflect.Type) error {
 					continue
 				} else { //不存在属性名,加入到allFieldMap
 					allFieldMap.Store(field.Name, field)
+					lock.Lock()
 					funcMapKV(field.Name, field)
+					lock.Unlock()
 				}
 
 				if field.Anonymous { //匿名struct里自身又有匿名struct
+					lock.Lock()
 					anonymousField = append(anonymousField, field)
+					lock.Unlock()
 				}
 			}
 			//递归调用匿名struct
@@ -188,10 +192,15 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		field := (*typeOf).Field(i)
 		if _, ok := allFieldMap.Load(field.Name); !ok {
 			allFieldMap.Store(field.Name, field)
+			lock.Lock()
 			funcMapKV(field.Name, field)
+			lock.Unlock()
+
 		}
 		if field.Anonymous { //如果是匿名的
+			lock.Lock()
 			anonymous = append(anonymous, field)
+			lock.Unlock()
 		}
 	}
 	//调用匿名struct的递归方法
