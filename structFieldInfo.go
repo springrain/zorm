@@ -209,7 +209,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
 
-	//数据库字段名称排序,使用反射的属性排序
+	//不按照字母顺序,按照反射获取的Struct属性顺序,生成insert语句和update语句
 	//sort.Strings(dbColumnFieldNameSlice)
 	cacheStructFieldInfoMap.Store(dbColumnNameSliceCacheKey, dbColumnFieldNameSlice)
 

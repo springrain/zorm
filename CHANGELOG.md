@@ -1,6 +1,7 @@
 v1.5.7
 更新内容：
- - 按照名称排序数据库字段,用于生成固定顺序的insert语句和update语句
+ - 感谢 @小口天 的辛苦付出,https://gitee.com/wuxiangege/zorm-examples 测试用例已经非常完善.
+ - 按照反射获取的Struct属性顺序,生成insert语句和update语句
  - 支持TDengine数据库,因TDengine驱动不支持事务,需要设置DisableTransaction=true
  - 增加hptx和dbpack分布式事务的支持,细粒度控制是否使用全局事务
  - DisableTransaction用于全局禁用数据库事务,用于不支持事务的数据库驱动.
