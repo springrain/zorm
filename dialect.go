@@ -70,12 +70,12 @@ func wrapInsertSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, co
 //Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
-	insersql, valuesql, autoIncrement, pktype, error := wrapInsertValueSQLNOreBuild(dbType, typeOf, entity, columns, values)
-	if error != nil {
-		return "", autoIncrement, pktype, error
+	insersql, valuesql, autoIncrement, pktype, err := wrapInsertValueSQLNOreBuild(dbType, typeOf, entity, columns, values)
+	if err != nil {
+		return "", autoIncrement, pktype, err
 	}
 	sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
-	return sqlstr, autoIncrement, pktype, error
+	return sqlstr, autoIncrement, pktype, err
 }
 
 //wrapInsertValueSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
@@ -425,11 +425,33 @@ func wrapDeleteSQL(dbType string, entity IEntityStruct) (string, error) {
 //wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interface{}, bool, error) {
+	insertsql, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(dbType, entity)
+	if err != nil {
+		return "", nil, autoIncrement, err
+	}
+	sqlstr := "INSERT INTO "
+	if dbType == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		sqlstr = sqlstr + entity.GetTableName() + " VALUES" + valuesql
+	} else {
+		sqlstr = sqlstr + insertsql + " VALUES" + valuesql
+	}
+	var e error
+	sqlstr, e = reBindSQL(dbType, sqlstr)
+	if e != nil {
+		return "", nil, autoIncrement, e
+	}
+	return sqlstr, values, autoIncrement, nil
+}
+
+//wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+//wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
+//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
+func wrapInsertValueEntityMapSQL(dbType string, entity IEntityMap) (string, string, []interface{}, bool, error) {
 	//是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", nil, autoIncrement, errors.New("wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return "", "", nil, autoIncrement, errors.New("wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL对应的参数
 	//SQL corresponding parameters
@@ -438,14 +460,14 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("INSERT INTO ")
+	//sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	//In the SQL statement, the constructor of the VALUES(?,?,...) statement.
 	var valueSQLBuilder strings.Builder
-	valueSQLBuilder.WriteString(" VALUES (")
+	valueSQLBuilder.WriteString(" (")
 	//是否Set了主键
 	//Whether the primary key is set.
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
@@ -464,27 +486,28 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 		//Concatenated string
 		sqlBuilder.WriteString(k)
 		sqlBuilder.WriteString(",")
-		valueSQLBuilder.WriteString("?,")
+		if dbType == "tdengine" && reflect.TypeOf(v).Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
+			valueSQLBuilder.WriteString("'?',")
+		} else {
+			valueSQLBuilder.WriteString("?,")
+		}
+
 		values = append(values, v)
 	}
 	//去掉字符串最后的 ','
 	//Remove the',' at the end of the string
-	sqlstr := sqlBuilder.String()
-	if len(sqlstr) > 0 {
-		sqlstr = sqlstr[:len(sqlstr)-1]
+	insertsql := sqlBuilder.String()
+	if len(insertsql) > 0 {
+		insertsql = insertsql[:len(insertsql)-1]
 	}
-	valuestr := valueSQLBuilder.String()
-	if len(valuestr) > 0 {
-		valuestr = valuestr[:len(valuestr)-1]
+	valuesql := valueSQLBuilder.String()
+	if len(valuesql) > 0 {
+		valuesql = valuesql[:len(valuesql)-1]
 	}
-	sqlstr = sqlstr + ")" + valuestr + ")"
+	insertsql = insertsql + ")"
+	valuesql = valuesql + ")"
 
-	var e error
-	sqlstr, e = reBindSQL(dbType, sqlstr)
-	if e != nil {
-		return "", nil, autoIncrement, e
-	}
-	return sqlstr, values, autoIncrement, nil
+	return insertsql, valuesql, values, autoIncrement, nil
 }
 
 //wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
