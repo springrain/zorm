@@ -22,8 +22,6 @@ go get gitee.com/chunanyong/zorm
 * 支持seata,hptx,dbpack分布式事务,支持全局托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
-zorm生产环境使用参考: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
-
 ## 源码仓库说明
 我主导的开源项目主库都在gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目star增长缓慢,毕竟github用户多些.  
 **开源没有国界,开发者却有自己的祖国.**   

@@ -20,8 +20,6 @@ go get gitee.com/chunanyong/zorm
 * Integrate seata-golang, support global hosting, do not modify business code, and zero intrusive global transactions
 * Support clickhouse, update and delete statements use SQL92 standard syntax. The official clickhouse-go driver does not support batch insert syntax, it is recommended to use https://github.com/mailru/go-clickhouse
 
-zorm Production environment reference: [UserStructService.go](https://gitee.com/chunanyong/readygo/tree/master/permission/permservice)  
-
 ## Support domestic database  
 DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 
