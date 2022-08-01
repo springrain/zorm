@@ -246,7 +246,12 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 	if firstErr != nil {
 		return "", autoIncrement, firstErr
 	}
-	sqlstr := "INSERT INTO " + insertsql + valuesql
+	sqlstr := "INSERT INTO "
+	if dbType == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		sqlstr = sqlstr + entity.GetTableName() + valuesql
+	} else {
+		sqlstr = sqlstr + insertsql + valuesql
+	}
 	//如果只有一个Struct对象
 	//If there is only one Struct object
 	if sliceLen == 1 {
