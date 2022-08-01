@@ -1742,7 +1742,11 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	var res *sql.Result
 	var errexec error
 	if lastInsertID != nil {
-		errexec = dbConnection.queryRowContext(ctx, sqlstr, values).Scan(lastInsertID)
+		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstr, values)
+		if errrow != nil {
+			return res, errrow
+		}
+		errexec = sqlrow.Scan(lastInsertID)
 		if errexec == nil { //如果插入成功,返回
 			*affected = 1
 			return res, errexec

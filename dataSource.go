@@ -215,10 +215,17 @@ func (dbConnection *dataBaseConnection) commit() error {
 // execContext 执行sql语句,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // execContext Execute sql statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
+	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	execsql, _ = reTDengineSQL(dbConnection.config.DBType, execsql, args)
+	execsql, err = reTDengineSQL(dbConnection.config.DBType, execsql, args)
+	if err != nil {
+		return nil, err
+	}
 	//执行前加入 hint
-	execsql, _ = wrapSQLHint(ctx, execsql)
+	execsql, err = wrapSQLHint(ctx, execsql)
+	if err != nil {
+		return nil, err
+	}
 	//打印SQL
 	//print SQL
 	if dbConnection.config.PrintSQL {
@@ -235,11 +242,18 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 }
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
-func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) *sql.Row {
+func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
+	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, _ = reTDengineSQL(dbConnection.config.DBType, query, args)
+	query, err = reTDengineSQL(dbConnection.config.DBType, query, args)
+	if err != nil {
+		return nil, err
+	}
 	//执行前加入 hint
-	query, _ = wrapSQLHint(ctx, query)
+	query, err = wrapSQLHint(ctx, query)
+	if err != nil {
+		return nil, err
+	}
 	//打印SQL
 	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
@@ -247,18 +261,25 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryRowContext(ctx, *query, args...)
+		return dbConnection.tx.QueryRowContext(ctx, *query, args...), nil
 	}
-	return dbConnection.db.QueryRowContext(ctx, *query, args...)
+	return dbConnection.db.QueryRowContext(ctx, *query, args...), nil
 }
 
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
+	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, _ = reTDengineSQL(dbConnection.config.DBType, query, args)
+	query, err = reTDengineSQL(dbConnection.config.DBType, query, args)
+	if err != nil {
+		return nil, err
+	}
 	//执行前加入 hint
-	query, _ = wrapSQLHint(ctx, query)
+	query, err = wrapSQLHint(ctx, query)
+	if err != nil {
+		return nil, err
+	}
 	//打印SQL
 	if dbConnection.config.PrintSQL {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
