@@ -112,9 +112,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	//遍历sync.Map,要求输入一个func作为参数
 	//这个函数的入参、出参的类型都已经固定,不能修改
 	//可以在函数体内编写自己的代码,调用map中的k,v
-	var f func(k, v interface{}) bool
-	f = func(k, v interface{}) bool {
-		// fmt.Println(k, ":", v)
+	var funcMapKV func(k, v interface{}) bool
+	funcMapKV = func(k, v interface{}) bool {
 		field := v.(reflect.StructField)
 		fieldName := field.Name
 		if ast.IsExported(fieldName) { //如果是可以输出的,不区分大小写
@@ -128,7 +127,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 				dbColumnFieldMap[tagColumnValueLower] = field
 				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
 				//structFieldTagMap[fieldName] = tagColumnValue
-
 			}
 
 		} else { //私有属性
@@ -138,11 +136,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		return true
 	}
 
-	var recursiveAnonymousStruct func(allFieldMap *sync.Map, anonymous []reflect.StructField)
-
-	//recursiveAnonymousStruct 递归调用struct的匿名属性,就近覆盖属性
-	recursiveAnonymousStruct = func(allFieldMap *sync.Map, anonymous []reflect.StructField) {
-
+	//funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
+	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous []reflect.StructField)
+	funcRecursiveAnonymous = func(allFieldMap *sync.Map, anonymous []reflect.StructField) {
 		for i := 0; i < len(anonymous); i++ {
 			field := anonymous[i]
 			typeOf := field.Type
@@ -174,17 +170,15 @@ func structFieldInfo(typeOf *reflect.Type) error {
 					continue
 				} else { //不存在属性名,加入到allFieldMap
 					allFieldMap.Store(field.Name, field)
-					f(field.Name, field)
+					funcMapKV(field.Name, field)
 				}
 
 				if field.Anonymous { //匿名struct里自身又有匿名struct
 					anonymousField = append(anonymousField, field)
 				}
 			}
-
 			//递归调用匿名struct
-			recursiveAnonymousStruct(allFieldMap, anonymousField)
-
+			funcRecursiveAnonymous(allFieldMap, anonymousField)
 		}
 
 	}
@@ -194,14 +188,14 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		field := (*typeOf).Field(i)
 		if _, ok := allFieldMap.Load(field.Name); !ok {
 			allFieldMap.Store(field.Name, field)
-			f(field.Name, field)
+			funcMapKV(field.Name, field)
 		}
 		if field.Anonymous { //如果是匿名的
 			anonymous = append(anonymous, field)
 		}
 	}
 	//调用匿名struct的递归方法
-	recursiveAnonymousStruct(allFieldMap, anonymous)
+	funcRecursiveAnonymous(allFieldMap, anonymous)
 
 	//allFieldMap.Range(f)
 

@@ -74,7 +74,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 	if error != nil {
 		return "", autoIncrement, pktype, error
 	}
-	sqlstr := "INSERT INTO " + insersql + valuesql
+	sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
 	return sqlstr, autoIncrement, pktype, error
 }
 
@@ -101,7 +101,7 @@ func wrapInsertValueSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEn
 	//In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
 
-	valueSQLBuilder.WriteString(" VALUES (")
+	valueSQLBuilder.WriteString(" (")
 	//主键的名称
 	//The name of the primary key.
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
@@ -248,9 +248,9 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 	}
 	sqlstr := "INSERT INTO "
 	if dbType == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-		sqlstr = sqlstr + entity.GetTableName() + valuesql
+		sqlstr = sqlstr + entity.GetTableName() + " VALUES" + valuesql
 	} else {
-		sqlstr = sqlstr + insertsql + valuesql
+		sqlstr = sqlstr + insertsql + " VALUES" + valuesql
 	}
 	//如果只有一个Struct对象
 	//If there is only one Struct object
@@ -267,13 +267,15 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 
 	//截取生成的SQL语句中 VALUES 后面的字符串值
 	//Intercept the string value after VALUES in the generated SQL statement
-	valueIndex := strings.Index(sqlstr, " VALUES (")
-	if valueIndex < 1 { //生成的语句异常
-		return "", autoIncrement, errors.New("wrapInsertSliceSQL生成的语句异常")
-	}
-	//value后面的字符串 例如 (?,?,?),用于循环拼接
-	//The string after the value, such as (?,?,?), is used for circular splicing
-	valuestr := sqlstr[valueIndex+8:]
+	/*
+		valueIndex := strings.Index(sqlstr, " VALUES (")
+		if valueIndex < 1 { //生成的语句异常
+			return "", autoIncrement, errors.New("wrapInsertSliceSQL生成的语句异常")
+		}
+		//value后面的字符串 例如 (?,?,?),用于循环拼接
+		//The string after the value, such as (?,?,?), is used for circular splicing
+		valuestr := sqlstr[valueIndex+8:]
+	*/
 	//SQL语句的构造器
 	//SQL statement constructor
 	var insertSliceSQLBuilder strings.Builder
@@ -287,7 +289,7 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 			insertSliceSQLBuilder.WriteString(valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
 			insertSliceSQLBuilder.WriteString(",")
-			insertSliceSQLBuilder.WriteString(valuestr)
+			insertSliceSQLBuilder.WriteString(valuesql)
 		}
 
 		entityStruct := entityStructSlice[i]
