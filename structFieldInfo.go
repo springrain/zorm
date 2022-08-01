@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/ast"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -44,6 +45,9 @@ const (
 	//数据库列名 缓存的前缀
 	dbColumnNamePrefix = "_dbColumnName_"
 
+	//数据库所有列名,经过排序 缓存的前缀
+	dbColumnNameSlicePrefix = "_dbColumnNameSlice_"
+
 	//field对应的column的tag值 缓存的前缀
 	//structFieldTagPrefix = "_structFieldTag_"
 	//数据库主键  缓存的前缀
@@ -75,6 +79,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	privateCacheKey := privatePrefix + entityName
 	//所有数据库的属性,key是数据库的字段名称,不区分大小写
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
+	//所有数据库字段名称的slice,经过排序,不区分大小写
+	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
+
 	//structFieldTagCacheKey := structFieldTagPrefix + entityName
 	//dbPKNameCacheKey := dbPKNamePrefix + entityName
 	//缓存的数据库主键值
@@ -112,7 +119,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	exportStructFieldMap := make(map[string]reflect.StructField)
 	privateStructFieldMap := make(map[string]reflect.StructField)
 	dbColumnFieldMap := make(map[string]reflect.StructField)
+
 	//structFieldTagMap := make(map[string]string)
+	dbColumnFieldNameSlice := make([]string, 0)
 
 	//遍历sync.Map,要求输入一个func作为参数
 	//这个函数的入参、出参的类型都已经固定,不能修改
@@ -128,8 +137,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 			if len(tagColumnValue) > 0 {
 				//dbColumnFieldMap[tagColumnValue] = field
 				//使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
-				dbColumnFieldMap[strings.ToLower(tagColumnValue)] = field
+				tagColumnValueLower := strings.ToLower(tagColumnValue)
+				dbColumnFieldMap[tagColumnValueLower] = field
 				//structFieldTagMap[fieldName] = tagColumnValue
+				//记录所有的key,后面用于排序
+				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
 			}
 
 		} else { //私有属性
@@ -149,6 +161,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	//cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 
 	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
+
+	//数据库字段名称排序
+	sort.Strings(dbColumnFieldNameSlice)
+	cacheStructFieldInfoMap.Store(dbColumnNameSliceCacheKey, dbColumnFieldNameSlice)
+
 	return nil
 }
 
@@ -277,10 +294,24 @@ func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, 
 	return getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 }
 
-//getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
-func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
+//getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
+func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
+	dbColumnFieldSlice, dbmapErr := getCacheStructFieldInfo(typeOf, dbColumnNameSlicePrefix)
+	if dbmapErr != nil {
+		return nil, errors.New("getDBColumnFieldNameSlice()-->getCacheStructFieldInfo()取值异常")
+	}
+	dbcfSlice, efOK := dbColumnFieldSlice.([]string)
+	if !efOK {
+		return dbcfSlice, errors.New("getDBColumnFieldNameSlice()-->dbColumnFieldSlice取值转[]string类型异常")
+	}
+	return dbcfSlice, nil
+
+}
+
+//getCacheStructFieldInfo 根据类型和key,获取缓存的数据字段信息slice,已经排序
+func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{}, error) {
 	if typeOf == nil {
-		return nil, errors.New("getCacheStructFieldInfoMap-->typeOf不能为空")
+		return nil, errors.New("getCacheStructFieldInfo-->typeOf不能为空")
 	}
 	key := keyPrefix + (*typeOf).String()
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
@@ -294,10 +325,21 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
 		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 		if !dbOk {
-			return nil, errors.New("getCacheStructFieldInfoMap()-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
+			return nil, errors.New("getCacheStructFieldInfo()-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
 		}
 	}
 
+	return dbColumnFieldMap, nil
+
+	//return dbColumnFieldMap, nil
+}
+
+//getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
+func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
+	dbColumnFieldMap, dbmapErr := getCacheStructFieldInfo(typeOf, keyPrefix)
+	if dbmapErr != nil {
+		return nil, errors.New("getCacheStructFieldInfoMap()-->getCacheStructFieldInfo()取值异常")
+	}
 	dbcfMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
 	if !efOK {
 		return dbcfMap, errors.New("getCacheStructFieldInfoMap()-->dbColumnFieldMap取值转map[string]reflect.StructField类型异常")
@@ -342,22 +384,29 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
-
+	dbSlice, err := getDBColumnFieldNameSlice(&typeOf)
+	if err != nil {
+		return typeOf, nil, nil, err
+	}
 	//实体类公开字段的长度
 	fLen := len(dbMap)
+	//长度不一致
+	if fLen-len(dbSlice) != 0 {
+		return typeOf, nil, nil, errors.New("columnAndValue-->缓存的数据库字段和实体类字段不对应")
+	}
 	//接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
 	columns := make([]reflect.StructField, 0, fLen)
 	//接收值的数组
 	values := make([]interface{}, 0, fLen)
 
 	//遍历所有数据库属性
-	for _, field := range dbMap {
+	for _, fieldName := range dbSlice {
 		//获取字段类型的Kind
 		//	fieldKind := field.Type.Kind()
 		//if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
 		//}
-
+		field := dbMap[fieldName]
 		columns = append(columns, field)
 		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
 		value := valueOf.FieldByName(field.Name).Interface()
