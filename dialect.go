@@ -429,12 +429,8 @@ func wrapInsertEntityMapSQL(dbType string, entity IEntityMap) (string, []interfa
 	if err != nil {
 		return "", nil, autoIncrement, err
 	}
-	sqlstr := "INSERT INTO "
-	if dbType == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-		sqlstr = sqlstr + entity.GetTableName() + " VALUES" + valuesql
-	} else {
-		sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-	}
+	//拼接SQL语句,带上列名,因为Map取值是无序的
+	sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
 	var e error
 	sqlstr, e = reBindSQL(dbType, sqlstr)
 	if e != nil {
