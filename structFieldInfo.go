@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"go/ast"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 )
@@ -102,19 +101,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	var allFieldMap *sync.Map = &sync.Map{}
 	anonymous := make([]reflect.StructField, 0)
 
-	//遍历所有字段,记录匿名属性
-	for i := 0; i < fieldNum; i++ {
-		field := (*typeOf).Field(i)
-		if _, ok := allFieldMap.Load(field.Name); !ok {
-			allFieldMap.Store(field.Name, field)
-		}
-		if field.Anonymous { //如果是匿名的
-			anonymous = append(anonymous, field)
-		}
-	}
-	//调用匿名struct的递归方法
-	recursiveAnonymousStruct(allFieldMap, anonymous)
-
 	//缓存的数据
 	exportStructFieldMap := make(map[string]reflect.StructField)
 	privateStructFieldMap := make(map[string]reflect.StructField)
@@ -126,7 +112,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	//遍历sync.Map,要求输入一个func作为参数
 	//这个函数的入参、出参的类型都已经固定,不能修改
 	//可以在函数体内编写自己的代码,调用map中的k,v
-	f := func(k, v interface{}) bool {
+	var f func(k, v interface{}) bool
+	f = func(k, v interface{}) bool {
 		// fmt.Println(k, ":", v)
 		field := v.(reflect.StructField)
 		fieldName := field.Name
@@ -139,9 +126,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 				//使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
 				tagColumnValueLower := strings.ToLower(tagColumnValue)
 				dbColumnFieldMap[tagColumnValueLower] = field
-				//structFieldTagMap[fieldName] = tagColumnValue
-				//记录所有的key,后面用于排序
 				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
+				//structFieldTagMap[fieldName] = tagColumnValue
+
 			}
 
 		} else { //私有属性
@@ -150,7 +137,73 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 		return true
 	}
-	allFieldMap.Range(f)
+
+	var recursiveAnonymousStruct func(allFieldMap *sync.Map, anonymous []reflect.StructField)
+
+	//recursiveAnonymousStruct 递归调用struct的匿名属性,就近覆盖属性
+	recursiveAnonymousStruct = func(allFieldMap *sync.Map, anonymous []reflect.StructField) {
+
+		for i := 0; i < len(anonymous); i++ {
+			field := anonymous[i]
+			typeOf := field.Type
+
+			if typeOf.Kind() == reflect.Ptr {
+				//获取指针下的Struct类型
+				typeOf = typeOf.Elem()
+			}
+
+			//只处理Struct类型
+			if typeOf.Kind() != reflect.Struct {
+				continue
+			}
+
+			//获取字段长度
+			fieldNum := typeOf.NumField()
+			//如果没有字段
+			if fieldNum < 1 {
+				continue
+			}
+
+			// 匿名struct里自身又有匿名struct
+			anonymousField := make([]reflect.StructField, 0)
+
+			//遍历所有字段
+			for i := 0; i < fieldNum; i++ {
+				field := typeOf.Field(i)
+				if _, ok := allFieldMap.Load(field.Name); ok { //如果存在属性名
+					continue
+				} else { //不存在属性名,加入到allFieldMap
+					allFieldMap.Store(field.Name, field)
+					f(field.Name, field)
+				}
+
+				if field.Anonymous { //匿名struct里自身又有匿名struct
+					anonymousField = append(anonymousField, field)
+				}
+			}
+
+			//递归调用匿名struct
+			recursiveAnonymousStruct(allFieldMap, anonymousField)
+
+		}
+
+	}
+
+	//遍历所有字段,记录匿名属性
+	for i := 0; i < fieldNum; i++ {
+		field := (*typeOf).Field(i)
+		if _, ok := allFieldMap.Load(field.Name); !ok {
+			allFieldMap.Store(field.Name, field)
+			f(field.Name, field)
+		}
+		if field.Anonymous { //如果是匿名的
+			anonymous = append(anonymous, field)
+		}
+	}
+	//调用匿名struct的递归方法
+	recursiveAnonymousStruct(allFieldMap, anonymous)
+
+	//allFieldMap.Range(f)
 
 	//加入缓存
 	cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
@@ -162,59 +215,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
 
-	//数据库字段名称排序
-	sort.Strings(dbColumnFieldNameSlice)
+	//数据库字段名称排序,使用反射的属性排序
+	//sort.Strings(dbColumnFieldNameSlice)
 	cacheStructFieldInfoMap.Store(dbColumnNameSliceCacheKey, dbColumnFieldNameSlice)
 
 	return nil
-}
-
-//recursiveAnonymousStruct 递归调用struct的匿名属性,就近覆盖属性
-func recursiveAnonymousStruct(allFieldMap *sync.Map, anonymous []reflect.StructField) {
-
-	for i := 0; i < len(anonymous); i++ {
-		field := anonymous[i]
-		typeOf := field.Type
-
-		if typeOf.Kind() == reflect.Ptr {
-			//获取指针下的Struct类型
-			typeOf = typeOf.Elem()
-		}
-
-		//只处理Struct类型
-		if typeOf.Kind() != reflect.Struct {
-			continue
-		}
-
-		//获取字段长度
-		fieldNum := typeOf.NumField()
-		//如果没有字段
-		if fieldNum < 1 {
-			continue
-		}
-
-		// 匿名struct里自身又有匿名struct
-		anonymousField := make([]reflect.StructField, 0)
-
-		//遍历所有字段
-		for i := 0; i < fieldNum; i++ {
-			field := typeOf.Field(i)
-			if _, ok := allFieldMap.Load(field.Name); ok { //如果存在属性名
-				continue
-			} else { //不存在属性名,加入到allFieldMap
-				allFieldMap.Store(field.Name, field)
-			}
-
-			if field.Anonymous { //匿名struct里自身又有匿名struct
-				anonymousField = append(anonymousField, field)
-			}
-		}
-
-		//递归调用匿名struct
-		recursiveAnonymousStruct(allFieldMap, anonymousField)
-
-	}
-
 }
 
 //setFieldValueByColumnName 根据数据库的字段名,找到struct映射的字段,并赋值

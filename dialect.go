@@ -65,11 +65,24 @@ func wrapInsertSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, co
 	return savesql, autoIncrement, pktype, err
 }
 
-//wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,错误信息
+//wrapInsertSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的SQL,是否自增,主键类型,错误信息
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 //Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
+	insersql, valuesql, autoIncrement, pktype, error := wrapInsertValueSQLNOreBuild(dbType, typeOf, entity, columns, values)
+	if error != nil {
+		return "", autoIncrement, pktype, error
+	}
+	sqlstr := "INSERT INTO " + insersql + valuesql
+	return sqlstr, autoIncrement, pktype, error
+}
+
+//wrapInsertValueSQLNOreBuild 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
+//数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
+//Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
+//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
+func wrapInsertValueSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, string, int, string, error) {
 
 	//自增类型  0(不自增),1(普通自增),2(序列自增),3(触发器自增)
 	//Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment),3(Trigger increment)
@@ -80,19 +93,20 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString("INSERT INTO ")
+	//sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	//In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
+
 	valueSQLBuilder.WriteString(" VALUES (")
 	//主键的名称
 	//The name of the primary key.
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return "", autoIncrement, pktype, e
+		return "", "", autoIncrement, pktype, e
 	}
 
 	var sequence string
@@ -123,7 +137,7 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 			} else if pkKind == reflect.Int64 {
 				pktype = "int64"
 			} else {
-				return "", autoIncrement, pktype, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
+				return "", "", autoIncrement, pktype, errors.New("wrapInsertSQLNOreBuild不支持的主键类型")
 			}
 
 			if autoIncrement == 3 {
@@ -188,22 +202,27 @@ func wrapInsertSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEntityS
 		colName := getFieldTagName(dbType, &field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString(",")
-		valueSQLBuilder.WriteString("?,")
+		if dbType == "tdengine" && field.Type.Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
+			valueSQLBuilder.WriteString("'?',")
+		} else {
+			valueSQLBuilder.WriteString("?,")
+		}
 
 	}
 	//去掉字符串最后的 ','
 	//Remove the',' at the end of the string
-	sqlstr := sqlBuilder.String()
-	if len(sqlstr) > 0 {
-		sqlstr = sqlstr[:len(sqlstr)-1]
+	insertsql := sqlBuilder.String()
+	if len(insertsql) > 0 {
+		insertsql = insertsql[:len(insertsql)-1]
 	}
-	valuestr := valueSQLBuilder.String()
-	if len(valuestr) > 0 {
-		valuestr = valuestr[:len(valuestr)-1]
+	valuesql := valueSQLBuilder.String()
+	if len(valuesql) > 0 {
+		valuesql = valuesql[:len(valuesql)-1]
 	}
-	sqlstr = sqlstr + ")" + valuestr + ")"
+	insertsql = insertsql + ")"
+	valuesql = valuesql + ")"
 	//savesql, err := wrapSQL(dbType, sqlstr)
-	return sqlstr, autoIncrement, pktype, nil
+	return insertsql, valuesql, autoIncrement, pktype, nil
 
 }
 
@@ -223,10 +242,11 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 
 	//先生成一条语句
 	//Generate a statement first
-	sqlstr, autoIncrement, _, firstErr := wrapInsertSQLNOreBuild(dbType, typeOf, entity, columns, values)
+	insertsql, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQLNOreBuild(dbType, typeOf, entity, columns, values)
 	if firstErr != nil {
 		return "", autoIncrement, firstErr
 	}
+	sqlstr := "INSERT INTO " + insertsql + valuesql
 	//如果只有一个Struct对象
 	//If there is only one Struct object
 	if sliceLen == 1 {
@@ -256,8 +276,14 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 	for i := 1; i < sliceLen; i++ {
 		//拼接字符串
 		//Splicing string
-		insertSliceSQLBuilder.WriteString(",")
-		insertSliceSQLBuilder.WriteString(valuestr)
+		if dbType == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+			insertSliceSQLBuilder.WriteString(" ")
+			insertSliceSQLBuilder.WriteString(entityStructSlice[i].GetTableName())
+			insertSliceSQLBuilder.WriteString(valuesql)
+		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
+			insertSliceSQLBuilder.WriteString(",")
+			insertSliceSQLBuilder.WriteString(valuestr)
+		}
 
 		entityStruct := entityStructSlice[i]
 		for j := 0; j < len(*columns); j++ {
