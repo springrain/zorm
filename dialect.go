@@ -202,11 +202,11 @@ func wrapInsertValueSQLNOreBuild(dbType string, typeOf *reflect.Type, entity IEn
 		colName := getFieldTagName(dbType, &field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString(",")
-		if dbType == "tdengine" && field.Type.Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
-			valueSQLBuilder.WriteString("'?',")
-		} else {
-			valueSQLBuilder.WriteString("?,")
-		}
+		//if dbType == "tdengine" && field.Type.Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
+		//	valueSQLBuilder.WriteString("'?',")
+		//} else {
+		valueSQLBuilder.WriteString("?,")
+		//}
 
 	}
 	//去掉字符串最后的 ','
@@ -483,11 +483,11 @@ func wrapInsertValueEntityMapSQL(dbType string, entity IEntityMap) (string, stri
 		//Concatenated string
 		sqlBuilder.WriteString(k)
 		sqlBuilder.WriteString(",")
-		if dbType == "tdengine" && reflect.TypeOf(v).Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
-			valueSQLBuilder.WriteString("'?',")
-		} else {
-			valueSQLBuilder.WriteString("?,")
-		}
+		//if dbType == "tdengine" && reflect.TypeOf(v).Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
+		//	valueSQLBuilder.WriteString("'?',")
+		//} else {
+		valueSQLBuilder.WriteString("?,")
+		//}
 
 		values = append(values, v)
 	}
@@ -605,7 +605,7 @@ func reBindSQL(dbType string, sqlstr string) (string, error) {
 		} else if dbType == "oracle" || dbType == "shentong" { //oracle,神州通用
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else { //其他情况,还是使用 '?' | In other cases, or use'?'
+		} else { //其他情况,还是使用 ? | In other cases, or use  ?
 			sqlBuilder.WriteString("?")
 		}
 		sqlBuilder.WriteString(strs[i])
@@ -856,5 +856,44 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 	}
 	sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
 	sqlstr = &sql
+	return sqlstr, nil
+}
+
+//reTDengineSQL 重新包装TDengine的sql语句,把 string类型的值对应的 ? 修改为 '?'
+func reTDengineSQL(dbType string, sqlstr *string, args []interface{}) (*string, error) {
+	if dbType != "tdengine" {
+		return sqlstr, nil
+	}
+
+	strs := strings.Split(*sqlstr, "?")
+	if len(strs) < 1 {
+		return sqlstr, nil
+	}
+	if len(strs)-1-len(args) != 0 { //分隔之后,字符串比值多1个
+		return sqlstr, errors.New("reTDengineSQL()-->参数数量和值不一致")
+	}
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString(strs[0])
+	for i := 0; i < len(args); i++ {
+		pre := strings.TrimSpace(strs[i])
+		after := strings.TrimSpace(strs[i+1])
+		if strings.HasSuffix(pre, "'") && strings.HasPrefix(after, "'") { //用户手动拼接了 '?'
+			sqlBuilder.WriteString("?")
+			sqlBuilder.WriteString(strs[i+1])
+			continue
+		}
+		typeOf := reflect.TypeOf(args[i])
+		if typeOf.Kind() == reflect.Ptr {
+			//获取指针下的类型
+			typeOf = typeOf.Elem()
+		}
+		if typeOf.Kind() == reflect.String { //如果值是字符串
+			sqlBuilder.WriteString("'?'")
+		} else { //其他情况,还是使用 ?
+			sqlBuilder.WriteString("?")
+		}
+		sqlBuilder.WriteString(strs[i+1])
+	}
+	*sqlstr = sqlBuilder.String()
 	return sqlstr, nil
 }
