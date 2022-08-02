@@ -1085,16 +1085,18 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	//var dbType string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
-	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(1).config.DBType
-	} else {
-		dbType = dbConnection.config.DBType
-	}
+	/*
+		if dbConnection == nil {
+			dbType = FuncReadWriteStrategy(1).config.DBType
+		} else {
+			dbType = dbConnection.config.DBType
+		}
+	*/
 
-	sqlstr, err = reBindSQL(dbType, sqlstr)
+	//sqlstr, err = reBindSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
 		FuncLogError(err)
@@ -1732,17 +1734,19 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	}
 
 	// 数据库语法兼容处理
-	sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.DBType, sqlstrptr)
-	if reUpdateFinderSQLErr != nil {
-		reUpdateFinderSQLErr = fmt.Errorf("wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
-		FuncLogError(reUpdateFinderSQLErr)
-		return nil, reUpdateFinderSQLErr
-	}
+	/*
+		sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.DBType, sqlstrptr)
+		if reUpdateFinderSQLErr != nil {
+			reUpdateFinderSQLErr = fmt.Errorf("wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
+			FuncLogError(reUpdateFinderSQLErr)
+			return nil, reUpdateFinderSQLErr
+		}
+	*/
 
 	var res *sql.Result
 	var errexec error
 	if lastInsertID != nil {
-		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstr, values)
+		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstrptr, values)
 		if errrow != nil {
 			return res, errrow
 		}
@@ -1752,7 +1756,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 			return res, errexec
 		}
 	} else {
-		res, errexec = dbConnection.execContext(ctx, sqlstr, values)
+		res, errexec = dbConnection.execContext(ctx, sqlstrptr, values)
 	}
 
 	if errexec != nil {

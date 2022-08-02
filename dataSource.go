@@ -217,7 +217,12 @@ func (dbConnection *dataBaseConnection) commit() error {
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	execsql, err = reTDengineSQL(dbConnection.config.DBType, execsql, args)
+	execsql, err = reBindSQL(dbConnection.config.DBType, execsql, args)
+	if err != nil {
+		return nil, err
+	}
+	// 更新语句处理ClickHouse特殊语法
+	execsql, err = reUpdateSQL(dbConnection.config.DBType, execsql)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +250,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reTDengineSQL(dbConnection.config.DBType, query, args)
+	query, err = reBindSQL(dbConnection.config.DBType, query, args)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +276,7 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reTDengineSQL(dbConnection.config.DBType, query, args)
+	query, err = reBindSQL(dbConnection.config.DBType, query, args)
 	if err != nil {
 		return nil, err
 	}
