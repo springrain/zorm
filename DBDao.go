@@ -1796,10 +1796,10 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
 
 // BindContextEnableGlobalTransaction context中绑定是否使用分布式事务的值,如果没有绑定,会取值DisableAutoGlobalTransaction
-func BindContextEnableGlobalTransaction(parent context.Context, openGlobalTransaction bool) (context.Context, error) {
+func BindContextEnableGlobalTransaction(parent context.Context, enableGlobalTransaction bool) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("BindContextEnableGlobalTransaction context的parent不能为nil")
 	}
-	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, openGlobalTransaction)
+	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, enableGlobalTransaction)
 	return ctx, nil
 }

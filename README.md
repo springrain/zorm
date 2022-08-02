@@ -33,14 +33,7 @@ It is recommended to use official driver, configure zorm.DataSourceConfig Driver
 
 gbase(GENERAL DATA)
 ~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
-Use odbc driver for the time being,DriverName:odbc ,DBType:gbase
-
-## Test case  
-https://gitee.com/wuxiangege/zorm-examples 
-
-
-
-
+Use odbc driver for the time being,DriverName:odbc ,DBType:gbase  
 
 ## Database scripts and entity classes  
 Generate entity classes or write manually, it is recommended to use a code generator ： 

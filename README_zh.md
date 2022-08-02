@@ -52,10 +52,6 @@ go get gitee.com/chunanyong/zorm
 配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:tdengine  
 
 
-## 测试用例  
-https://gitee.com/wuxiangege/zorm-examples  
-
-
 ## 数据库脚本和实体类
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/wsgt
 ```go 
@@ -147,7 +143,7 @@ func newDemoStruct() demoStruct {
 ```
 
 ## 测试用例即文档
-https://gitee.com/wuxiangege/zorm-examples  
+详细用例请参考: https://gitee.com/wuxiangege/zorm-examples  
 
 ```go  
 
