@@ -147,6 +147,7 @@ func newDemoStruct() demoStruct {
 ```
 
 ## 测试用例即文档
+https://gitee.com/wuxiangege/zorm-examples  
 
 ```go  
 

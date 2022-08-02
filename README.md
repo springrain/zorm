@@ -130,7 +130,7 @@ func newDemoStruct() demoStruct {
 ```
 
 ## Test cases are documents
-
+https://gitee.com/wuxiangege/zorm-examples  
 ```go  
 
 // testzorm: Use native SQL statements, no restrictions on SQL syntax. Statements use Finder as a carrier
