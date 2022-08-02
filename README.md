@@ -164,6 +164,9 @@ func init() {
 	//log.SetFlags(log.LstdFlags)
 	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
+	//自定义主键生成
+	//zorm.FuncGenerateStringID=funcmyId
+
 	//dbDaoConfig: Database configuration
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN: Database connection string
@@ -303,9 +306,9 @@ func TestQueryRow(t *testing.T) {
 	demo := &demoStruct{}
 
 	//Finder for constructing query.
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
-	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 
 	// finder.Append： The first parameter is the statement, and the following parameters are the corresponding values.
     // The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
@@ -328,7 +331,8 @@ func TestQueryRow(t *testing.T) {
 func TestQueryRowMap(t *testing.T) {
 
 	//Finder for constructing query.
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//finder.Append: The first parameter is the statement, and the following parameters are the corresponding values. 
     //The order of the values ​​must be correct. Use the statement uniformly? Zorm will handle the difference in the database
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
@@ -348,7 +352,7 @@ func TestQuery(t *testing.T) {
 	list := make([]*demoStruct, 0)
 
 	//Finder for constructing query
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//Create a paging object. After the query is completed, the page object can be directly used by the front-end paging component.
 	page := zorm.NewPage()
 	page.PageNo = 1    //Query page 1, default is 1
@@ -366,7 +370,7 @@ func TestQuery(t *testing.T) {
 //TestQueryMap 08.Test query map list, used in scenarios where struct is not convenient, a record is a map object.
 func TestQueryMap(t *testing.T) {
 	//Finder for constructing query.
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	
 	//Create a paging object. After the query is completed, the page object can be directly used by the front-end paging component。
 	page := zorm.NewPage()
@@ -434,9 +438,9 @@ func TestUpdateFinder(t *testing.T) {
 	//You need to manually start the transaction. If the error returned by the anonymous function is not nil, the transaction will be rolled back.
 	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
+		//finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
-		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
+		finder := zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
 		//Update "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]

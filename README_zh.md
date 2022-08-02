@@ -184,6 +184,10 @@ func init() {
 	//log.SetFlags(log.LstdFlags)
 	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
+    //自定义主键生成
+	//zorm.FuncGenerateStringID=funcmyId
+
+
 	//dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
@@ -321,9 +325,9 @@ func TestQueryRow(t *testing.T) {
 	demo := &demoStruct{}
 
 	//构造查询用的finder
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
-	//finder = zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//finder默认启用了sql注入检查,禁止语句中拼接 ' 单引号,可以设置 finder.InjectionCheck = false 解开限制
 
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
@@ -344,7 +348,8 @@ func TestQueryRow(t *testing.T) {
 func TestQueryRowMap(t *testing.T) {
 
 	//构造查询用的finder
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//finder.Append 第一个参数是语句,后面的参数是对应的值,值的顺序要正确.语句统一使用?,zorm会处理数据库的差异
 	//in (?) 参数必须有()括号,不能 in ?
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
@@ -364,7 +369,8 @@ func TestQuery(t *testing.T) {
 	list := make([]*demoStruct, 0)
 
 	//构造查询用的finder
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 2   //查询第1页,默认是1
@@ -382,8 +388,8 @@ func TestQuery(t *testing.T) {
 //TestQueryMap 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
 func TestQueryMap(t *testing.T) {
 	//构造查询用的finder
-	finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-
+	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+    finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1   //查询第1页,默认是1
@@ -450,9 +456,9 @@ func TestUpdateFinder(t *testing.T) {
 	//如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
+		//finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		//finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
-		//finder = zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
+		finder := zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
 		//更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]
