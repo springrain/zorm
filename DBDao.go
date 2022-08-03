@@ -1796,7 +1796,7 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 //contextEnableGlobalTransactionValueKey 是否使用分布式事务放到context里使用的key
 const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
 
-// BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务
+// BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务,必须放到本地事务开启之前调用
 func BindContextEnableGlobalTransaction(parent context.Context) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("BindContextEnableGlobalTransaction context的parent不能为nil")

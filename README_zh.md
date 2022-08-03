@@ -734,7 +734,7 @@ func main() {
 //不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
-//必须手动开启分布式事务
+//必须手动开启分布式事务,必须放到本地事务开启之前调用
 ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // 分布式事务示例代码
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
