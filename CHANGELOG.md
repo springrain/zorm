@@ -1,11 +1,11 @@
 
 v1.5.8
 更新内容：
+ - 感谢 @zhou-a-xing 编写TDengine的测试用例,不允许手动拼接 '?' 单引号,强制使用?,书写统一
+ - 感谢 @小口天 反馈的bug和编写hptx测试用例,修改全局事务接口方法名,避免和gtx方法名一致造成递归调用
  - 取消自动开启全局事务,必须手动zorm.BindContextEnableGlobalTransaction(ctx)开启全局事务
- - 修改全局事务接口方法名,加上GTX后缀,避免和gtx方法名一致造成递归调用
- - 重构 reBindSQL 函数,在语句最后执行前统一处理 
+ - 重构 reBindSQL 函数,在SQL最后执行前统一处理 
  - 吐槽很久的switch代替if else
- - TDengine不允许再手动拼接 '?' 单引号了,强制统一使用?,书写统一
  - 完善文档,注释
   
 v1.5.7

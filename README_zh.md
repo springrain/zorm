@@ -19,7 +19,7 @@ go get gitee.com/chunanyong/zorm
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
-* 支持seata,hptx,dbpack分布式事务,支持全局托管,不修改业务代码,零侵入分布式事务
+* 支持seata,hptx,dbpack分布式事务,支持全局事务托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
 ## 源码仓库说明
@@ -50,6 +50,8 @@ go get gitee.com/chunanyong/zorm
 ### TDengine  
 因TDengine驱动不支持事务,需要设置DisableTransaction=true
 配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:tdengine  
+
+测试用例: https://gitee.com/wuxiangege/zorm-examples/blob/master/zorm_example_td_test.go  
 
 
 ## 数据库脚本和实体类
@@ -635,7 +637,7 @@ func main() {
 	//后续正常初始化zorm,一定要放到seata mysql 初始化后面!!!
 
 	//................//
-	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	//tm注册事务服务,参照官方例子.(事务托管主要是去掉proxy,对业务零侵入)
 	tm.Implement(svc.ProxySvc)
 	//................//
 
@@ -696,7 +698,7 @@ func main() {
 	//后续正常初始化zorm,一定要放到hptx mysql 初始化后面!!!
 
 	//................//
-	//tm注册事务服务,参照官方例子.(全局托管主要是去掉proxy,对业务零侵入)
+	//tm注册事务服务,参照官方例子.(事务托管主要是去掉proxy,对业务零侵入)
 	tm.Implement(svc.ProxySvc)
 	//................//
 
@@ -725,13 +727,13 @@ func main() {
 
 
 
-#### seata/hptx 全局托管模式
+#### seata/hptx 事务托管模式
 
-```seata-golang``` 和 ```hptx```实现方式一致,只是实现的包不同
+```seata-golang``` 和 ```hptx```实现方式一致,只是实现包不同
 
 ```golang
 
-//不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
+//不使用proxy代理模式,zorm实现事务托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
 //必须手动开启分布式事务,必须放到本地事务开启之前调用
