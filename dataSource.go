@@ -237,7 +237,8 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
 		FuncPrintSQL(*execsql, args, 0)
 	} else if dbConnection.config.SlowSQLMillis > 0 {
-		*start = time.Now() // 获取当前时间
+		now := time.Now() // 获取当前时间
+		start = &now
 	}
 	if dbConnection.tx != nil {
 		res, err = dbConnection.tx.ExecContext(ctx, *execsql, args...)
@@ -245,8 +246,8 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 		res, err = dbConnection.db.ExecContext(ctx, *execsql, args...)
 	}
 	if dbConnection.config.SlowSQLMillis > 0 {
-		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
-		if slow >= 0 {
+		slow := time.Since(*start).Milliseconds()
+		if slow-int64(dbConnection.config.SlowSQLMillis) >= 0 {
 			FuncPrintSQL(*execsql, args, slow)
 		}
 	}
@@ -274,7 +275,8 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(*query, args, 0)
 	} else if dbConnection.config.SlowSQLMillis > 0 {
-		*start = time.Now() // 获取当前时间
+		now := time.Now() // 获取当前时间
+		start = &now
 	}
 
 	if dbConnection.tx != nil {
@@ -283,8 +285,8 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 		row = dbConnection.db.QueryRowContext(ctx, *query, args...)
 	}
 	if dbConnection.config.SlowSQLMillis > 0 {
-		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
-		if slow >= 0 {
+		slow := time.Since(*start).Milliseconds()
+		if slow-int64(dbConnection.config.SlowSQLMillis) >= 0 {
 			FuncPrintSQL(*query, args, slow)
 		}
 	}
@@ -312,7 +314,8 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(*query, args, 0)
 	} else if dbConnection.config.SlowSQLMillis > 0 {
-		*start = time.Now() // 获取当前时间
+		now := time.Now() // 获取当前时间
+		start = &now
 	}
 
 	if dbConnection.tx != nil {
@@ -321,8 +324,8 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 		rows, err = dbConnection.db.QueryContext(ctx, *query, args...)
 	}
 	if dbConnection.config.SlowSQLMillis > 0 {
-		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
-		if slow >= 0 {
+		slow := time.Since(*start).Milliseconds()
+		if slow-int64(dbConnection.config.SlowSQLMillis) >= 0 {
 			FuncPrintSQL(*query, args, slow)
 		}
 	}
