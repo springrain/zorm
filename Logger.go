@@ -23,9 +23,9 @@ var FuncLogError func(err error) = defaultLogError
 //FuncLogPanic Record panic log, using "defaultLogError" by default
 var FuncLogPanic func(err error) = defaultLogPanic
 
-//FuncPrintSQL 打印sql语句和参数
+//FuncPrintSQL 打印sql语句,参数和执行时间,小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 //FuncPrintSQL Print sql statement and parameters
-var FuncPrintSQL func(sqlstr string, args []interface{}) = defaultPrintSQL
+var FuncPrintSQL func(sqlstr string, args []interface{}, slowSQLMillis int64) = defaultPrintSQL
 
 func defaultLogError(err error) {
 	log.Output(LogCallDepth, fmt.Sprintln(err))
@@ -33,11 +33,11 @@ func defaultLogError(err error) {
 func defaultLogPanic(err error) {
 	defaultLogError(err)
 }
-func defaultPrintSQL(sqlstr string, args []interface{}) {
+func defaultPrintSQL(sqlstr string, args []interface{}, slowSQLMillis int64) {
 	if args != nil {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",slowSQLMillis:", slowSQLMillis))
 	} else {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:[]", ",slowSQLMillis:", slowSQLMillis))
 	}
 
 }

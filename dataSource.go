@@ -27,9 +27,8 @@ type DataSourceConfig struct {
 	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
 	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName,A database may have multiple drivers
 	DBType string
-	//PrintSQL 是否打印SQL语句.使用zorm.PrintSQL记录SQL
-	//PrintSQL Whether to print SQL, use zorm.PrintSQL record sql
-	PrintSQL bool
+	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
+	SlowSQLMillis int
 	//MaxOpenConns 数据库最大连接数,默认50
 	//MaxOpenConns Maximum number of database connections, Default 50
 	MaxOpenConns int
@@ -231,19 +230,28 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 	if err != nil {
 		return nil, err
 	}
-	//打印SQL
-	//print SQL
-	if dbConnection.config.PrintSQL {
+	var start *time.Time
+	var res *sql.Result
+	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
+	if dbConnection.config.SlowSQLMillis == 0 {
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
-		FuncPrintSQL(*execsql, args)
+		FuncPrintSQL(*execsql, args, 0)
+	} else if dbConnection.config.SlowSQLMillis > 0 {
+		*start = time.Now() // 获取当前时间
+	}
+	if dbConnection.tx != nil {
+		*res, err = dbConnection.tx.ExecContext(ctx, *execsql, args...)
+	} else {
+		*res, err = dbConnection.db.ExecContext(ctx, *execsql, args...)
+	}
+	if dbConnection.config.SlowSQLMillis > 0 {
+		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
+		if slow >= 0 {
+			FuncPrintSQL(*execsql, args, slow)
+		}
 	}
 
-	if dbConnection.tx != nil {
-		res, reserr := dbConnection.tx.ExecContext(ctx, *execsql, args...)
-		return &res, reserr
-	}
-	res, reserr := dbConnection.db.ExecContext(ctx, *execsql, args...)
-	return &res, reserr
+	return res, err
 }
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
@@ -259,16 +267,28 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 	if err != nil {
 		return nil, err
 	}
-	//打印SQL
-	if dbConnection.config.PrintSQL {
+	var start *time.Time
+	var row *sql.Row
+	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
+	if dbConnection.config.SlowSQLMillis == 0 {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		FuncPrintSQL(*query, args)
+		FuncPrintSQL(*query, args, 0)
+	} else if dbConnection.config.SlowSQLMillis > 0 {
+		*start = time.Now() // 获取当前时间
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryRowContext(ctx, *query, args...), nil
+		row = dbConnection.tx.QueryRowContext(ctx, *query, args...)
+	} else {
+		row = dbConnection.db.QueryRowContext(ctx, *query, args...)
 	}
-	return dbConnection.db.QueryRowContext(ctx, *query, args...), nil
+	if dbConnection.config.SlowSQLMillis > 0 {
+		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
+		if slow >= 0 {
+			FuncPrintSQL(*query, args, slow)
+		}
+	}
+	return row, nil
 }
 
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
@@ -285,16 +305,28 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 	if err != nil {
 		return nil, err
 	}
-	//打印SQL
-	if dbConnection.config.PrintSQL {
+	var start *time.Time
+	var rows *sql.Rows
+	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
+	if dbConnection.config.SlowSQLMillis == 0 {
 		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
-		FuncPrintSQL(*query, args)
+		FuncPrintSQL(*query, args, 0)
+	} else if dbConnection.config.SlowSQLMillis > 0 {
+		*start = time.Now() // 获取当前时间
 	}
 
 	if dbConnection.tx != nil {
-		return dbConnection.tx.QueryContext(ctx, *query, args...)
+		rows, err = dbConnection.tx.QueryContext(ctx, *query, args...)
+	} else {
+		rows, err = dbConnection.db.QueryContext(ctx, *query, args...)
 	}
-	return dbConnection.db.QueryContext(ctx, *query, args...)
+	if dbConnection.config.SlowSQLMillis > 0 {
+		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
+		if slow >= 0 {
+			FuncPrintSQL(*query, args, slow)
+		}
+	}
+	return rows, err
 }
 
 /*
