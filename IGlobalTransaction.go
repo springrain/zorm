@@ -100,7 +100,7 @@ type IGlobalTransaction interface {
 	// BeginGTX 开启全局分布式事务
 	BeginGTX(ctx context.Context) error
 
-	// CommitGTX 提交全局分布式事务
+	// CommitGTX 提交全局分布式事务.不能命名为 Commit,不然就和gtx的Commit一致了,就递归调用自己了.......
 	CommitGTX(ctx context.Context) error
 
 	// RollbackGTX 回滚全局分布式事务
