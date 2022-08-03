@@ -735,7 +735,7 @@ func main() {
 //tm.Implement(svc.ProxySvc)
 
 //必须手动开启分布式事务
-zorm.BindContextEnableGlobalTransaction(ctx)
+ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // 分布式事务示例代码
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
