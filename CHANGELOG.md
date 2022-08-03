@@ -1,7 +1,8 @@
 
 v1.5.8
 更新内容：
- - 修改全局事务接口方法名,加上GTX后缀,避免和gtx方法名一致,进而调用递归
+ - 取消自动开启全局事务,必须手动zorm.BindContextEnableGlobalTransaction(ctx)开启全局事务
+ - 修改全局事务接口方法名,加上GTX后缀,避免和gtx方法名一致造成递归调用
  - 重构 reBindSQL 函数,在语句最后执行前统一处理 
  - 吐槽很久的switch代替if else
  - TDengine不允许再手动拼接 '?' 单引号了,强制统一使用?,书写统一

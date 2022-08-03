@@ -699,8 +699,8 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	}
 	return gtx.Rollback(rootContext)
 }
-// GetXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetXID(ctx context.Context) string {
+// GetGTXID 获取全局分布式事务的XID
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }

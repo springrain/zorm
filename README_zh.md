@@ -210,12 +210,8 @@ func init() {
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 		//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
+		//业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
 	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
-
-        //DisableAutoGlobalTransaction  禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
-		//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
-        //DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
-        //DisableAutoGlobalTransaction:false,
 
 	    //使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
@@ -738,9 +734,8 @@ func main() {
 //不使用proxy代理模式,全局托管,不修改业务代码,零侵入实现分布式事务
 //tm.Implement(svc.ProxySvc)
 
-//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
-//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
-
+//必须手动开启分布式事务
+zorm.BindContextEnableGlobalTransaction(ctx)
 // 分布式事务示例代码
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
@@ -819,8 +814,8 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	}
 	return gtx.Rollback(rootContext)
 }
-// GetXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetXID(ctx context.Context) string {
+// GetGTXID 获取全局分布式事务的XID
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }

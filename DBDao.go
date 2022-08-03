@@ -217,7 +217,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			if ctxGTXval != nil { //如果有值
 				enableGlobalTransaction = ctxGTXval.(bool)
 			} else { //如果ctx没有值,就取值DisableAutoGlobalTransaction
-				enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
+				//enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
+				enableGlobalTransaction = false
 			}
 		}
 
@@ -257,7 +258,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
 			//seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
-			globalXID := globalTransaction.GetXID(globalRootContext)
+			globalXID := globalTransaction.GetGTXID(globalRootContext)
 			if len(globalXID) < 1 {
 				globalErr = errors.New("global:globalTransaction.Begin无异常开启后,获取的XID为空")
 				FuncLogError(globalErr)
@@ -1795,11 +1796,11 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 //contextEnableGlobalTransactionValueKey 是否使用分布式事务放到context里使用的key
 const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
 
-// BindContextEnableGlobalTransaction context中绑定是否使用分布式事务的值,如果没有绑定,会取值DisableAutoGlobalTransaction
-func BindContextEnableGlobalTransaction(parent context.Context, enableGlobalTransaction bool) (context.Context, error) {
+// BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务
+func BindContextEnableGlobalTransaction(parent context.Context) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("BindContextEnableGlobalTransaction context的parent不能为nil")
 	}
-	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, enableGlobalTransaction)
+	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, true)
 	return ctx, nil
 }
