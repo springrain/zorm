@@ -1,12 +1,13 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-go(golang)轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库.  
-源码地址:https://gitee.com/chunanyong/zorm    
+Go轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库. 
 
-官网:[https://zorm.cn](https://zorm.cn)  
+源码地址:https://gitee.com/chunanyong/zorm      
+官网:[https://zorm.cn](https://zorm.cn)    
+测试用例: https://gitee.com/wuxiangege/zorm-examples/    
 
-交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨
-社区微信: [LAUV927]() 
+交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨  
+社区微信: [LAUV927]()   
 
 ``` 
 go get gitee.com/chunanyong/zorm 
@@ -145,7 +146,7 @@ func newDemoStruct() demoStruct {
 ```
 
 ## 测试用例即文档
-详细用例请参考: https://gitee.com/wuxiangege/zorm-examples  
+测试用例: https://gitee.com/wuxiangege/zorm-examples  
 
 ```go  
 
