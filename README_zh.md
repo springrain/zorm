@@ -212,7 +212,7 @@ func init() {
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 		//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
-		//业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
+		//业务必须调用 ctx,_=zorm.BindContextEnableGlobalTransaction(ctx) 开启全局分布事务
 	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
 	    //使用现有的数据库连接,优先级高于DSN
