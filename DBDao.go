@@ -248,7 +248,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 		}
 		if globalTxOpen { //如果是分布事务开启方,启动分布式事务
-			globalErr = globalTransaction.Begin(globalRootContext)
+			globalErr = globalTransaction.BeginGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction 分布式事务开启失败:%w ", globalErr)
 				FuncLogError(globalErr)
@@ -307,7 +307,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			}
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.Rollback(globalRootContext)
+				globalErr = globalTransaction.RollbackGTX(globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:recover内globalTransaction事务回滚失败:%w", globalErr)
 					FuncLogError(globalErr)
@@ -338,7 +338,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		}
 		//任意一个分支事务回滚,分布式事务就整体回滚
 		if globalTransaction != nil {
-			globalErr = globalTransaction.Rollback(globalRootContext)
+			globalErr = globalTransaction.RollbackGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->rollback globalTransaction事务回滚失败:%w", globalErr)
 				FuncLogError(globalErr)
@@ -352,7 +352,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		commitError := dbConnection.commit()
 		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
 		if commitError == nil && globalTxOpen {
-			globalErr = globalTransaction.Commit(globalRootContext)
+			globalErr = globalTransaction.CommitGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->commit globalTransaction 事务提交失败:%w", globalErr)
 				FuncLogError(globalErr)
@@ -364,7 +364,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.Rollback(globalRootContext)
+				globalErr = globalTransaction.RollbackGTX(globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:Transaction-->commit失败,然后回滚globalTransaction事务也失败:%w", globalErr)
 					FuncLogError(globalErr)
