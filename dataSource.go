@@ -231,7 +231,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 		return nil, err
 	}
 	var start *time.Time
-	var res *sql.Result
+	var res sql.Result
 	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	if dbConnection.config.SlowSQLMillis == 0 {
 		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
@@ -240,9 +240,9 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 		*start = time.Now() // 获取当前时间
 	}
 	if dbConnection.tx != nil {
-		*res, err = dbConnection.tx.ExecContext(ctx, *execsql, args...)
+		res, err = dbConnection.tx.ExecContext(ctx, *execsql, args...)
 	} else {
-		*res, err = dbConnection.db.ExecContext(ctx, *execsql, args...)
+		res, err = dbConnection.db.ExecContext(ctx, *execsql, args...)
 	}
 	if dbConnection.config.SlowSQLMillis > 0 {
 		slow := time.Since(*start).Milliseconds() - int64(dbConnection.config.SlowSQLMillis)
@@ -251,7 +251,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 		}
 	}
 
-	return res, err
+	return &res, err
 }
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行

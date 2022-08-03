@@ -37,7 +37,7 @@ func defaultPrintSQL(sqlstr string, args []interface{}, slowSQLMillis int64) {
 	if args != nil {
 		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",slowSQLMillis:", slowSQLMillis))
 	} else {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:[]", ",slowSQLMillis:", slowSQLMillis))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",slowSQLMillis:", slowSQLMillis))
 	}
 
 }
