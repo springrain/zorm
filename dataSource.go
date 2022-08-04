@@ -15,54 +15,6 @@ type dataSource struct {
 	//config *DataSourceConfig
 }
 
-// DataSourceConfig 数据库连接池的配置
-// DateSourceConfig Database connection pool configuration
-type DataSourceConfig struct {
-	//DSN dataSourceName 连接字符串
-	//DSN DataSourceName Database connection string
-	DSN string
-	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
-	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to DBType,A database may have multiple drivers
-	DriverName string
-	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
-	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName,A database may have multiple drivers
-	DBType string
-	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
-	SlowSQLMillis int
-	//MaxOpenConns 数据库最大连接数,默认50
-	//MaxOpenConns Maximum number of database connections, Default 50
-	MaxOpenConns int
-	//MaxIdleConns 数据库最大空闲连接数,默认50
-	//MaxIdleConns The maximum number of free connections to the database default 50
-	MaxIdleConns int
-	//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
-	//ConnMaxLifetimeSecond: (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
-	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
-	ConnMaxLifetimeSecond int
-
-	//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
-	DefaultTxOptions *sql.TxOptions
-
-	//DisableTransaction 全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
-	//禁用事务应该有驱动伪造事务API,不应该由orm实现
-	DisableTransaction bool
-
-	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
-	//db, mock, err := sqlmock.New()
-	//MockSQLDB *sql.DB
-
-	//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
-	//业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
-	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, error)
-	//DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
-	//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
-	//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
-	//DisableAutoGlobalTransaction bool
-
-	//SQLDB 使用现有的数据库连接,优先级高于DSN
-	SQLDB *sql.DB
-}
-
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
