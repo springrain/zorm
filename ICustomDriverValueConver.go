@@ -31,7 +31,7 @@ type driverValueInfo struct {
 
 /**
 
-//实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+//实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
 //GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
