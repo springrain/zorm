@@ -27,7 +27,7 @@ type DataSourceConfig struct {
 	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
 	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName,A database may have multiple drivers
 	DBType string
-	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用日志输出;等于0是只输出日志,不计算SQL执行时间;大于0是计算执行时间,并且>=SlowSQLMillis值
+	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 	SlowSQLMillis int
 	//MaxOpenConns 数据库最大连接数,默认50
 	//MaxOpenConns Maximum number of database connections, Default 50
