@@ -668,7 +668,7 @@ func main() {
 
 #### hptx proxy模式 
 
-hptx已合并@小口天的pr, [https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm](在hptx代理模式下的zorm使用示例)  
+hptx已合并@小口天的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  
 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
@@ -735,7 +735,7 @@ func main() {
 
 ```seata-golang``` 和 ```hptx```实现方式一致,只是实现包不同
 
-hptx已合并@小口天的pr, [https://github.com/CECTC/hptx-samples/tree/main/http_zorm](zorm事务托管hptx例子)   
+hptx已合并@小口天的pr, [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)   
 
 ```golang
 
