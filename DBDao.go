@@ -24,7 +24,7 @@ import (
 // 即便是放到DBDao里,因为是多库,BindContextDBConnection函数调用少不了,业务包装一个方法,指定一下读写获取一个DBDao效果是一样的,唯一就是需要根据业务指定一下读写,其实更灵活了
 // FuncReadWriteStrategy Single database read and write separation strategy,used for external replication to implement custom logic, rwType=0 read, rwType=1 write.
 // "BindContextDBConnection" is already a connection to the specified database and will conflict with this function. As a single database read and write separation of processing
-var FuncReadWriteStrategy func(rwType int) *DBDao = getDefaultDao
+var FuncReadWriteStrategy func(ctx context.Context, rwType int) *DBDao = getDefaultDao
 
 // wrapContextStringKey 包装context的key,不直接使用string类型,避免外部直接注入使用
 type wrapContextStringKey string
@@ -76,7 +76,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 		return nil, err
 	}
 
-	if FuncReadWriteStrategy(1) == nil {
+	if FuncReadWriteStrategy(nil, 1) == nil {
 		defaultDao = &DBDao{config, dataSource}
 		return defaultDao, nil
 	}
@@ -85,7 +85,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 
 // getDefaultDao 获取默认的Dao,用于隔离读写的Dao
 // getDefaultDao Get the default Dao, used to isolate Dao for reading and writing
-func getDefaultDao(rwType int) *DBDao {
+func getDefaultDao(ctx context.Context, rwType int) *DBDao {
 	return defaultDao
 }
 
@@ -412,7 +412,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(0).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 0).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -637,7 +637,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteStrategy(0).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 0).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -886,7 +886,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	//dbConnection为nil,使用defaultDao
 	//db Connection is nil, use default Dao
 	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(0).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 0).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1091,7 +1091,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	//dbConnection is nil, use default Dao
 	/*
 		if dbConnection == nil {
-			dbType = FuncReadWriteStrategy(1).config.DBType
+			dbType = FuncReadWriteStrategy(ctx,1).config.DBType
 		} else {
 			dbType = dbConnection.config.DBType
 		}
@@ -1150,7 +1150,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1277,7 +1277,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1358,7 +1358,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1407,7 +1407,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 	var dbType string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1509,7 +1509,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1560,7 +1560,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
-		dbType = FuncReadWriteStrategy(1).config.DBType
+		dbType = FuncReadWriteStrategy(ctx, 1).config.DBType
 	} else {
 		dbType = dbConnection.config.DBType
 	}
@@ -1676,7 +1676,7 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 
 //变量名建议errFoo这样的驼峰
 //The variable name suggests a hump like "errFoo"
-var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
+var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(ctx,rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
 
 // checkDBConnection 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 // context必须传入,不能为空.rwType=0 read,rwType=1 write
@@ -1692,7 +1692,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 	//dbConnection is nil
 	if dbConnection == nil {
 		//是否禁用了事务
-		disabletx := FuncReadWriteStrategy(rwType).config.DisableTransaction
+		disabletx := FuncReadWriteStrategy(ctx, rwType).config.DisableTransaction
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 		if hastx && (!disabletx) {
 			//if hastx {
@@ -1702,7 +1702,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 		//如果要求没有事务,实例化一个默认的dbConnection
 		//If no transaction is required, instantiate a default db Connection
 		var errGetDBConnection error
-		dbConnection, errGetDBConnection = FuncReadWriteStrategy(rwType).newDBConnection()
+		dbConnection, errGetDBConnection = FuncReadWriteStrategy(ctx, rwType).newDBConnection()
 		if errGetDBConnection != nil {
 			return ctx, nil, errGetDBConnection
 		}

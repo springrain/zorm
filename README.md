@@ -543,7 +543,7 @@ func TestOther(t *testing.T) {
 }
 
 //Strategies for the separation of read and write of a single database rwType=0 read,rwType=1 write
-func myReadWriteStrategy(rwType int) *zorm.DBDao {
+func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
 	//According to your own business scenario, return the required read and write dao, and call this function every time you need a database connection
 	return dbDao
 }

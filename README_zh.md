@@ -556,7 +556,7 @@ func TestOther(t *testing.T) {
 }
 
 //单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
-func myReadWriteStrategy(rwType int) *zorm.DBDao {
+func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
 	return dbDao
 }
