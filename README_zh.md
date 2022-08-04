@@ -205,8 +205,8 @@ func init() {
 		MaxIdleConns: 50,
 		//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 		ConnMaxLifetimeSecond: 600,
-		//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
-		//SlowSQLMillis: 0,
+		//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用日志输出;等于0是只输出日志,不计算SQL执行时间;大于0是计算执行时间,并且>=SlowSQLMillis值
+		SlowSQLMillis: -1,
 		//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 		//DefaultTxOptions: nil,
 		//如果是使用分布式事务,建议使用默认配置

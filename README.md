@@ -184,8 +184,8 @@ func init() {
 		//ConnMaxLifetimeSecond: The connection survival time in seconds. The connection is destroyed and rebuilt after the default 600 (10 minutes). 
         //To prevent the database from actively disconnecting and causing dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
-		//SlowSQLMillis The time threshold of slow SQL, in milliseconds. Less than 0 disables log output; equal to 0 only outputs logs without calculating SQ execution time; greater than 0 calculates execution time and is greater than the specified value
-		//SlowSQLMillis: 0,
+		//SlowSQLMillis The time threshold of slow SQL, in milliseconds. If less than 0, log output is disabled; if equal to 0, only the log is output, and SQL execution time is not calculated; if greater than 0, the execution time is calculated, and >=SlowSQLMillis value
+		SlowSQLMillis: -1,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
 		//If you are using distributed transactions, it is recommended to use the default configuration
