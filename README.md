@@ -185,7 +185,7 @@ func init() {
         //To prevent the database from actively disconnecting and causing dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
 		//SlowSQLMillis The time threshold of slow SQL, in milliseconds. Less than 0 means to disable SQL statement output; equal to 0 means only output SQL statements without calculating execution time; greater than 0 means calculating SQL execution time, and >=SlowSQLMillis value
-		SlowSQLMillis: -1,
+		SlowSQLMillis: 0,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
 		//If you are using distributed transactions, it is recommended to use the default configuration
@@ -196,8 +196,6 @@ func init() {
 
 		//SQLDB Use an existing database connection, which takes precedence over DSN
 	    //SQLDB : nil,
-
-		
 
 	    //DisableTransaction Globally disable transactions, the default is false. In order to deal with some databases that do not support transactions, such as TDengine
 	    //Disabling transactions should have a driver forge transaction API, there should be no orm implementation, clickhouse's driver does this
