@@ -1,6 +1,7 @@
 
 v1.5.9
  - hptx已合并@小口天的pr, [hptx代理模式zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)   和 [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)  
+ - 增加IsInTransaction(ctx)函数,检查是否在事务内
  - 扩展函数统一加上ctx入参,方便场景自定义扩展
  - 取消PrintSQL参数,使用SlowSQLMillis控制输出慢sql语句
  - 完善文档,注释

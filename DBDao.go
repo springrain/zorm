@@ -1574,6 +1574,18 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 }
 
+//IsInTransaction 检查ctx是否包含事务
+func IsInTransaction(ctx context.Context) (bool, error) {
+	dbConnection, err := getDBConnectionFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	if dbConnection != nil && dbConnection.tx != nil {
+		return true, err
+	}
+	return false, err
+}
+
 // updateStructFunc 更新对象
 // ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 // affected影响的行数,如果异常或者驱动不支持,返回-1
