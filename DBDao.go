@@ -72,7 +72,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 
 	if err != nil {
 		err = fmt.Errorf("NewDBDao创建dataSource失败:%w", err)
-		FuncLogError(err)
+		FuncLogError(nil, err)
 		return nil, err
 	}
 
@@ -238,12 +238,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			globalTransaction, globalRootContext, globalErr = funcGlobalTx(ctx)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", globalErr)
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
 			if globalTransaction == nil || globalRootContext == nil {
 				globalErr = errors.New("global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口的实现为nil ")
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
 
@@ -252,7 +252,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			globalErr = globalTransaction.BeginGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction 分布式事务开启失败:%w ", globalErr)
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
 
@@ -261,7 +261,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			globalXID := globalTransaction.GetGTXID(globalRootContext)
 			if len(globalXID) < 1 {
 				globalErr = errors.New("global:globalTransaction.Begin无异常开启后,获取的XID为空")
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
 			ctx = context.WithValue(ctx, "XID", globalXID)
@@ -272,7 +272,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		beginerr := dbConnection.beginTx(ctx)
 		if beginerr != nil {
 			beginerr = fmt.Errorf("Transaction 事务开启失败:%w ", beginerr)
-			FuncLogError(beginerr)
+			FuncLogError(ctx, beginerr)
 			return nil, beginerr
 		}
 		//本方法开启的事务,由本方法提交
@@ -290,9 +290,9 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("recover异常:%w", err)
-				FuncLogPanic(err)
+				FuncLogPanic(ctx, err)
 			} else {
-				FuncLogPanic(fmt.Errorf("recover异常:%v", r))
+				FuncLogPanic(ctx, fmt.Errorf("recover异常:%v", r))
 			}
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
@@ -304,14 +304,14 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			rberr := dbConnection.rollback()
 			if rberr != nil {
 				rberr = fmt.Errorf("recover内事务回滚失败:%w", rberr)
-				FuncLogError(rberr)
+				FuncLogError(ctx, rberr)
 			}
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
 				globalErr = globalTransaction.RollbackGTX(globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:recover内globalTransaction事务回滚失败:%w", globalErr)
-					FuncLogError(globalErr)
+					FuncLogError(ctx, globalErr)
 				}
 			}
 
@@ -323,7 +323,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 	if err != nil {
 		err = fmt.Errorf("Transaction-->doTransaction业务执行异常:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 
 		//如果全局禁用了事务
 		if dbConnection.config.DisableTransaction {
@@ -335,14 +335,14 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		rberr := dbConnection.rollback()
 		if rberr != nil {
 			rberr = fmt.Errorf("Transaction-->rollback事务回滚失败:%w", rberr)
-			FuncLogError(rberr)
+			FuncLogError(ctx, rberr)
 		}
 		//任意一个分支事务回滚,分布式事务就整体回滚
 		if globalTransaction != nil {
 			globalErr = globalTransaction.RollbackGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->rollback globalTransaction事务回滚失败:%w", globalErr)
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 			}
 		}
 		return info, err
@@ -356,19 +356,19 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			globalErr = globalTransaction.CommitGTX(globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->commit globalTransaction 事务提交失败:%w", globalErr)
-				FuncLogError(globalErr)
+				FuncLogError(ctx, globalErr)
 			}
 		}
 		if commitError != nil {
 			commitError = fmt.Errorf("Transaction-->commit事务提交失败:%w", commitError)
-			FuncLogError(commitError)
+			FuncLogError(ctx, commitError)
 
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
 				globalErr = globalTransaction.RollbackGTX(globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:Transaction-->commit失败,然后回滚globalTransaction事务也失败:%w", globalErr)
-					FuncLogError(globalErr)
+					FuncLogError(ctx, globalErr)
 				}
 			}
 
@@ -393,7 +393,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		checkerr = fmt.Errorf("QueryRow-->checkEntityKind类型检查错误:%w", checkerr)
-		FuncLogError(checkerr)
+		FuncLogError(ctx, checkerr)
 		return has, checkerr
 	}
 	//从contxt中获取数据库连接,可能为nil
@@ -422,7 +422,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
 	if err != nil {
 		err = fmt.Errorf("QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return has, err
 	}
 
@@ -439,7 +439,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("QueryRow-->queryContext查询数据库错误:%w", e)
-		FuncLogError(e)
+		FuncLogError(ctx, e)
 		return has, e
 	}
 	//先判断error 再关闭
@@ -453,7 +453,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		columns, cne := rows.Columns()
 		if cne != nil {
 			cne = fmt.Errorf("QueryRow-->rows.Columns数据库返回列名错误:%w", cne)
-			FuncLogError(cne)
+			FuncLogError(ctx,cne)
 			return cne
 		}
 	*/
@@ -461,7 +461,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
 		cte = fmt.Errorf("QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
-		FuncLogError(cte)
+		FuncLogError(ctx, cte)
 		return has, cte
 	}
 
@@ -504,7 +504,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], &typeOf, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryRow-->conver.GetDriverValue异常:%w", errGetDriverValue)
-					FuncLogError(errGetDriverValue)
+					FuncLogError(ctx, errGetDriverValue)
 					return has, errGetDriverValue
 				}
 
@@ -521,7 +521,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 
 			if scanerr != nil {
 				scanerr = fmt.Errorf("QueryRow-->rows.Scan异常:%w", scanerr)
-				FuncLogError(scanerr)
+				FuncLogError(ctx, scanerr)
 				return has, scanerr
 			}
 		}
@@ -532,7 +532,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 			rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], &typeOf, tempDriverValue, finder)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryRow-->converFunc.ConverDriverValue异常:%w", errConverDriverValue)
-				FuncLogError(errConverDriverValue)
+				FuncLogError(ctx, errConverDriverValue)
 				return has, errConverDriverValue
 			}
 
@@ -553,7 +553,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(&typeOf)
 	if dbe != nil {
 		dbe = fmt.Errorf("QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
-		FuncLogError(dbe)
+		FuncLogError(ctx, dbe)
 		return has, dbe
 	}
 
@@ -570,10 +570,10 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		}
 
 		//接收对象设置值
-		scanerr := sqlRowsValues(rows, &driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, &valueOf, finder, cdvMapHasBool)
+		scanerr := sqlRowsValues(ctx, rows, &driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, &valueOf, finder, cdvMapHasBool)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryRow-->sqlRowsValues错误:%w", scanerr)
-			FuncLogError(scanerr)
+			FuncLogError(ctx, scanerr)
 			return has, scanerr
 		}
 
@@ -645,7 +645,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("Query-->wrapQuerySQL获取查询SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return err
 	}
 
@@ -662,7 +662,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("Query-->queryContext查询rows异常:%w", e)
-		FuncLogError(e)
+		FuncLogError(ctx, e)
 		return e
 	}
 	//先判断error 再关闭
@@ -672,7 +672,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
 		cte = fmt.Errorf("Query-->rows.ColumnTypes数据库类型错误:%w", cte)
-		FuncLogError(cte)
+		FuncLogError(ctx, cte)
 		return cte
 	}
 	//反射获取 []driver.Value的值
@@ -722,7 +722,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnTypes[0], &sliceElementType, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("Query-->conver.GetDriverValue异常:%w", errGetDriverValue)
-					FuncLogError(errGetDriverValue)
+					FuncLogError(ctx, errGetDriverValue)
 					return errGetDriverValue
 				}
 				if tempDriverValue != nil { //为nil,不做处理
@@ -737,7 +737,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 			if scanerr != nil {
 				scanerr = fmt.Errorf("Query-->rows.Scan异常:%w", scanerr)
-				FuncLogError(scanerr)
+				FuncLogError(ctx, scanerr)
 				return scanerr
 			}
 			//如果需要类型转换,需要把临时值转换成需要接收的类型值
@@ -746,7 +746,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 				rightValue, errConverDriverValue := converFunc.ConverDriverValue(columnTypes[0], &sliceElementType, tempDriverValue, finder)
 				if errConverDriverValue != nil {
 					errConverDriverValue = fmt.Errorf("Query-->conver.ConverDriverValue异常:%w", errConverDriverValue)
-					FuncLogError(errConverDriverValue)
+					FuncLogError(ctx, errConverDriverValue)
 					return errConverDriverValue
 				}
 				//把正确的值赋值给pv
@@ -769,7 +769,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 			count, counterr := selectCount(ctx, finder)
 			if counterr != nil {
 				counterr = fmt.Errorf("Query-->selectCount查询总条数错误:%w", counterr)
-				FuncLogError(counterr)
+				FuncLogError(ctx, counterr)
 				return counterr
 			}
 			page.setTotalCount(count)
@@ -783,7 +783,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(&sliceElementType)
 	if dbe != nil {
 		dbe = fmt.Errorf("Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
-		FuncLogError(dbe)
+		FuncLogError(ctx, dbe)
 		return dbe
 	}
 
@@ -796,13 +796,13 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		//Reflectively initialize the elements in an array
 		pv := reflect.New(sliceElementType).Elem()
 		//设置接收值
-		scanerr := sqlRowsValues(rows, &driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, &pv, finder, cdvMapHasBool)
+		scanerr := sqlRowsValues(ctx, rows, &driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, &pv, finder, cdvMapHasBool)
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("Query-->sqlRowsValues异常:%w", scanerr)
-			FuncLogError(scanerr)
+			FuncLogError(ctx, scanerr)
 			return scanerr
 		}
 
@@ -823,7 +823,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("Query-->selectCount查询总条数错误:%w", counterr)
-			FuncLogError(counterr)
+			FuncLogError(ctx, counterr)
 			return counterr
 		}
 		page.setTotalCount(count)
@@ -845,7 +845,7 @@ func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, e
 	resultMapList, listerr := QueryMap(ctx, finder, nil)
 	if listerr != nil {
 		listerr = fmt.Errorf("QueryRowMap-->QueryMap查询错误:%w", listerr)
-		FuncLogError(listerr)
+		FuncLogError(ctx, listerr)
 		return nil, listerr
 	}
 	if resultMapList == nil {
@@ -894,7 +894,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	sqlstr, err := wrapQuerySQL(dbType, finder, page)
 	if err != nil {
 		err = fmt.Errorf("QueryMap -->wrapQuerySQL查询SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return nil, err
 	}
 
@@ -911,7 +911,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("QueryMap-->queryContext查询rows错误:%w", e)
-		FuncLogError(e)
+		FuncLogError(ctx, e)
 		return nil, e
 	}
 	//先判断error 再关闭
@@ -922,7 +922,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	columnTypes, cne := rows.ColumnTypes()
 	if cne != nil {
 		cne = fmt.Errorf("QueryMap-->rows.ColumnTypes数据库返回列名错误:%w", cne)
-		FuncLogError(cne)
+		FuncLogError(ctx, cne)
 		return nil, cne
 	}
 	//反射获取 []driver.Value的值
@@ -973,7 +973,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(columnType, nil, finder)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("QueryMap-->conver.GetDriverValue异常:%w", errGetDriverValue)
-					FuncLogError(errGetDriverValue)
+					FuncLogError(ctx, errGetDriverValue)
 					return nil, errGetDriverValue
 				}
 				//返回值为nil,不做任何处理,使用原始逻辑
@@ -999,7 +999,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
 			scanerr = fmt.Errorf("QueryMap-->rows.Scan异常:%w", scanerr)
-			FuncLogError(scanerr)
+			FuncLogError(ctx, scanerr)
 			return nil, scanerr
 		}
 
@@ -1010,7 +1010,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 			rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue, finder)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("QueryMap-->conver.ConverDriverValue异常:%w", errConverDriverValue)
-				FuncLogError(errConverDriverValue)
+				FuncLogError(ctx, errConverDriverValue)
 				return nil, errConverDriverValue
 			}
 			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
@@ -1046,7 +1046,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		count, counterr := selectCount(ctx, finder)
 		if counterr != nil {
 			counterr = fmt.Errorf("QueryMap-->selectCount查询总条数错误:%w", counterr)
-			FuncLogError(counterr)
+			FuncLogError(ctx, counterr)
 			return resultMapList, counterr
 		}
 		page.setTotalCount(count)
@@ -1069,7 +1069,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->finder.GetSQL()错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 
@@ -1100,7 +1100,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	//sqlstr, err = reBindSQL(dbType, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 
@@ -1108,7 +1108,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 	}
 
 	return affected, errexec
@@ -1128,7 +1128,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("Insert-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
-		FuncLogError(columnAndValueErr)
+		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
@@ -1160,7 +1160,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(dbType, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("Insert-->wrapInsertSQL获取保存语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 
@@ -1188,7 +1188,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 		return affected, errexec
 	}
 
@@ -1214,7 +1214,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		//The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
 		if e != nil {
 			e = fmt.Errorf("Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", e)
-			FuncLogError(e)
+			FuncLogError(ctx, e)
 			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
@@ -1236,7 +1236,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 		if seterr != nil {
 			seterr = fmt.Errorf("Insert-->setFieldValueByColumnName反射赋值数据库返回的自增主键错误:%w", seterr)
-			FuncLogError(seterr)
+			FuncLogError(ctx, seterr)
 			return affected, seterr
 		}
 	}
@@ -1259,7 +1259,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("InsertSlice-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
-		FuncLogError(columnAndValueErr)
+		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
@@ -1286,14 +1286,14 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	sqlstr, _, err := wrapInsertSliceSQL(dbType, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 	}
 
 	return affected, errexec
@@ -1336,14 +1336,14 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("Delete-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
-		FuncLogError(pkNameErr)
+		FuncLogError(ctx, pkNameErr)
 		return affected, pkNameErr
 	}
 
 	value, e := structFieldValue(entity, pkName)
 	if e != nil {
 		e = fmt.Errorf("Delete-->structFieldValue获取主键值错误:%w", e)
-		FuncLogError(e)
+		FuncLogError(ctx, e)
 		return affected, e
 	}
 	//从contxt中获取数据库连接,可能为nil
@@ -1367,7 +1367,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	sqlstr, err := wrapDeleteSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("Delete-->wrapDeleteSQL获取SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1376,7 +1376,7 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("Delete-->wrapExecUpdateValuesAffected执行删除错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 	}
 
 	return affected, errexec
@@ -1416,7 +1416,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 
@@ -1443,7 +1443,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 		return affected, errexec
 	}
 
@@ -1465,7 +1465,7 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		}
 		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("InsertEntityMap数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
-			FuncLogError(e)
+			FuncLogError(ctx, e)
 			return affected, nil
 		}
 		//int64 转 int
@@ -1519,14 +1519,14 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	sqlstr, values, err := wrapUpdateEntityMapSQL(dbType, entity)
 	if err != nil {
 		err = fmt.Errorf("UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
-		FuncLogError(err)
+		FuncLogError(ctx, err)
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 	}
 
 	return affected, errexec
@@ -1581,7 +1581,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("updateStruct-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
-		FuncLogError(errexec)
+		FuncLogError(ctx, errexec)
 	}
 
 	return affected, errexec
@@ -1739,7 +1739,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 		sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.DBType, sqlstrptr)
 		if reUpdateFinderSQLErr != nil {
 			reUpdateFinderSQLErr = fmt.Errorf("wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
-			FuncLogError(reUpdateFinderSQLErr)
+			FuncLogError(ctx,reUpdateFinderSQLErr)
 			return nil, reUpdateFinderSQLErr
 		}
 	*/

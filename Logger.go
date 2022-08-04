@@ -1,6 +1,7 @@
 package zorm
 
 import (
+	"context"
 	"fmt"
 	"log"
 )
@@ -15,25 +16,25 @@ func init() {
 //Log Call Depth Record the log call level, used to locate the business layer code
 var LogCallDepth = 4
 
-//FuncLogError 记录error日志
+//FuncLogError 记录error日志.NewDBDao方法里的异常,ctx为nil,扩展时请注意
 //FuncLogError Record error log
-var FuncLogError func(err error) = defaultLogError
+var FuncLogError func(ctx context.Context, err error) = defaultLogError
 
 //FuncLogPanic  记录panic日志,默认使用"defaultLogError"实现
 //FuncLogPanic Record panic log, using "defaultLogError" by default
-var FuncLogPanic func(err error) = defaultLogPanic
+var FuncLogPanic func(ctx context.Context, err error) = defaultLogPanic
 
 //FuncPrintSQL 打印sql语句,参数和执行时间,小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 //FuncPrintSQL Print sql statement and parameters
-var FuncPrintSQL func(sqlstr string, args []interface{}, slowSQLMillis int64) = defaultPrintSQL
+var FuncPrintSQL func(ctx context.Context, sqlstr string, args []interface{}, slowSQLMillis int64) = defaultPrintSQL
 
-func defaultLogError(err error) {
+func defaultLogError(ctx context.Context, err error) {
 	log.Output(LogCallDepth, fmt.Sprintln(err))
 }
-func defaultLogPanic(err error) {
-	defaultLogError(err)
+func defaultLogPanic(ctx context.Context, err error) {
+	defaultLogError(ctx, err)
 }
-func defaultPrintSQL(sqlstr string, args []interface{}, slowSQLMillis int64) {
+func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, slowSQLMillis int64) {
 	if args != nil {
 		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",slowSQLMillis:", slowSQLMillis))
 	} else {
