@@ -59,8 +59,8 @@ func wrapPageSQL(dbType string, sqlstr string, page *Page) (string, error) {
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
-	insersql, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(dbType, typeOf, entity, columns, values)
+func wrapInsertSQL(ctx context.Context, dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
+	insersql, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, dbType, typeOf, entity, columns, values)
 	if err != nil {
 		return "", autoIncrement, pktype, err
 	}
@@ -72,7 +72,7 @@ func wrapInsertSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, co
 //数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 //Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertValueSQL(dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, string, int, string, error) {
+func wrapInsertValueSQL(ctx context.Context, dbType string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, string, int, string, error) {
 
 	//自增类型  0(不自增),1(普通自增),2(序列自增),3(触发器自增)
 	//Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment),3(Trigger increment)
@@ -163,7 +163,7 @@ func wrapInsertValueSQL(dbType string, typeOf *reflect.Type, entity IEntityStruc
 			} else if (pktype == "string") && reflect.ValueOf(pkValue).IsZero() { //主键是字符串类型,并且值为"",赋值id
 				//生成主键字符串
 				//Generate primary key string
-				id := FuncGenerateStringID()
+				id := FuncGenerateStringID(ctx)
 				(*values)[i] = id
 				//给对象主键赋值
 				//Assign a value to the primary key of the object
@@ -220,7 +220,7 @@ func wrapInsertValueSQL(dbType string, typeOf *reflect.Type, entity IEntityStruc
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
+func wrapInsertSliceSQL(ctx context.Context, dbType string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
 		return "", 0, errors.New("wrapInsertSliceSQL对象数组不能为空")
@@ -232,7 +232,7 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 
 	//先生成一条语句
 	//Generate a statement first
-	insertsql, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQL(dbType, typeOf, entity, columns, values)
+	insertsql, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQL(ctx, dbType, typeOf, entity, columns, values)
 	if firstErr != nil {
 		return "", autoIncrement, firstErr
 	}
@@ -301,7 +301,7 @@ func wrapInsertSliceSQL(dbType string, typeOf *reflect.Type, entityStructSlice [
 					//生成主键字符串
 					//The primary key is a string type, and the value is "", assigned the value'id'
 					//Generate primary key string
-					id := FuncGenerateStringID()
+					id := FuncGenerateStringID(ctx)
 					*values = append(*values, id)
 					//给对象主键赋值
 					//Assign a value to the primary key of the object
@@ -720,11 +720,11 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 //FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
-var FuncGenerateStringID func() string = generateStringID
+var FuncGenerateStringID func(ctx context.Context) string = generateStringID
 
 //generateStringID 生成主键字符串
 //generateStringID Generate primary key string
-func generateStringID() string {
+func generateStringID(ctx context.Context) string {
 
 	// 使用 crypto/rand 真随机9位数
 	randNum, randErr := rand.Int(rand.Reader, big.NewInt(1000000000))

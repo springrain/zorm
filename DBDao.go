@@ -1157,7 +1157,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//SQL语句
 	//SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(dbType, &typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dbType, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1283,7 +1283,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 	}
 
 	//SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(dbType, &typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, dbType, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
