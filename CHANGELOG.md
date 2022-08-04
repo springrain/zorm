@@ -1,6 +1,7 @@
 
 v1.5.9
- - hptx已合并@小口天的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)   
+ - hptx已合并@小口天的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)  
+ - 日志函数统一加上ctx,用于绑定span值 
  - 取消PrintSQL参数,使用SlowSQLMillis控制输出慢sql语句
  - 完善文档,注释
 
