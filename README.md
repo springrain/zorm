@@ -164,7 +164,7 @@ func init() {
 	//log.SetFlags(log.LstdFlags)
 	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
-	//自定义主键生成
+	//Custom primary key generation
 	//zorm.FuncGenerateStringID=funcmyId
 
 	//dbDaoConfig: Database configuration
@@ -184,23 +184,23 @@ func init() {
 		//ConnMaxLifetimeSecond: The connection survival time in seconds. The connection is destroyed and rebuilt after the default 600 (10 minutes). 
         //To prevent the database from actively disconnecting and causing dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
-		//PrintSQL: Print SQL. Func Print SQL will be used to record SQL
-		PrintSQL: true,
+		//SlowSQLMillis The time threshold of slow SQL, in milliseconds. Less than 0 disables log output; equal to 0 only outputs logs without calculating SQ execution time; greater than 0 calculates execution time and is greater than the specified value
+		//SlowSQLMillis: 0,
 		//DefaultTxOptions The default configuration of the transaction isolation level, the default is nil
 		//DefaultTxOptions: nil,
-		//如果是使用分布式事务,建议使用默认配置
+		//If you are using distributed transactions, it is recommended to use the default configuration
 		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-		//FuncGlobalTransaction 分布式事务的适配函数,返回IGlobalTransaction接口的实现
+		//FuncGlobalTransaction An adaptation function for distributed transactions, which returns the implementation of the IGlobalTransaction interface
 	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
-		//使用现有的数据库连接,优先级高于DSN
+		//SQLDB Use an existing database connection, which takes precedence over DSN
 	    //SQLDB : nil,
 
 		
 
-	    //全局禁用事务,默认false.为了处理某些数据库不支持事务,比如TDengine等
-	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
+	    //DisableTransaction Globally disable transactions, the default is false. In order to deal with some databases that do not support transactions, such as TDengine
+	    //Disabling transactions should have a driver forge transaction API, there should be no orm implementation, clickhouse's driver does this
 	    //DisableTransaction :false,
 	}
 
@@ -678,28 +678,28 @@ return globalTransaction, rootContext, nil
 }
 
 //Implement the zorm.IGlobalTransaction interface
-// BeginGTX 开启全局分布式事务
+// BeginGTX Begin global distributed transactions
 func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
-// CommitGTX 提交全局分布式事务
+// CommitGTX Commit globally distributed transaction
 func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
-// RollbackGTX 回滚全局分布式事务
+// RollbackGTX Rollback global distributed transactions
 func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	rootContext := ctx.(*gtxContext.RootContext)
-	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
+	//If it is the Participant role, modify it to the Launcher role, allowing branch transactions to submit global transactions.
 	if gtx.Role != tm.Launcher {
 		gtx.Role = tm.Launcher
 	}
 	return gtx.Rollback(rootContext)
 }
-// GetGTXID 获取全局分布式事务的XID
+// GetGTXID Get the XID of a global distributed transaction
 func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
 	rootContext := ctx.(*gtxContext.RootContext)
 	return rootContext.GetXID()

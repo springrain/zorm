@@ -40,10 +40,10 @@ type DataSourceConfig struct {
 	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
 	ConnMaxLifetimeSecond int
 
-	//事务隔离级别的默认配置,默认为nil
+	//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
-	//全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
+	//DisableTransaction 全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
 	//禁用事务应该有驱动伪造事务API,不应该由orm实现
 	DisableTransaction bool
 
@@ -59,7 +59,7 @@ type DataSourceConfig struct {
 	//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
 	//DisableAutoGlobalTransaction bool
 
-	//使用现有的数据库连接,优先级高于DSN
+	//SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 }
 

@@ -1,6 +1,7 @@
 
 v1.5.9
- - 使用SlowSQLMillis控制输出慢sql语句
+ - hptx已合并@小口天的pr, [https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm](在hptx代理模式下的zorm使用示例)  [https://github.com/CECTC/hptx-samples/tree/main/http_zorm](zorm托管hptx例子) 
+ - 取消PrintSQL参数,使用SlowSQLMillis控制输出慢sql语句
  - 完善文档,注释
 
 v1.5.8

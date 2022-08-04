@@ -216,10 +216,10 @@ func init() {
 		//业务必须调用 ctx,_=zorm.BindContextEnableGlobalTransaction(ctx) 开启全局分布事务
 	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
 
-	    //使用现有的数据库连接,优先级高于DSN
+	    //SQLDB 使用现有的数据库连接,优先级高于DSN
 	    //SQLDB : nil,
 
-	    //全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine
+	    //DisableTransaction 全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine
 	    //禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
 	    //DisableTransaction :false,
 	}
@@ -667,6 +667,9 @@ func main() {
 ```
 
 #### hptx proxy模式 
+
+hptx已合并@小口天的pr, [https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm](在hptx代理模式下的zorm使用示例)  
+
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
 //DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
@@ -731,6 +734,8 @@ func main() {
 #### seata/hptx 事务托管模式
 
 ```seata-golang``` 和 ```hptx```实现方式一致,只是实现包不同
+
+hptx已合并@小口天的pr, [https://github.com/CECTC/hptx-samples/tree/main/http_zorm](zorm事务托管hptx例子)   
 
 ```golang
 
