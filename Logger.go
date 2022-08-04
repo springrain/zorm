@@ -26,7 +26,7 @@ var FuncLogPanic func(ctx context.Context, err error) = defaultLogPanic
 
 //FuncPrintSQL 打印sql语句,参数和执行时间,小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 //FuncPrintSQL Print sql statement and parameters
-var FuncPrintSQL func(ctx context.Context, sqlstr string, args []interface{}, slowSQLMillis int64) = defaultPrintSQL
+var FuncPrintSQL func(ctx context.Context, sqlstr string, args []interface{}, execSQLMillis int64) = defaultPrintSQL
 
 func defaultLogError(ctx context.Context, err error) {
 	log.Output(LogCallDepth, fmt.Sprintln(err))
@@ -34,11 +34,11 @@ func defaultLogError(ctx context.Context, err error) {
 func defaultLogPanic(ctx context.Context, err error) {
 	defaultLogError(ctx, err)
 }
-func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, slowSQLMillis int64) {
+func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, execSQLMillis int64) {
 	if args != nil {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",slowSQLMillis:", slowSQLMillis))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",execSQLMillis:", execSQLMillis))
 	} else {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",slowSQLMillis:", slowSQLMillis))
+		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",execSQLMillis:", execSQLMillis))
 	}
 
 }
