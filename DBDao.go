@@ -249,7 +249,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 		}
 		if globalTxOpen { //如果是分布事务开启方,启动分布式事务
-			globalErr = globalTransaction.BeginGTX(globalRootContext)
+			globalErr = globalTransaction.BeginGTX(ctx, globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction 分布式事务开启失败:%w ", globalErr)
 				FuncLogError(ctx, globalErr)
@@ -258,7 +258,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
 			//seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
-			globalXID := globalTransaction.GetGTXID(globalRootContext)
+			globalXID := globalTransaction.GetGTXID(ctx, globalRootContext)
 			if len(globalXID) < 1 {
 				globalErr = errors.New("global:globalTransaction.Begin无异常开启后,获取的XID为空")
 				FuncLogError(ctx, globalErr)
@@ -308,7 +308,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			}
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.RollbackGTX(globalRootContext)
+				globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:recover内globalTransaction事务回滚失败:%w", globalErr)
 					FuncLogError(ctx, globalErr)
@@ -339,7 +339,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		}
 		//任意一个分支事务回滚,分布式事务就整体回滚
 		if globalTransaction != nil {
-			globalErr = globalTransaction.RollbackGTX(globalRootContext)
+			globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->rollback globalTransaction事务回滚失败:%w", globalErr)
 				FuncLogError(ctx, globalErr)
@@ -353,7 +353,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		commitError := dbConnection.commit()
 		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
 		if commitError == nil && globalTxOpen {
-			globalErr = globalTransaction.CommitGTX(globalRootContext)
+			globalErr = globalTransaction.CommitGTX(ctx, globalRootContext)
 			if globalErr != nil {
 				globalErr = fmt.Errorf("global:Transaction-->commit globalTransaction 事务提交失败:%w", globalErr)
 				FuncLogError(ctx, globalErr)
@@ -365,7 +365,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.RollbackGTX(globalRootContext)
+				globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
 				if globalErr != nil {
 					globalErr = fmt.Errorf("global:Transaction-->commit失败,然后回滚globalTransaction事务也失败:%w", globalErr)
 					FuncLogError(ctx, globalErr)
@@ -475,7 +475,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
 	if len(columnTypes) == 1 {
 		//类型转换的接口实现
-		var converFunc CustomDriverValueConver
+		var converFunc ICustomDriverValueConver
 		//是否有需要的类型转换
 		var converOK bool = false
 		//类型转换的临时值
@@ -704,7 +704,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 				continue
 			}
 			//类型转换的接口实现
-			var converFunc CustomDriverValueConver
+			var converFunc ICustomDriverValueConver
 			//是否需要类型转换
 			var converOK bool = false
 
@@ -955,7 +955,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		for i, columnType := range columnTypes {
 
 			//类型转换的接口实现
-			var converFunc CustomDriverValueConver
+			var converFunc ICustomDriverValueConver
 			//是否需要类型转换
 			var converOK bool = false
 			//类型转换的临时值

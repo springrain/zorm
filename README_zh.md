@@ -33,7 +33,7 @@ go get gitee.com/chunanyong/zorm
 ### 达梦(dm)  
 配置zorm.DataSourceConfig的 DriverName:dm ,DBType:dm  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
-达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.CustomDriverValueConver接口,自定义扩展处理  
+达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
 
 ### 人大金仓(kingbase)  
 配置zorm.DataSourceConfig的 DriverName:kingbase ,DBType:kingbase    
@@ -563,7 +563,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
 
 //---------------------------------//
 
-//实现CustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+//实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
 //GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
 //如果无法获取到structFieldType,例如Map查询,会传入nil
@@ -802,20 +802,20 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 
 //实现zorm.IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
 // BeginGTX 开启全局分布式事务
-func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // CommitGTX 提交全局分布式事务
-func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // RollbackGTX 回滚全局分布式事务
-func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
 	if gtx.Role != tm.Launcher {
 		gtx.Role = tm.Launcher
@@ -823,8 +823,8 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }
 

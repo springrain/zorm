@@ -550,7 +550,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
 
 //---------------------------------//
 
-//To implement the interface of CustomDriverValueConver,extend the custom type, such as text type of dm database, the mapped type is dm.DmClob type , cannot use string type to receive directly.
+//To implement the interface of ICustomDriverValueConver,extend the custom type, such as text type of dm database, the mapped type is dm.DmClob type , cannot use string type to receive directly.
 type CustomDMText struct{}
 //GetDriverValue according to the database column type and entity class field type, return driver.Value Instance. If the return value is nil, no type replacement is performed and the default method is used.
 func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType *reflect.Type, finder *zorm.Finder) (driver.Value, error) {
@@ -677,20 +677,20 @@ return globalTransaction, rootContext, nil
 
 //Implement the zorm.IGlobalTransaction interface
 // BeginGTX Begin global distributed transactions
-func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // CommitGTX Commit globally distributed transaction
-func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // RollbackGTX Rollback global distributed transactions
-func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	//If it is the Participant role, modify it to the Launcher role, allowing branch transactions to submit global transactions.
 	if gtx.Role != tm.Launcher {
 		gtx.Role = tm.Launcher
@@ -698,8 +698,8 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID Get the XID of a global distributed transaction
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }
 

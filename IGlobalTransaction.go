@@ -67,20 +67,20 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 
 //实现zorm.IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
 // BeginGTX 开启全局分布式事务
-func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // CommitGTX 提交全局分布式事务
-func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // RollbackGTX 回滚全局分布式事务
-func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context.Context) error {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	//如果是Participant角色,修改为Launcher角色,允许分支事务提交全局事务.
 	if gtx.Role != tm.Launcher {
 		gtx.Role = tm.Launcher
@@ -88,8 +88,8 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context) error {
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
-	rootContext := ctx.(*gtxContext.RootContext)
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return rootContext.GetXID()
 }
 //................//
@@ -98,16 +98,16 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context) string {
 // IGlobalTransaction 托管全局分布式事务接口,seata和hptx目前实现代码一致,只是引用的实现包不同
 type IGlobalTransaction interface {
 	// BeginGTX 开启全局分布式事务
-	BeginGTX(ctx context.Context) error
+	BeginGTX(ctx context.Context, globalRootContext context.Context) error
 
 	// CommitGTX 提交全局分布式事务.不能命名为 Commit,不然就和gtx的Commit一致了,就递归调用自己了.......
-	CommitGTX(ctx context.Context) error
+	CommitGTX(ctx context.Context, globalRootContext context.Context) error
 
 	// RollbackGTX 回滚全局分布式事务
-	RollbackGTX(ctx context.Context) error
+	RollbackGTX(ctx context.Context, globalRootContext context.Context) error
 
 	// GetGTXID 获取全局分布式事务的XID
-	GetGTXID(ctx context.Context) string
+	GetGTXID(ctx context.Context, globalRootContext context.Context) string
 
 	//重新包装为 seata/hptx 的context.RootContext
 	//context.RootContext 如果后续使用了 context.WithValue,类型就是context.valueCtx 就会造成无法再类型断言为 context.RootContext
