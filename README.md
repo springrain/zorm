@@ -110,7 +110,7 @@ func newDemoStruct() demoStruct {
 	demo := demoStruct{
 		// If Id=="",When saving, zorm will call zorm.Func Generate String ID(),
         // the default UUID string, or you can define your own implementation,E.g: zorm.FuncGenerateStringID=funcmyId
-		Id:         zorm.FuncGenerateStringID(),
+		Id:         zorm.FuncGenerateStringID(ctx),
 		UserName:   "defaultUserName",
 		Password:   "defaultPassword",
 		Active:     1,
@@ -279,7 +279,7 @@ func TestInsertEntityMap(t *testing.T) {
 
 		//Set Set the field value of the database
 		//If the primary key is auto-increment or sequence, don't entity Map.Set the value of the primary key.
-		entityMap.Set("id", zorm.FuncGenerateStringID())
+		entityMap.Set("id", zorm.FuncGenerateStringID(ctx))
 		entityMap.Set("userName", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
 		entityMap.Set("createTime", time.Now())

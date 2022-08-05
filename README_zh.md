@@ -1,9 +1,9 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-Go轻量级ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南大通用(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库. 
+Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库. 
 
-源码地址:https://gitee.com/chunanyong/zorm      
-官网:[https://zorm.cn](https://zorm.cn)    
+源码地址: https://gitee.com/chunanyong/zorm      
+官网: [https://zorm.cn](https://zorm.cn)    
 测试用例: https://gitee.com/wuxiangege/zorm-examples/    
 
 交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨  
@@ -44,7 +44,7 @@ go get gitee.com/chunanyong/zorm
 ### 神舟通用(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
 
-### 南大通用(gbase)
+### 南通(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
 暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
 
@@ -132,8 +132,8 @@ func (entity *demoStruct) GetPKColumnName() string {
 //newDemoStruct 创建一个默认对象
 func newDemoStruct() demoStruct {
 	demo := demoStruct{
-		//如果Id=="",保存时zorm会调用zorm.FuncGenerateStringID(),默认时间戳+随机数,也可以自己定义实现方式,例如 zorm.FuncGenerateStringID=funcmyId
-		Id:         zorm.FuncGenerateStringID(),
+		//如果Id=="",保存时zorm会调用zorm.FuncGenerateStringID(ctx),默认时间戳+随机数,也可以自己定义实现方式,例如 zorm.FuncGenerateStringID=funcmyId
+		Id:         zorm.FuncGenerateStringID(ctx),
 		UserName:   "defaultUserName",
 		Password:   "defaultPassword",
 		Active:     1,
@@ -299,7 +299,7 @@ func TestInsertEntityMap(t *testing.T) {
 
 		//Set 设置数据库的字段值
 		//如果主键是自增或者序列,不要entityMap.Set主键的值
-		entityMap.Set("id", zorm.FuncGenerateStringID())
+		entityMap.Set("id", zorm.FuncGenerateStringID(ctx))
 		entityMap.Set("userName", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
 		entityMap.Set("createTime", time.Now())
