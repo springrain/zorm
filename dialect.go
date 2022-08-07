@@ -679,7 +679,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	//如果是字节数组
 	//If it is a byte array
 	value, ok := v.([]byte)
-	if !ok { //转化失败,不是字节数组,例如:string,直接返回值
+	if !ok { //转化失败,不是字节数组,例如:string,直接返回值.日期格式一般数据库驱动都不解析为[]byte
 		return v
 	}
 	if len(value) < 1 { //值为空,为nil
@@ -689,33 +689,44 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	//获取数据库类型,自己对应golang的基础类型值,不处理sql.Nullxxx类型
 	//Get the database type, corresponding to the basic type value of golang, and do not process the sql.Nullxxx type.
 	databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
+	var val interface{}
+	var err error
 	switch databaseTypeName {
 	case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG":
-		return typeConvertString(v)
+		val, err = typeConvertString(v)
 	case "INT", "INT4", "INTEGER", "SERIAL", "TINYINT", "BIT", "SMALLINT", "SMALLSERIAL", "INT2":
-		return typeConvertInt(v)
+		val, err = typeConvertInt(v)
 	case "BIGINT", "BIGSERIAL", "INT8":
-		return typeConvertInt64(v)
+		val, err = typeConvertInt64(v)
 	case "FLOAT", "REAL":
-		return typeConvertFloat32(v)
+		val, err = typeConvertFloat32(v)
 	case "DOUBLE":
-		return typeConvertFloat64(v)
+		val, err = typeConvertFloat64(v)
 	case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
-		return typeConvertDecimal(v)
-	case "DATE":
-		return typeConvertTime(v, "2006-01-02", time.Local)
-	case "TIME":
-		return typeConvertTime(v, "15:04:05", time.Local)
-	case "DATETIME":
-		return typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
-	case "TIMESTAMP":
-		return typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
+		val, err = typeConvertDecimal(v)
 	case "BOOLEAN", "BOOL":
-		return typeConvertBool(v)
-	}
+		val, err = typeConvertBool(v)
+		/*
+			case "DATE":
+				val, err = typeConvertTime(v, "2006-01-02", time.Local)
+			case "TIME":
+				val, err = typeConvertTime(v, "15:04:05", time.Local)
+			case "DATETIME":
+				val, err = typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
+			case "TIMESTAMP":
+				val, err = typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
+		*/
+
 	//其他类型以后再写.....
 	//Other types will be written later...
-	return v
+	default: //其他情况返回原值
+		return v
+	}
+	if err != nil { //如果格式转换失败,返回原值
+		return v
+	}
+	//返回转换后的值
+	return val
 }
 
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展

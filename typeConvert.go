@@ -3,182 +3,191 @@ package zorm
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"gitee.com/chunanyong/zorm/decimal"
 )
 
-func typeConvertFloat32(i interface{}) float32 {
+func typeConvertFloat32(i interface{}) (float32, error) {
 	if i == nil {
-		return 0
+		return 0, nil
 	}
 	if v, ok := i.(float32); ok {
-		return v
+		return v, nil
 	}
-	v, _ := strconv.ParseFloat(typeConvertString(i), 32)
-	return float32(v)
+	v, err := typeConvertString(i)
+	if err != nil {
+		return 0, err
+	}
+	vf, err := strconv.ParseFloat(v, 32)
+	return float32(vf), err
 }
 
-func typeConvertFloat64(i interface{}) float64 {
+func typeConvertFloat64(i interface{}) (float64, error) {
 	if i == nil {
-		return 0
+		return 0, nil
 	}
 	if v, ok := i.(float64); ok {
-		return v
+		return v, nil
 	}
-	v, _ := strconv.ParseFloat(typeConvertString(i), 64)
-	return v
+	v, err := typeConvertString(i)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseFloat(v, 64)
 }
 
-func typeConvertDecimal(i interface{}) decimal.Decimal {
+func typeConvertDecimal(i interface{}) (decimal.Decimal, error) {
 	if i == nil {
-		return decimal.Zero
+		return decimal.Zero, nil
 	}
 	if v, ok := i.(decimal.Decimal); ok {
-		return v
+		return v, nil
 	}
-	v, _ := decimal.NewFromString(typeConvertString(i))
-	return v
+	v, err := typeConvertString(i)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	return decimal.NewFromString(v)
 }
 
 func typeConvertInt64toInt(from int64) (int, error) {
 	//int64 转 int
 	strInt64 := strconv.FormatInt(from, 10)
-	to, err := strconv.Atoi(strInt64)
-	if err != nil {
-		return -1, err
-	}
-	return to, err
+	return strconv.Atoi(strInt64)
 }
 
-func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location) time.Time {
-	s := typeConvertString(i)
-	t, _ := typeConvertStrToTime(s, format, TZLocation...)
-	return t
-}
-
-func typeConvertStrToTime(str string, format string, TZLocation ...*time.Location) (time.Time, error) {
-	if len(TZLocation) > 0 {
-		t, err := time.ParseInLocation(format, str, TZLocation[0])
-		if err == nil {
-			return t, nil
-		}
-		return time.Time{}, err
-
-	}
-	t, err := time.ParseInLocation(format, str, time.Local)
-	if err == nil {
-		return t, nil
-	}
-	return time.Time{}, err
-
-}
-
-func typeConvertInt64(i interface{}) int64 {
+func typeConvertInt64(i interface{}) (int64, error) {
 	if i == nil {
-		return 0
+		return 0, nil
 	}
 	if v, ok := i.(int64); ok {
-		return v
+		return v, nil
 	}
-	return int64(typeConvertInt(i))
+	v, err := typeConvertInt(i)
+	if err != nil {
+		return 0, err
+	}
+	return int64(v), err
 }
 
-func typeConvertString(i interface{}) string {
+func typeConvertString(i interface{}) (string, error) {
 	if i == nil {
-		return ""
+		return "", nil
 	}
 	switch value := i.(type) {
 	case int:
-		return strconv.Itoa(value)
+		return strconv.Itoa(value), nil
 	case int8:
-		return strconv.Itoa(int(value))
+		return strconv.Itoa(int(value)), nil
 	case int16:
-		return strconv.Itoa(int(value))
+		return strconv.Itoa(int(value)), nil
 	case int32:
-		return strconv.Itoa(int(value))
+		return strconv.Itoa(int(value)), nil
 	case int64:
-		return strconv.Itoa(int(value))
+		return strconv.Itoa(int(value)), nil
 	case uint:
-		return strconv.FormatUint(uint64(value), 10)
+		return strconv.FormatUint(uint64(value), 10), nil
 	case uint8:
-		return strconv.FormatUint(uint64(value), 10)
+		return strconv.FormatUint(uint64(value), 10), nil
 	case uint16:
-		return strconv.FormatUint(uint64(value), 10)
+		return strconv.FormatUint(uint64(value), 10), nil
 	case uint32:
-		return strconv.FormatUint(uint64(value), 10)
+		return strconv.FormatUint(uint64(value), 10), nil
 	case uint64:
-		return strconv.FormatUint(uint64(value), 10)
+		return strconv.FormatUint(uint64(value), 10), nil
 	case float32:
-		return strconv.FormatFloat(float64(value), 'f', -1, 32)
+		return strconv.FormatFloat(float64(value), 'f', -1, 32), nil
 	case float64:
-		return strconv.FormatFloat(value, 'f', -1, 64)
+		return strconv.FormatFloat(value, 'f', -1, 64), nil
 	case bool:
-		return strconv.FormatBool(value)
+		return strconv.FormatBool(value), nil
 	case string:
-		return value
+		return value, nil
 	case []byte:
-		return string(value)
+		return string(value), nil
 	default:
-		return fmt.Sprintf("%v", value)
+		return fmt.Sprintf("%v", value), nil
 	}
 }
 
 //false: "", 0, false, off
-func typeConvertBool(i interface{}) bool {
+func typeConvertBool(i interface{}) (bool, error) {
 	if i == nil {
-		return false
+		return false, nil
 	}
 	if v, ok := i.(bool); ok {
-		return v
+		return v, nil
 	}
-	if s := typeConvertString(i); s != "" && s != "0" && s != "false" && s != "off" {
-		return true
+	s, err := typeConvertString(i)
+	if err != nil {
+		return false, err
 	}
-	return false
+	if s != "" && s != "0" && s != "false" && s != "off" {
+		return true, err
+	}
+	return false, err
 }
 
-func typeConvertInt(i interface{}) int {
+func typeConvertInt(i interface{}) (int, error) {
 	if i == nil {
-		return 0
+		return 0, nil
 	}
 	switch value := i.(type) {
 	case int:
-		return value
+		return value, nil
 	case int8:
-		return int(value)
+		return int(value), nil
 	case int16:
-		return int(value)
+		return int(value), nil
 	case int32:
-		return int(value)
+		return int(value), nil
 	case int64:
-		return int(value)
+		return int(value), nil
 	case uint:
-		return int(value)
+		return int(value), nil
 	case uint8:
-		return int(value)
+		return int(value), nil
 	case uint16:
-		return int(value)
+		return int(value), nil
 	case uint32:
-		return int(value)
+		return int(value), nil
 	case uint64:
-		return int(value)
+		return int(value), nil
 	case float32:
-		return int(value)
+		return int(value), nil
 	case float64:
-		return int(value)
+		return int(value), nil
 	case bool:
 		if value {
-			return 1
+			return 1, nil
 		}
-		return 0
+		return 0, nil
 	default:
-		v, _ := strconv.Atoi(typeConvertString(value))
-		return v
+		v, err := typeConvertString(value)
+		if err != nil {
+			return 0, err
+		}
+		return strconv.Atoi(v)
 	}
 }
 
 /*
+
+func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location) (time.Time, error) {
+	s, err := typeConvertString(i)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return typeConvertStrToTime(s, format, TZLocation...)
+}
+
+func typeConvertStrToTime(str string, format string, TZLocation ...*time.Location) (time.Time, error) {
+	if len(TZLocation) > 0 {
+		return time.ParseInLocation(format, str, TZLocation[0])
+	}
+	return time.ParseInLocation(format, str, time.Local)
+}
+
 func encodeString(s string) []byte {
 	return []byte(s)
 }

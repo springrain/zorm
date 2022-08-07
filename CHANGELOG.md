@@ -1,4 +1,7 @@
-
+v1.6.0
+ - 曾经偷的懒还是还上吧,类型转换加上err返回值.去掉无用的日期格式转换,驱动获取的并不是[]byte
+ - 完善文档,注释
+  
 v1.5.9
  - hptx已合并@小口天的pr, [hptx代理模式zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)   和 [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)  
  - 增加IsInTransaction(ctx)函数,检查是否在事务内
