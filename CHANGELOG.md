@@ -1,5 +1,8 @@
 v1.6.0
+ - FuncReadWriteStrategy和GetGTXID函数增加error返回值
+ - 修改日志格式,统一加上 -> 符号
  - 曾经偷的懒还是还上吧,类型转换加上err返回值.去掉无用的日期格式转换,驱动获取的并不是[]byte
+ - 修复Finder.Append和GetSQL为nil的bug
  - 完善文档,注释
   
 v1.5.9

@@ -88,9 +88,9 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootCon
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) (string,error) {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
-	return rootContext.GetXID()
+	return rootContext.GetXID(), nil
 }
 //................//
 **/
@@ -107,7 +107,7 @@ type IGlobalTransaction interface {
 	RollbackGTX(ctx context.Context, globalRootContext context.Context) error
 
 	// GetGTXID 获取全局分布式事务的XID
-	GetGTXID(ctx context.Context, globalRootContext context.Context) string
+	GetGTXID(ctx context.Context, globalRootContext context.Context) (string, error)
 
 	//重新包装为 seata/hptx 的context.RootContext
 	//context.RootContext 如果后续使用了 context.WithValue,类型就是context.valueCtx 就会造成无法再类型断言为 context.RootContext

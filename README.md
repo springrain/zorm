@@ -543,9 +543,9 @@ func TestOther(t *testing.T) {
 }
 
 //Strategies for the separation of read and write of a single database rwType=0 read,rwType=1 write
-func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
+func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 	//According to your own business scenario, return the required read and write dao, and call this function every time you need a database connection
-	return dbDao
+	return dbDao,nil
 }
 
 //---------------------------------//
@@ -698,9 +698,9 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootCon
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID Get the XID of a global distributed transaction
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) (string,error) {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
-	return rootContext.GetXID()
+	return rootContext.GetXID(), nil
 }
 
 //................//

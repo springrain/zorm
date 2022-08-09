@@ -556,9 +556,9 @@ func TestOther(t *testing.T) {
 }
 
 //单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
-func myReadWriteStrategy(ctx context.Context, rwType int) *zorm.DBDao {
+func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao,error) {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
-	return dbDao
+	return dbDao, nil
 }
 
 //---------------------------------//
@@ -823,9 +823,9 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootCon
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID 获取全局分布式事务的XID
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) string {
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) (string,error) {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
-	return rootContext.GetXID()
+	return rootContext.GetXID(), nil
 }
 
 //................//

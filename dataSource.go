@@ -38,7 +38,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 		}
 		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
 		if errSQLOpen != nil {
-			errSQLOpen = fmt.Errorf("newDataSource-->open数据库打开失败:%w", errSQLOpen)
+			errSQLOpen = fmt.Errorf("->newDataSource-->open数据库打开失败:%w", errSQLOpen)
 			FuncLogError(nil, errSQLOpen)
 			return nil, errSQLOpen
 		}
@@ -70,7 +70,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
 	//验证连接
 	if pingerr := db.Ping(); pingerr != nil {
-		pingerr = fmt.Errorf("newDataSource-->ping数据库失败:%w", pingerr)
+		pingerr = fmt.Errorf("->newDataSource-->ping数据库失败:%w", pingerr)
 		FuncLogError(nil, pingerr)
 		db.Close()
 		return nil, pingerr
@@ -118,7 +118,7 @@ func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 
 		tx, err := dbConnection.db.BeginTx(ctx, txOptions)
 		if err != nil {
-			err = fmt.Errorf("beginTx事务开启失败:%w", err)
+			err = fmt.Errorf("->beginTx事务开启失败:%w", err)
 			return err
 		}
 		dbConnection.tx = tx
@@ -136,7 +136,7 @@ func (dbConnection *dataBaseConnection) rollback() error {
 	if dbConnection.tx != nil {
 		err := dbConnection.tx.Rollback()
 		if err != nil {
-			err = fmt.Errorf("rollback事务回滚失败:%w", err)
+			err = fmt.Errorf("->rollback事务回滚失败:%w", err)
 			return err
 		}
 		dbConnection.tx = nil
@@ -155,7 +155,7 @@ func (dbConnection *dataBaseConnection) commit() error {
 	}
 	err := dbConnection.tx.Commit()
 	if err != nil {
-		err = fmt.Errorf("commit事务提交失败:%w", err)
+		err = fmt.Errorf("->commit事务提交失败:%w", err)
 		return err
 	}
 	dbConnection.tx = nil
