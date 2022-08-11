@@ -53,11 +53,14 @@ type DataSourceConfig struct {
 	//DSN dataSourceName 连接字符串
 	//DSN DataSourceName Database connection string
 	DSN string
-	//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
-	//Database diver name:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to DBType,A database may have multiple drivers
+	//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
+	//DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
 	DriverName string
-	//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
-	//Database Type:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName,A database may have multiple drivers
+	//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
+	//Dialect:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
+	Dialect string
+	//Deprecated
+	//DBType is about to be deprecated, please use the Dialect property
 	DBType string
 	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 	SlowSQLMillis int
@@ -68,7 +71,7 @@ type DataSourceConfig struct {
 	//MaxIdleConns The maximum number of free connections to the database default 50
 	MaxIdleConns int
 	//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
-	//ConnMaxLifetimeSecond: (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
+	//ConnMaxLifetimeSecond (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
 	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
 	ConnMaxLifetimeSecond int
 
@@ -117,12 +120,12 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 		return nil, err
 	}
 	dbdao, err := FuncReadWriteStrategy(nil, 1)
-	if err != nil {
-		return dbdao, err
-	}
 	if dbdao == nil {
 		defaultDao = &DBDao{config, dataSource}
 		return defaultDao, nil
+	}
+	if err != nil {
+		return dbdao, err
 	}
 	return &DBDao{config, dataSource}, nil
 }
@@ -459,7 +462,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		return has, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
@@ -467,14 +470,14 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		if err != nil {
 			return has, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//获取到sql语句
 	//Get the sql statement
-	sqlstr, err := wrapQuerySQL(dbType, finder, nil)
+	sqlstr, err := wrapQuerySQL(dialect, finder, nil)
 	if err != nil {
 		err = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -690,18 +693,18 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		return errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbdao, err := FuncReadWriteStrategy(ctx, 0)
 		if err != nil {
 			return err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
-	sqlstr, err := wrapQuerySQL(dbType, finder, page)
+	sqlstr, err := wrapQuerySQL(dialect, finder, page)
 	if err != nil {
 		err = fmt.Errorf("->Query-->wrapQuerySQL获取查询SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -941,7 +944,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		return nil, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//db Connection is nil, use default Dao
 	if dbConnection == nil {
@@ -949,12 +952,12 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 		if err != nil {
 			return nil, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
-	sqlstr, err := wrapQuerySQL(dbType, finder, page)
+	sqlstr, err := wrapQuerySQL(dialect, finder, page)
 	if err != nil {
 		err = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1149,18 +1152,18 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 		return affected, errDBConnection
 	}
 
-	//var dbType string = ""
+	//var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	/*
 		if dbConnection == nil {
-			dbType = FuncReadWriteStrategy(ctx,1).config.DBType
+			dialect = FuncReadWriteStrategy(ctx,1).config.Dialect
 		} else {
-			dbType = dbConnection.config.DBType
+			dialect = dbConnection.config.Dialect
 		}
 	*/
 
-	//sqlstr, err = reBindSQL(dbType, sqlstr)
+	//sqlstr, err = reBindSQL(dialect, sqlstr)
 	if err != nil {
 		err = fmt.Errorf("->UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1209,7 +1212,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
@@ -1217,14 +1220,14 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//SQL语句
 	//SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dbType, &typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dialect, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1237,11 +1240,11 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		if dbType == "postgresql" || dbType == "kingbase" {
+		if dialect == "postgresql" || dialect == "kingbase" {
 			var p int64 = 0
 			lastInsertID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
-		} else if dbType == "oracle" || dbType == "shentong" {
+		} else if dialect == "oracle" || dialect == "shentong" {
 			var p int64 = 0
 			zormSQLOutReturningID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
@@ -1342,19 +1345,19 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbdao, err := FuncReadWriteStrategy(ctx, 1)
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, dbType, &typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1427,19 +1430,19 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbdao, err := FuncReadWriteStrategy(ctx, 1)
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//SQL语句
-	sqlstr, err := wrapDeleteSQL(dbType, entity)
+	sqlstr, err := wrapDeleteSQL(dialect, entity)
 	if err != nil {
 		err = fmt.Errorf("->Delete-->wrapDeleteSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1480,19 +1483,19 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	if dbConnection == nil { //dbConnection为nil,使用defaultDao
 		dbdao, err := FuncReadWriteStrategy(ctx, 1)
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//SQL语句
-	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(dbType, entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(dialect, entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1504,11 +1507,11 @@ func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
-		if dbType == "postgresql" || dbType == "kingbase" {
+		if dialect == "postgresql" || dialect == "kingbase" {
 			var p int64 = 0
 			lastInsertID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
-		} else if dbType == "oracle" || dbType == "shentong" {
+		} else if dialect == "oracle" || dialect == "shentong" {
 			var p int64 = 0
 			zormSQLOutReturningID = &p
 			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
@@ -1584,7 +1587,7 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
@@ -1592,14 +1595,14 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	//SQL语句
 	//SQL statement
-	sqlstr, values, err := wrapUpdateEntityMapSQL(dbType, entity)
+	sqlstr, values, err := wrapUpdateEntityMapSQL(dialect, entity)
 	if err != nil {
 		err = fmt.Errorf("->UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1651,7 +1654,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 		return affected, errDBConnection
 	}
 
-	var dbType string = ""
+	var dialect string = ""
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
@@ -1659,9 +1662,9 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 		if err != nil {
 			return affected, err
 		}
-		dbType = dbdao.config.DBType
+		dialect = dbdao.config.Dialect
 	} else {
-		dbType = dbConnection.config.DBType
+		dialect = dbConnection.config.Dialect
 	}
 
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
@@ -1671,7 +1674,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 
 	//SQL语句
 	//SQL statement
-	sqlstr, err := wrapUpdateSQL(dbType, &typeOf, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateSQL(dialect, &typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return affected, err
 	}
@@ -1840,7 +1843,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 
 	// 数据库语法兼容处理
 	/*
-		sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.DBType, sqlstrptr)
+		sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.Dialect, sqlstrptr)
 		if reUpdateFinderSQLErr != nil {
 			reUpdateFinderSQLErr = fmt.Errorf("->wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
 			FuncLogError(ctx,reUpdateFinderSQLErr)

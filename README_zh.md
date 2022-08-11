@@ -31,26 +31,26 @@ go get gitee.com/chunanyong/zorm
 
 ## 支持国产数据库  
 ### 达梦(dm)  
-配置zorm.DataSourceConfig的 DriverName:dm ,DBType:dm  
+配置zorm.DataSourceConfig的 DriverName:dm ,Dialect:dm  
 达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
 
 ### 人大金仓(kingbase)  
-配置zorm.DataSourceConfig的 DriverName:kingbase ,DBType:kingbase    
+配置zorm.DataSourceConfig的 DriverName:kingbase ,Dialect:kingbase    
 金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神通(shentong)  
-建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,DBType:shentong  
+建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,Dialect:shentong  
 
 ### 南通(gbase)
-~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,DBType:gbase~~  
-暂时先使用odbc驱动,DriverName:odbc ,DBType:gbase
+~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,Dialect:gbase~~  
+暂时先使用odbc驱动,DriverName:odbc ,Dialect:gbase
 
 ### TDengine  
 因TDengine驱动不支持事务,需要设置DisableTransaction=true
-配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, DBType:tdengine  
+配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, Dialect:tdengine  
 
 测试用例: https://gitee.com/wuxiangege/zorm-examples/blob/master/zorm_example_td_test.go  
 
@@ -195,10 +195,10 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和DBType对应,处理数据库有多个驱动
+		//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
 		DriverName: "mysql",
-		//数据库类型(方言判断依据):mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应,处理数据库有多个驱动
-		DBType: "mysql",
+		//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
+		Dialect: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
 		//MaxIdleConns 数据库最大空闲连接数 默认50

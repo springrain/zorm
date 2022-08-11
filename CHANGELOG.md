@@ -1,4 +1,5 @@
 v1.6.0
+ - DBType即将废弃,更名为Dialect,方便gorm和xorm迁移
  - FuncReadWriteStrategy和GetGTXID函数增加error返回值
  - 修改日志格式,统一加上 -> 符号
  - 曾经偷的懒还是还上吧,类型转换加上err返回值.去掉无用的日期格式转换,驱动获取的并不是[]byte

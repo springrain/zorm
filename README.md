@@ -29,11 +29,11 @@ Pay attention to modify ora_input_emptystr_isnull = false in the data/kingbase.c
 If this value is set to true, the database will set the value to null, which conflicts with the field property not null. Therefore, an error is reported.
 
 shentong(Shenzhou General Data)Instructions:
-It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,DBType:shentong  
+It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,Dialect:shentong  
 
 gbase(GENERAL DATA)
-~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,DBType:gbase~~  
-Use odbc driver for the time being,DriverName:odbc ,DBType:gbase  
+~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,Dialect:gbase~~  
+Use odbc driver for the time being,DriverName:odbc ,Dialect:gbase  
 
 ## Database scripts and entity classes  
 Generate entity classes or write manually, it is recommended to use a code generator ： 
@@ -172,10 +172,13 @@ func init() {
 		// DSN: Database connection string
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3,clickhouse, 
-        // dm, kingbase,taosSql|taosRestful and DBType correspond, there are multiple drivers for processing databases
+        // dm, kingbase,taosSql|taosRestful and Dialect correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
-		// Database type (based on dialect judgment): mysql, postgresql,oracle, mssql, sqlite, clickhouse,
+		// Dialect: mysql, postgresql,oracle, mssql, sqlite, clickhouse,
         // dm, kingbase,tdengine and DriverName correspond to multiple drivers for processing databases
+		Dialect: "mysql",
+		//Deprecated
+		//DBType 
 		DBType: "mysql",
 		//MaxOpenConns: Maximum number of database connections Default 50
 		MaxOpenConns: 50,

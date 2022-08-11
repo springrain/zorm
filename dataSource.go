@@ -26,8 +26,12 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if config.DriverName == "" {
 		return nil, errors.New("DriverName cannot be empty")
 	}
-	if config.DBType == "" {
-		return nil, errors.New("DBType cannot be empty")
+	//兼容处理,DBType即将废弃,请使用Dialect属性
+	if len(config.DBType) > 0 && len(config.Dialect) == 0 {
+		config.Dialect = config.DBType
+	}
+	if config.Dialect == "" {
+		return nil, errors.New("Dialect cannot be empty")
 	}
 	var db *sql.DB
 	var errSQLOpen error
@@ -168,12 +172,12 @@ func (dbConnection *dataBaseConnection) commit() error {
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	execsql, err = reBindSQL(dbConnection.config.DBType, execsql, args)
+	execsql, err = reBindSQL(dbConnection.config.Dialect, execsql, args)
 	if err != nil {
 		return nil, err
 	}
 	// 更新语句处理ClickHouse特殊语法
-	execsql, err = reUpdateSQL(dbConnection.config.DBType, execsql)
+	execsql, err = reUpdateSQL(dbConnection.config.Dialect, execsql)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +215,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reBindSQL(dbConnection.config.DBType, query, args)
+	query, err = reBindSQL(dbConnection.config.Dialect, query, args)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +254,7 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reBindSQL(dbConnection.config.DBType, query, args)
+	query, err = reBindSQL(dbConnection.config.Dialect, query, args)
 	if err != nil {
 		return nil, err
 	}
