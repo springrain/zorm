@@ -1,6 +1,6 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库. 
+Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse数据库. 
 
 源码地址: https://gitee.com/chunanyong/zorm      
 官网: [https://zorm.cn](https://zorm.cn)    
@@ -16,7 +16,7 @@ go get gitee.com/chunanyong/zorm
 * [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
 * 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改.  
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse数据库
+* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse数据库
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
@@ -190,14 +190,15 @@ func init() {
     //自定义主键生成
 	//zorm.FuncGenerateStringID=funcmyId
 
+    //Go数据库驱动列表:https://github.com/golang/go/wiki/SQLDrivers
 
 	//dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
 		//DSN 数据库的连接字符串
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
+		//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
 		DriverName: "mysql",
-		//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
+		//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
 		Dialect: "mysql",
 		//MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,

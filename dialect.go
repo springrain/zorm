@@ -29,7 +29,7 @@ func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
 	var sqlbuilder strings.Builder
 	sqlbuilder.WriteString(sqlstr)
 	switch dialect {
-	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine": //MySQL,sqlite3,dm数据库,南大通用,clickhouse,TDengine
+	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": //MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
@@ -806,9 +806,13 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 //reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, error) {
-	if dialect == "mysql" || dialect == "sqlite" || dialect == "dm" || dialect == "gbase" || dialect == "clickhouse" {
+	switch dialect {
+	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
 		return sqlstr, nil
 	}
+	//if dialect == "mysql" || dialect == "sqlite" || dialect == "dm" || dialect == "gbase" || dialect == "clickhouse" || dialect == "db2" {
+	//	return sqlstr, nil
+	//}
 
 	strs := strings.Split(*sqlstr, "?")
 	if len(strs) < 1 {
@@ -817,16 +821,17 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, err
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
-		if dialect == "postgresql" || dialect == "kingbase" { //postgresql,kingbase
+		switch dialect {
+		case "postgresql", "kingbase": //postgresql,kingbase
 			sqlBuilder.WriteString("$")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dialect == "mssql" { //mssql
+		case "mssql": //mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dialect == "oracle" || dialect == "shentong" { //oracle,神州通用
+		case "oracle", "shentong": //oracle,神通
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		} else if dialect == "tdengine" {
+		case "tdengine": //tdengine
 			typeOf := reflect.TypeOf(args[i-1])
 			if typeOf.Kind() == reflect.Ptr {
 				//获取指针下的类型
@@ -837,9 +842,36 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, err
 			} else { //其他情况,还是使用 ?
 				sqlBuilder.WriteString("?")
 			}
-		} else { //其他情况,还是使用 ? | In other cases, or use  ?
+		default: //其他情况,还是使用 ? | In other cases, or use  ?
 			sqlBuilder.WriteString("?")
 		}
+
+		/*
+			if dialect == "postgresql" || dialect == "kingbase" { //postgresql,kingbase
+				sqlBuilder.WriteString("$")
+				sqlBuilder.WriteString(strconv.Itoa(i))
+			} else if dialect == "mssql" { //mssql
+				sqlBuilder.WriteString("@p")
+				sqlBuilder.WriteString(strconv.Itoa(i))
+			} else if dialect == "oracle" || dialect == "shentong" { //oracle,神州通用
+				sqlBuilder.WriteString(":")
+				sqlBuilder.WriteString(strconv.Itoa(i))
+			} else if dialect == "tdengine" {
+				typeOf := reflect.TypeOf(args[i-1])
+				if typeOf.Kind() == reflect.Ptr {
+					//获取指针下的类型
+					typeOf = typeOf.Elem()
+				}
+				if typeOf.Kind() == reflect.String { //如果值是字符串
+					sqlBuilder.WriteString("'?'")
+				} else { //其他情况,还是使用 ?
+					sqlBuilder.WriteString("?")
+				}
+			} else { //其他情况,还是使用 ? | In other cases, or use  ?
+				sqlBuilder.WriteString("?")
+			}
+		*/
+
 		sqlBuilder.WriteString(strs[i])
 	}
 	*sqlstr = sqlBuilder.String()

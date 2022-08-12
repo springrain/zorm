@@ -53,11 +53,11 @@ type DataSourceConfig struct {
 	//DSN dataSourceName 连接字符串
 	//DSN DataSourceName Database connection string
 	DSN string
-	//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
-	//DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
+	//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
+	//DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
 	DriverName string
-	//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
-	//Dialect:mysql,postgresql,oracle,mssql,sqlite,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
+	//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
+	//Dialect:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
 	Dialect string
 	//Deprecated
 	//DBType 即将废弃,请使用Dialect属性

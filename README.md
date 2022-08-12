@@ -1,6 +1,6 @@
 ## Introduction
 ![zorm logo](zorm-logo.png)  
-This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,TDengine,mysql,postgresql,oracle,mssql,sqlite,clickhouse databases.
+This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse databases.
 
 Source address:https://gitee.com/chunanyong/zorm  
 web site:[https://zorm.cn](https://zorm.cn)  
@@ -13,7 +13,7 @@ go get gitee.com/chunanyong/zorm
 * [Built-in code generator](https://gitee.com/chunanyong/readygo/tree/master/codegenerator)  
 * The code is streamlined, main part 2500 lines, zero dependency 4000 lines, detailed comments, convenient for customization and modification. 
 * <font color=red>Support transaction propagation, which is the main reason for the birth of zorm</font>
-* Support dm, kingbase,shentong,gbase,TDengine,mysql, postgresql, oracle, mssql, sqlite, clickhouse
+* Support dm,kingbase,shentong,gbase,TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse
 * Support more databases, read and write separation.
 * The update performance of zorm, gorm, and xorm is equivalent. The read performance of zorm is twice as fast as that of gorm and xorm.
 * Does not support joint primary keys, alternatively thinks that there is no primary key, and business control is implemented (difficult choice)  
@@ -171,10 +171,10 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN: Database connection string
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
-		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3,clickhouse, 
+		// Database driver name: mysql, postgres, oci8, sqlserver, sqlite3, go_ibm_db, clickhouse, 
         // dm, kingbase,taosSql|taosRestful and Dialect correspond, there are multiple drivers for processing databases
 		DriverName: "mysql",
-		// Dialect: mysql, postgresql,oracle, mssql, sqlite, clickhouse,
+		// Dialect: mysql, postgresql,oracle, mssql, sqlite, db2, clickhouse,
         // dm, kingbase,tdengine and DriverName correspond to multiple drivers for processing databases
 		Dialect: "mysql",
 		//Deprecated
