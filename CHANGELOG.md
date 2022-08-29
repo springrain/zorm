@@ -1,4 +1,5 @@
 v1.6.0
+ - 更新漂亮的logo
  - 增加db2数据支持,依赖Limit分页语法
  - DBType即将废弃,更名为Dialect,方便gorm和xorm迁移
  - FuncReadWriteStrategy和GetGTXID函数增加error返回值
