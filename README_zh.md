@@ -56,7 +56,7 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 因TDengine驱动不支持事务,需要设置DisableTransaction=true
 配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, Dialect:tdengine  
 
-测试用例: https://gitee.com/wuxiangege/zorm-examples/blob/master/zorm_example_td_test.go  
+测试用例: https://www.yuque.com/u27016943/nrgi00/dnru3f    
 
 
 ## 数据库脚本和实体类
