@@ -30,8 +30,8 @@ go get gitee.com/chunanyong/zorm
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
 
 ## 事务传播
-事务传播是zorm的核心功能,这也是zorm所有方法都有ctx入参的主要原因.    
-zorm的事务操作需要显式使用zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})开启,事务会在进入闭包函数之前检查开启,如果ctx里有事务就加入事务,如果ctx里没事务就创建新的事务,所以只需要传递同一个ctx对象,就可以实现事务传播.特殊场景如果不想事务同步,就可以声明一个新的ctx对象,做事务隔离.
+事务传播是zorm的核心功能,也是zorm所有方法都有ctx入参的主要原因.    
+zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})```开启,在执行闭包函数前检查事务,如果ctx里有事务就加入事务,如果ctx里没事务就创建新的事务,所以只需要传递同一个ctx对象,就可以实现事务传播.特殊场景如果不想事务同步,就可以声明一个新的ctx对象,做事务隔离.
 
 ## 支持国产数据库  
 ### 达梦(dm)  
@@ -676,7 +676,7 @@ func main() {
 
 #### hptx proxy模式 
 
-hptx已合并@小口天的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  
+hptx已合并[@小口天](https://gitee.com/wuxiangege)的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  
 
 ```golang
 //DataSourceConfig 配置  DefaultTxOptions
@@ -743,7 +743,7 @@ func main() {
 
 ```seata-golang``` 和 ```hptx```实现方式一致,只是实现包不同
 
-hptx已合并@小口天的pr, [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)   
+hptx已合并[@小口天](https://gitee.com/wuxiangege)的pr, [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)   
 
 ```golang
 
