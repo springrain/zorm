@@ -706,6 +706,9 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		val, err = typeConvertDecimal(v)
 	case "BOOLEAN", "BOOL":
 		val, err = typeConvertBool(v)
+
+		//MySQL DSN加上parseTime=true参数,会自动转换为time格式,默认查询出来的是[]byte数组
+
 		/*
 			case "DATE":
 				val, err = typeConvertTime(v, "2006-01-02", time.Local)

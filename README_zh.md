@@ -198,7 +198,7 @@ func init() {
 
 	//dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
-		//DSN 数据库的连接字符串
+		//DSN 数据库的连接字符串,parseTime=true会自动转换为time格式,默认查询出来的是[]byte数组
 		DSN: "root:root@tcp(127.0.0.1:3306)/readygo?charset=utf8&parseTime=true",
 		//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
 		DriverName: "mysql",
