@@ -1,10 +1,10 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse数据库. 
+Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse... 
 
-源码地址: https://gitee.com/chunanyong/zorm      
-官网: [https://zorm.cn](https://zorm.cn)    
-测试用例: https://gitee.com/wuxiangege/zorm-examples/    
+官网: https://zorm.cn  
+源码地址: https://gitee.com/chunanyong/zorm        
+测试用例: https://gitee.com/wuxiangege/zorm-examples/      
 
 交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨  
 社区微信: [LAUV927]()   
@@ -23,26 +23,26 @@ go get gitee.com/chunanyong/zorm
 * 支持seata,hptx,dbpack分布式事务,支持全局事务托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
 
+## 事务传播
+事务传播是zorm的核心功能,也是zorm所有方法都有ctx入参的主要原因.    
+zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})```开启,在执行闭包函数前检查事务,如果ctx里有事务就加入事务,如果ctx里没事务就创建新的事务,所以只需要传递同一个ctx对象,就可以实现事务传播.特殊场景如果不想事务同步,就可以声明一个新的ctx对象,做事务隔离.
+
 ## 源码仓库说明
 我主导的开源项目主库都在gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目star增长缓慢,毕竟github用户多些.  
 **开源没有国界,开发者却有自己的祖国.**   
 严格意义上,github是受美国法律管辖的 https://www.infoq.cn/article/SA72SsSeZBpUSH_ZH8XB  
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
 
-## 事务传播
-事务传播是zorm的核心功能,也是zorm所有方法都有ctx入参的主要原因.    
-zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {})```开启,在执行闭包函数前检查事务,如果ctx里有事务就加入事务,如果ctx里没事务就创建新的事务,所以只需要传递同一个ctx对象,就可以实现事务传播.特殊场景如果不想事务同步,就可以声明一个新的ctx对象,做事务隔离.
-
 ## 支持国产数据库  
 ### 达梦(dm)  
 配置zorm.DataSourceConfig的 DriverName:dm ,Dialect:dm  
-达梦数据库驱动: [https://gitee.com/chunanyong/dm](https://gitee.com/chunanyong/dm)  
+达梦数据库驱动: https://gitee.com/chunanyong/dm    
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
 
 ### 人大金仓(kingbase)  
 配置zorm.DataSourceConfig的 DriverName:kingbase ,Dialect:kingbase    
-金仓驱动说明: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
-金仓kingbase 8核心是基于postgresql 9.6,可以使用 [https://github.com/lib/pq](https://github.com/lib/pq) 进行测试,生产环境建议使用官方驱动.    
+金仓驱动说明: https://help.kingbase.com.cn/doc-view-8108.html    
+金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.    
 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神通(shentong)  
