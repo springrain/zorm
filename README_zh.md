@@ -38,6 +38,7 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 配置zorm.DataSourceConfig的 DriverName:dm ,Dialect:dm  
 达梦数据库驱动: https://gitee.com/chunanyong/dm    
 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
+达梦使用time作为where条件,需要注意时区问题,建议使用字符串,https://eco.dameng.com/community/question/936924eb9861e6d429114e87d6f3a854  
 
 ### 人大金仓(kingbase)  
 配置zorm.DataSourceConfig的 DriverName:kingbase ,Dialect:kingbase    
