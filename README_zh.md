@@ -12,11 +12,11 @@ Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase)
 ``` 
 go get gitee.com/chunanyong/zorm 
 ```  
-* 基于原生sql语句编写,是[springrain](https://gitee.com/chunanyong/springrain)的精简和优化.
-* [代码生成器](https://gitee.com/zhou-a-xing/wsgt)  
-* 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改.  
+* 基于原生sql语句编写,学习成本更低  
+* [代码生成器](https://gitee.com/zhou-a-xing/wsgt)    
+* 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改   
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse数据库
+* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 * 支持多库和读写分离
 * 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
@@ -35,30 +35,28 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 
 ## 支持国产数据库  
 ### 达梦(dm)  
-配置zorm.DataSourceConfig的 DriverName:dm ,Dialect:dm  
-达梦数据库驱动: https://gitee.com/chunanyong/dm    
-达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
-达梦使用time作为where条件,需要注意时区问题,建议使用字符串,https://eco.dameng.com/community/question/936924eb9861e6d429114e87d6f3a854  
+- 配置zorm.DataSourceConfig的 ```DriverName:dm ,Dialect:dm```  
+- 达梦数据库驱动: https://gitee.com/chunanyong/dm    
+- 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
+- 达梦使用time作为where条件,需要注意时区问题,建议使用字符串代替time, https://eco.dameng.com/community/question/936924eb9861e6d429114e87d6f3a854  
 
 ### 人大金仓(kingbase)  
-配置zorm.DataSourceConfig的 DriverName:kingbase ,Dialect:kingbase    
-金仓驱动说明: https://help.kingbase.com.cn/doc-view-8108.html    
-金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.    
-注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
+- 配置zorm.DataSourceConfig的 ```DriverName:kingbase ,Dialect:kingbase```    
+- 金仓驱动说明: https://help.kingbase.com.cn/doc-view-8108.html    
+- 金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.    
+- 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神通(shentong)  
-建议使用官方驱动,配置zorm.DataSourceConfig的 DriverName:aci ,Dialect:shentong  
+建议使用官方驱动,配置zorm.DataSourceConfig的 ```DriverName:aci ,Dialect:shentong```  
 
 ### 南通(gbase)
 ~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,Dialect:gbase~~  
-暂时先使用odbc驱动,DriverName:odbc ,Dialect:gbase
+暂时先使用odbc驱动,```DriverName:odbc ,Dialect:gbase```
 
 ### TDengine  
-因TDengine驱动不支持事务,需要设置DisableTransaction=true
-配置zorm.DataSourceConfig的 DriverName:taosSql或者taosRestful, Dialect:tdengine  
-
-测试用例: https://www.yuque.com/u27016943/nrgi00/dnru3f    
-
+- 因TDengine驱动不支持事务,需要设置```DisableTransaction=true```
+- 配置zorm.DataSourceConfig的 ```DriverName:taosSql或者taosRestful, Dialect:tdengine```  
+- 测试用例: https://www.yuque.com/u27016943/nrgi00/dnru3f    
 
 ## 数据库脚本和实体类
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/wsgt
