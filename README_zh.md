@@ -263,7 +263,7 @@ func TestInsertSlice(t *testing.T) {
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用全局DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//slice存放的类型是zorm.IEntityStruct!!!,golang目前没有泛型,使用IEntityStruct接口,兼容Struct实体类
+		//slice存放的类型是zorm.IEntityStruct!!!使用IEntityStruct接口,兼容Struct实体类
 		demoSlice := make([]zorm.IEntityStruct, 0)
 
 		//创建对象1
