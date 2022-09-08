@@ -278,7 +278,7 @@ func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 }
 
 /*
-//deepCopy 深度拷贝对象.golang没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
+//deepCopy 深度拷贝对象.Go没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
 func deepCopy(dst, src interface{}) error {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(src); err != nil {

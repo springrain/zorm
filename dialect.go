@@ -668,8 +668,8 @@ func findDeleteTableName(strsql *string) []string {
 
 }
 
-//converValueColumnType 根据数据库的字段类型,转化成golang的类型,不处理sql.Nullxxx类型
-//converValueColumnType According to the field type of the database, it is converted to the type of golang, and the sql.Nullxxx type is not processed
+//converValueColumnType 根据数据库的字段类型,转化成Go的类型,不处理sql.Nullxxx类型
+//converValueColumnType According to the field type of the database, it is converted to the type of Go, and the sql.Nullxxx type is not processed
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
 
 	if v == nil {
@@ -686,8 +686,8 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 		return value
 	}
 
-	//获取数据库类型,自己对应golang的基础类型值,不处理sql.Nullxxx类型
-	//Get the database type, corresponding to the basic type value of golang, and do not process the sql.Nullxxx type.
+	//获取数据库类型,自己对应Go的基础类型值,不处理sql.Nullxxx类型
+	//Get the database type, corresponding to the basic type value of Go, and do not process the sql.Nullxxx type.
 	databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 	var val interface{}
 	var err error

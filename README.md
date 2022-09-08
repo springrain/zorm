@@ -25,14 +25,14 @@ DM(Da Meng) database driver: [https://gitee.com/chunanyong/dm](https://gitee.com
 
 kingbase(Ren Da Jincang)Driver Instructions: [https://help.kingbase.com.cn/doc-view-8108.html](https://help.kingbase.com.cn/doc-view-8108.html)  
 The core of Kingbase(Ren Da Jincang) 8 is based on postgresql 9.6. You can use [https://github.com/lib/pq](https://github.com/lib/pq) for testing. The official driver is recommended for the production environment.    
-Pay attention to modify ora_input_emptystr_isnull = false in the data/kingbase.conf file , because golang has no null value. Generally, the database is not null, the default value of golang string is' '. 
+Pay attention to modify ora_input_emptystr_isnull = false in the data/kingbase.conf file , because Go has no null value. Generally, the database is not null, the default value of Go string is' '. 
 If this value is set to true, the database will set the value to null, which conflicts with the field property not null. Therefore, an error is reported.
 
 shentong(Shenzhou General Data)Instructions:
 It is recommended to use official driver, configure zorm.DataSourceConfig DriverName:aci ,Dialect:shentong  
 
 gbase(GENERAL DATA)
-~~The official golang driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,Dialect:gbase~~  
+~~The official Go driver has not been found yet. Please configure it zorm.DataSourceConfig DriverName:gbase ,Dialect:gbase~~  
 Use odbc driver for the time being,DriverName:odbc ,Dialect:gbase  
 
 ## Database scripts and entity classes  
@@ -242,7 +242,7 @@ func TestInsertSlice(t *testing.T) {
 	//If the global DefaultTxOptions configuration does not meet the requirements, you can set the isolation level of the transaction before the zorm.Transaction transaction method, such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil , Use the global DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//The type stored by slice is zorm.I Entity Struct!!!, golang currently does not have generics, 
+		//The type stored by slice is zorm.I Entity Struct!!!
         //uses the I Entity Struct interface, and is compatible with the Struct entity class.
 		demoSlice := make([]zorm.IEntityStruct, 0)
 

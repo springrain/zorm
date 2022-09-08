@@ -44,13 +44,13 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 - 配置zorm.DataSourceConfig的 ```DriverName:kingbase ,Dialect:kingbase```    
 - 金仓驱动说明: https://help.kingbase.com.cn/doc-view-8108.html    
 - 金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.    
-- 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
+- 注意修改 data/kingbase.conf中 ```ora_input_emptystr_isnull = false```,因为Go没有null值,一般数据库都是not null,Go的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.   
 
 ### 神通(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 ```DriverName:aci ,Dialect:shentong```  
 
 ### 南通(gbase)
-~~暂时还未找到官方golang驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,Dialect:gbase~~  
+~~暂时还未找到官方Go驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,Dialect:gbase~~  
 暂时先使用odbc驱动,```DriverName:odbc ,Dialect:gbase```
 
 ### TDengine  

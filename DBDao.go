@@ -925,10 +925,10 @@ func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, e
 }
 
 // QueryMap 根据Finder查询,封装Map数组
-// 根据数据库字段的类型,完成从[]byte到golang类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
+// 根据数据库字段的类型,完成从[]byte到Go类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
 // context必须传入,不能为空
 // QueryMap According to Finder query, encapsulate Map array
-//According to the type of database field, the mapping from []byte to golang type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
+//According to the type of database field, the mapping from []byte to Go type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
 //context must be passed in and cannot be empty
 func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
