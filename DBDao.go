@@ -79,7 +79,7 @@ type DataSourceConfig struct {
 	//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
-	//DisableTransaction 全局禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
+	//DisableTransaction 禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
 	//禁用事务应该有驱动伪造事务API,不应该由orm实现
 	DisableTransaction bool
 
@@ -210,7 +210,7 @@ Transaction 的示例代码
 // 在多库的场景,手动获取dbConnection,然后绑定到一个新的context,传入进来
 // 不要去掉匿名函数的context参数,因为如果Transaction的context中没有dbConnection,会新建一个context并放入dbConnection,此时的context指针已经变化,不能直接使用Transaction的context参数
 // bug(springrain)如果有大神修改了匿名函数内的参数名,例如改为ctx2,这样业务代码实际使用的是Transaction的context参数,如果为没有dbConnection,会抛异常,如果有dbConnection,实际就是一个对象.影响有限.也可以把匿名函数抽到外部
-// 如果全局DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用全局DefaultTxOptions
+// 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别,例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
 // return的error如果不为nil,事务就会回滚
 // 如果使用了分布式事务,需要设置分布式事务函数zorm.DataSourceConfig.FuncGlobalTransaction,实现IGlobalTransaction接口
 // 如果是分布式事务开启方,需要在本地事务前开启分布事务,开启之后获取XID,设值到ctx的XID和TX_XID.XID是seata/hptx MySQL驱动需要,TX_XID是gtxContext.NewRootContext需要
