@@ -13,7 +13,7 @@ Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase)
 go get gitee.com/chunanyong/zorm 
 ```  
 * 基于原生sql语句编写,学习成本更低  
-* [代码生成器](https://gitee.com/zhou-a-xing/wsgt)    
+* [代码生成器](https://gitee.com/zhou-a-xing/zorm-generate-struct)    
 * 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改   
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
