@@ -524,7 +524,11 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		FuncLogError(ctx, cte)
 		return has, cte
 	}
-
+	if len(columnTypes) < 1 { //没有返回列
+		column0Err := errors.New("->QueryRow-->len(columnTypes)<1,没有返回列")
+		FuncLogError(ctx, column0Err)
+		return has, column0Err
+	}
 	//反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
@@ -739,6 +743,11 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 		cte = fmt.Errorf("->Query-->rows.ColumnTypes数据库类型错误:%w", cte)
 		FuncLogError(ctx, cte)
 		return cte
+	}
+	if len(columnTypes) < 1 { //没有返回列
+		column0Err := errors.New("->Query-->len(columnTypes)<1,没有返回列")
+		FuncLogError(ctx, column0Err)
+		return column0Err
 	}
 	//反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
