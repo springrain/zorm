@@ -339,6 +339,9 @@ func TestQueryRow(t *testing.T) {
 	//in (?) 参数必须有()括号,不能 in ?
 	finder.Append("WHERE id=? and active in(?)", "20210630163227149563000042432429", []int{0, 1})
 
+	//如何使用like
+	//finder.Append("WHERE id like ? ", "20210630163227149563000042432429%")
+
 	//执行查询,has为true表示数据库有数据
 	has, err := zorm.QueryRow(ctx, finder, demo)
 
@@ -380,7 +383,7 @@ func TestQuery(t *testing.T) {
 	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
-	page.PageNo = 2   //查询第1页,默认是1
+	page.PageNo = 1   //查询第1页,默认是1
 	page.PageSize = 2 //每页20条,默认是20
 
 	//执行查询
