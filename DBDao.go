@@ -135,7 +135,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 // getDefaultDao Get the default Dao, used to isolate Dao for reading and writing
 func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
 	if defaultDao == nil {
-		return nil, errors.New("getDefaultDao()-->defaultDao为nil")
+		return nil, errors.New("->getDefaultDao-->defaultDao为nil")
 	}
 	return defaultDao, nil
 }
@@ -148,7 +148,7 @@ func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
 // If it is multi-database, Dao manually calls new DB Connection() to obtain db Connection, and With Value is bound to the sub-context
 func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return nil, errors.New("请不要自己创建dbDao,使用NewDBDao方法进行创建")
+		return nil, errors.New("->newDBConnection-->请不要自己创建dbDao,使用NewDBDao方法进行创建")
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = dbDao.dataSource.DB
@@ -160,7 +160,7 @@ func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 // BindContextDBConnection In the case of multiple databases, create a DB Connection through db Dao and bind it to a sub-context,and the returned context will have a DB Connection. parent is not nil
 func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("BindContextDBConnection context的parent不能为nil")
+		return nil, errors.New("->BindContextDBConnection-->context的parent不能为nil")
 	}
 	dbConnection, errDBConnection := dbDao.newDBConnection()
 	if errDBConnection != nil {
@@ -174,7 +174,7 @@ func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Con
 //需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
 func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.TxOptions) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("BindContextTxOptions context的parent不能为nil")
+		return nil, errors.New("->BindContextTxOptions-->context的parent不能为nil")
 	}
 
 	ctx := context.WithValue(parent, contextTxOptionsKey, txOptions)
@@ -185,7 +185,7 @@ func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.
 //请谨慎调用这个方法,会关闭所有数据库连接,用于处理特殊场景,正常使用无需手动关闭数据库连接
 func (dbDao *DBDao) CloseDB() error {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return errors.New("请不要自己创建dbDao,使用NewDBDao方法进行创建")
+		return errors.New("->CloseDB-->请不要自己创建dbDao,使用NewDBDao方法进行创建")
 	}
 	return dbDao.dataSource.Close()
 }
@@ -258,7 +258,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 	//如果没有事务,并且事务没有被禁用,开启事务
 	//开启本地事务前,需要拿到分布式事务对象
-	if dbConnection.tx == nil && (!dbConnection.config.DisableTransaction) {
+	if dbConnection.tx == nil && (!isDisableTransaction(ctx, dbConnection.config)) {
 		//if dbConnection.tx == nil {
 
 		//是否使用分布式事务
@@ -288,12 +288,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//获取分布式事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
 			globalTransaction, globalRootContext, globalErr = funcGlobalTx(ctx)
 			if globalErr != nil {
-				globalErr = fmt.Errorf("->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", globalErr)
+				globalErr = fmt.Errorf("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", globalErr)
 				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
 			if globalTransaction == nil || globalRootContext == nil {
-				globalErr = errors.New("global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口的实现为nil ")
+				globalErr = errors.New("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口的实现为nil ")
 				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
@@ -315,7 +315,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 				return nil, globalErr
 			}
 			if len(globalXID) < 1 {
-				globalErr = errors.New("global:globalTransaction.Begin无异常开启后,获取的XID为空")
+				globalErr = errors.New("->Transaction-->global:globalTransaction.Begin无异常开启后,获取的XID为空")
 				FuncLogError(ctx, globalErr)
 				return nil, globalErr
 			}
@@ -352,8 +352,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
 			//}
-			//如果全局禁用了事务
-			if dbConnection.config.DisableTransaction {
+			//如果禁用了事务
+			if isDisableTransaction(ctx, dbConnection.config) {
 				return
 			}
 			rberr := dbConnection.rollback()
@@ -380,8 +380,8 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		err = fmt.Errorf("->Transaction-->doTransaction业务执行异常:%w", err)
 		FuncLogError(ctx, err)
 
-		//如果全局禁用了事务
-		if dbConnection.config.DisableTransaction {
+		//如果禁用了事务
+		if isDisableTransaction(ctx, dbConnection.config) {
 			return info, err
 		}
 
@@ -548,7 +548,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 		for i := 0; rows.Next(); i++ {
 			has = true
 			if i > 0 {
-				return has, errors.New("QueryRow查询出多条数据")
+				return has, errors.New("->QueryRow查询出多条数据")
 			}
 
 			dv := driverValue.Index(0)
@@ -630,7 +630,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	for i := 0; rows.Next(); i++ {
 		has = true
 		if i > 0 {
-			return has, errors.New("QueryRow查询出多条数据")
+			return has, errors.New("->QueryRow查询出多条数据")
 		}
 
 		//接收对象设置值
@@ -656,12 +656,12 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
-		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	pv1 := reflect.ValueOf(rowsSlicePtr)
 	if pv1.Kind() != reflect.Ptr { //如果不是指针
-		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
 	//获取数组元素
@@ -671,7 +671,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 	//如果不是数组
 	//If it is not an array.
 	if sliceValue.Kind() != reflect.Slice {
-		return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 	//获取数组内的元素类型
 	//Get the element type in the array
@@ -686,7 +686,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 
 	//如果不是struct
 	//if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
-	//	return errors.New("Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+	//	return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	//}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -914,7 +914,7 @@ func Query(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *
 func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryRowMap-->finder参数不能为nil")
+		return nil, errors.New("->QueryRowMap-->finder参数不能为nil")
 	}
 	resultMapList, listerr := QueryMap(ctx, finder, nil)
 	if listerr != nil {
@@ -926,7 +926,7 @@ func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, e
 		return nil, nil
 	}
 	if len(resultMapList) > 1 {
-		return resultMapList[0], errors.New("QueryRowMap查询出多条数据")
+		return resultMapList[0], errors.New("->QueryRowMap查询出多条数据")
 	} else if len(resultMapList) == 0 { //数据库不存在值
 		return nil, nil
 	}
@@ -942,7 +942,7 @@ func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, e
 func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
-		return nil, errors.New("QueryMap-->finder参数不能为nil")
+		return nil, errors.New("->QueryMap-->finder参数不能为nil")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -1142,7 +1142,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 	affected := -1
 	if finder == nil {
-		return affected, errors.New("UpdateFinder-->finder不能为空")
+		return affected, errors.New("->UpdateFinder-->finder不能为空")
 	}
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
@@ -1201,7 +1201,7 @@ func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
 func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	if entity == nil {
-		return affected, errors.New("对象不能为空")
+		return affected, errors.New("->Insert-->entity对象不能为空")
 	}
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
@@ -1210,7 +1210,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
-		return affected, errors.New("Insert没有tag信息,请检查struct中 column 的tag")
+		return affected, errors.New("->Insert-->没有tag信息,请检查struct中 column 的tag")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -1334,7 +1334,7 @@ func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
 func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
 	affected := -1
 	if entityStructSlice == nil || len(entityStructSlice) < 1 {
-		return affected, errors.New("InsertSlice对象数组不能为空")
+		return affected, errors.New("->InsertSlice-->entityStructSlice对象数组不能为空")
 	}
 	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityStructSlice[0]
@@ -1345,7 +1345,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 		return affected, columnAndValueErr
 	}
 	if len(columns) < 1 {
-		return affected, errors.New("InsertSlice没有tag信息,请检查struct中 column 的tag")
+		return affected, errors.New("->InsertSlice-->columns没有tag信息,请检查struct中 column 的tag")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -1652,7 +1652,7 @@ func IsInTransaction(ctx context.Context) (bool, error) {
 func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (int, error) {
 	affected := -1
 	if entity == nil {
-		return affected, errors.New("updateStructFunc对象不能为空")
+		return affected, errors.New("->updateStructFunc-->entity对象不能为空")
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -1709,7 +1709,7 @@ func updateStructFunc(ctx context.Context, entity IEntityStruct, onlyUpdateNotZe
 func selectCount(ctx context.Context, finder *Finder) (int, error) {
 
 	if finder == nil {
-		return -1, errors.New("selectCount参数为nil")
+		return -1, errors.New("->selectCount-->finder参数为nil")
 	}
 	//自定义的查询总条数Finder,主要是为了在group by等复杂情况下,为了性能,手动编写总条数语句
 	//Customized query total number Finder,mainly for the sake of performance in complex situations such as group by, manually write the total number of statements
@@ -1750,7 +1750,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		//没有找到FROM关键字,认为是异常语句
 		//The FROM keyword was not found, which is considered an abnormal statement
 		if len(locFrom) == 0 {
-			return -1, errors.New("selectCount-->findFromIndex没有FROM关键字,语句错误")
+			return -1, errors.New("->selectCount-->findFromIndex没有FROM关键字,语句错误")
 		}
 		countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
 	}
@@ -1772,7 +1772,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 // getDBConnectionFromContext Get database connection from Conext
 func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error) {
 	if ctx == nil {
-		return nil, errors.New("getDBConnectionFromContext context不能为空")
+		return nil, errors.New("->getDBConnectionFromContext-->context不能为空")
 	}
 	//获取数据库连接
 	//Get database connection
@@ -1782,7 +1782,7 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 	}
 	dbConnection, isdb := value.(*dataBaseConnection)
 	if !isdb { //不是数据库连接
-		return nil, errors.New("getDBConnectionFromContext context传递了错误的*DBConnection类型值")
+		return nil, errors.New("->getDBConnectionFromContext-->context传递了错误的*DBConnection类型值")
 	}
 	return dbConnection, nil
 
@@ -1810,7 +1810,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 			return ctx, nil, err
 		}
 		//是否禁用了事务
-		disabletx := dbdao.config.DisableTransaction
+		disabletx := isDisableTransaction(ctx, dbConnection.config)
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 		if hastx && (!disabletx) {
 			//if hastx {
@@ -1834,7 +1834,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 		if dbConnection.db == nil { //禁止外部构建
 			return ctx, dbConnection, errDBConnection
 		}
-		if dbConnection.tx == nil && hastx && (!dbConnection.config.DisableTransaction) {
+		if dbConnection.tx == nil && hastx && (!isDisableTransaction(ctx, dbConnection.config)) {
 			//if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
@@ -1902,10 +1902,10 @@ const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
 // hint 是完整的sql片段, 例如: hint:="/*+ XID('gs/aggregationSvc/2612341069705662465') */"
 func BindContextSQLHint(parent context.Context, hint string) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("BindContextSQLHint context的parent不能为nil")
+		return nil, errors.New("->BindContextSQLHint-->context的parent不能为nil")
 	}
 	if len(hint) < 1 {
-		return nil, errors.New("BindContextSQLHint hint不能为空")
+		return nil, errors.New("->BindContextSQLHint-->hint不能为空")
 	}
 
 	ctx := context.WithValue(parent, contextSQLHintValueKey, hint)
@@ -1918,8 +1918,32 @@ const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnab
 // BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务,必须放到本地事务开启之前调用
 func BindContextEnableGlobalTransaction(parent context.Context) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("BindContextEnableGlobalTransaction context的parent不能为nil")
+		return nil, errors.New("->BindContextEnableGlobalTransaction-->context的parent不能为nil")
 	}
 	ctx := context.WithValue(parent, contextEnableGlobalTransactionValueKey, true)
 	return ctx, nil
+}
+
+//contextDisableTransactionValueKey 是否禁用事务放到context里使用的key
+const contextDisableTransactionValueKey = wrapContextStringKey("contextDisableTransactionValueKey")
+
+// BindContextDisableTransaction  context禁用事务,必须放到事务开启之前调用.用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
+func BindContextDisableTransaction(parent context.Context) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("->BindContextDisableTransaction-->context的parent不能为nil")
+	}
+	ctx := context.WithValue(parent, contextDisableTransactionValueKey, true)
+	return ctx, nil
+}
+
+//isDisableTransaction 是否禁用事务,先从ctx中获取,如果没有设置,再从DataSourceConfig设置中获取
+func isDisableTransaction(ctx context.Context, config *DataSourceConfig) bool {
+	disableTransaction := false
+	ctxDisableTransaction := ctx.Value(contextDisableTransactionValueKey)
+	if ctxDisableTransaction != nil { //如果有值
+		disableTransaction = ctxDisableTransaction.(bool)
+	} else {
+		disableTransaction = config.DisableTransaction
+	}
+	return disableTransaction
 }
