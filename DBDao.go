@@ -1813,7 +1813,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 			return ctx, nil, err
 		}
 		//是否禁用了事务
-		disabletx := getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)
+		disabletx := getContextBoolValue(ctx, contextDisableTransactionValueKey, dbdao.config.DisableTransaction)
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 		if hastx && (!disabletx) {
 			//if hastx {
