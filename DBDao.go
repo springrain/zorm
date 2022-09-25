@@ -1942,7 +1942,7 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 //getContextBoolValue 从ctx中获取key的bool值,ctx如果没有值使用defaultValue
 func getContextBoolValue(ctx context.Context, key wrapContextStringKey, defaultValue bool) bool {
 	boolValue := false
-	ctxBoolValue := ctx.Value(contextDisableTransactionValueKey)
+	ctxBoolValue := ctx.Value(key)
 	if ctxBoolValue != nil { //如果有值
 		boolValue = ctxBoolValue.(bool)
 	} else { //ctx如果没有值使用defaultValue
