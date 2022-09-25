@@ -258,19 +258,22 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 
 	//如果没有事务,并且事务没有被禁用,开启事务
 	//开启本地事务前,需要拿到分布式事务对象
-	if dbConnection.tx == nil && (!isDisableTransaction(ctx, dbConnection.config)) {
+	if dbConnection.tx == nil && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
 		//if dbConnection.tx == nil {
 
 		//是否使用分布式事务
 		enableGlobalTransaction := funcGlobalTx != nil
 		if enableGlobalTransaction { // 判断ctx里是否有绑定 enableGlobalTransaction
-			ctxGTXval := ctx.Value(contextEnableGlobalTransactionValueKey)
-			if ctxGTXval != nil { //如果有值
-				enableGlobalTransaction = ctxGTXval.(bool)
-			} else { //如果ctx没有值,就取值DisableAutoGlobalTransaction
-				//enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
-				enableGlobalTransaction = false
-			}
+			/*
+				ctxGTXval := ctx.Value(contextEnableGlobalTransactionValueKey)
+				if ctxGTXval != nil { //如果有值
+					enableGlobalTransaction = ctxGTXval.(bool)
+				} else { //如果ctx没有值,就取值DisableAutoGlobalTransaction
+					//enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
+					enableGlobalTransaction = false
+				}
+			*/
+			enableGlobalTransaction = getContextBoolValue(ctx, contextEnableGlobalTransactionValueKey, false)
 		}
 
 		//需要开启分布式事务,初始化分布式事务对象,判断是否是分布式事务入口
@@ -353,7 +356,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 			//	return
 			//}
 			//如果禁用了事务
-			if isDisableTransaction(ctx, dbConnection.config) {
+			if getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction) {
 				return
 			}
 			rberr := dbConnection.rollback()
@@ -381,7 +384,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 		FuncLogError(ctx, err)
 
 		//如果禁用了事务
-		if isDisableTransaction(ctx, dbConnection.config) {
+		if getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction) {
 			return info, err
 		}
 
@@ -1810,7 +1813,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 			return ctx, nil, err
 		}
 		//是否禁用了事务
-		disabletx := isDisableTransaction(ctx, dbConnection.config)
+		disabletx := getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)
 		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 		if hastx && (!disabletx) {
 			//if hastx {
@@ -1834,7 +1837,7 @@ func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Con
 		if dbConnection.db == nil { //禁止外部构建
 			return ctx, dbConnection, errDBConnection
 		}
-		if dbConnection.tx == nil && hastx && (!isDisableTransaction(ctx, dbConnection.config)) {
+		if dbConnection.tx == nil && hastx && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
 			//if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
@@ -1936,14 +1939,14 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 	return ctx, nil
 }
 
-//isDisableTransaction 是否禁用事务,先从ctx中获取,如果没有设置,再从DataSourceConfig设置中获取
-func isDisableTransaction(ctx context.Context, config *DataSourceConfig) bool {
-	disableTransaction := false
-	ctxDisableTransaction := ctx.Value(contextDisableTransactionValueKey)
-	if ctxDisableTransaction != nil { //如果有值
-		disableTransaction = ctxDisableTransaction.(bool)
-	} else {
-		disableTransaction = config.DisableTransaction
+//getContextBoolValue 从ctx中获取key的bool值,ctx如果没有值使用defaultValue
+func getContextBoolValue(ctx context.Context, key wrapContextStringKey, defaultValue bool) bool {
+	boolValue := false
+	ctxBoolValue := ctx.Value(contextDisableTransactionValueKey)
+	if ctxBoolValue != nil { //如果有值
+		boolValue = ctxBoolValue.(bool)
+	} else { //ctx如果没有值使用defaultValue
+		boolValue = defaultValue
 	}
-	return disableTransaction
+	return boolValue
 }
