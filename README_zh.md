@@ -60,7 +60,7 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 - TDengine已收录: https://github.com/taosdata/awesome-tdengine/#orm   
 
 ## 数据库脚本和实体类
-生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/wsgt
+生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/zorm-generate-struct
 ```go 
 
 package testzorm
