@@ -27,6 +27,7 @@ func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
 		}
 	*/
 	var sqlbuilder strings.Builder
+	sqlbuilder.Grow(50)
 	sqlbuilder.WriteString(sqlstr)
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": //MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
@@ -47,7 +48,7 @@ func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	default:
-		return "", errors.New("wrapPageSQL()-->不支持的数据库类型:" + dialect)
+		return "", errors.New("->wrapPageSQL-->不支持的数据库类型:" + dialect)
 
 	}
 	sqlstr = sqlbuilder.String()
@@ -83,6 +84,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(50)
 	//sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
@@ -90,7 +92,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	//In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
-
+	valueSQLBuilder.Grow(50)
 	valueSQLBuilder.WriteString(" (")
 	//主键的名称
 	//The name of the primary key.
@@ -120,16 +122,16 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		if field.Name == pkFieldName { //如果是主键 | If it is the primary key
 			//获取主键类型 | Get the primary key type.
 			pkKind := field.Type.Kind()
-			if pkKind == reflect.String {
+			switch pkKind {
+			case reflect.String:
 				pktype = "string"
-			} else if pkKind == reflect.Int || pkKind == reflect.Int32 || pkKind == reflect.Int16 || pkKind == reflect.Int8 {
+			case reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
 				pktype = "int"
-			} else if pkKind == reflect.Int64 {
+			case reflect.Int64:
 				pktype = "int64"
-			} else {
-				return "", "", autoIncrement, pktype, errors.New("wrapInsertValueSQL不支持的主键类型")
+			default:
+				return "", "", autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
 			}
-
 			if autoIncrement == 3 {
 				//如果是后台触发器生成的主键值,sql语句中不再体现
 				//去掉这一列,后续不再处理
@@ -223,7 +225,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	if entityStructSlice == nil || sliceLen < 1 {
-		return "", 0, errors.New("wrapInsertSliceSQL对象数组不能为空")
+		return "", 0, errors.New("->wrapInsertSliceSQL对象数组不能为空")
 	}
 
 	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
@@ -260,7 +262,7 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	/*
 		valueIndex := strings.Index(sqlstr, " VALUES (")
 		if valueIndex < 1 { //生成的语句异常
-			return "", autoIncrement, errors.New("wrapInsertSliceSQL生成的语句异常")
+			return "", autoIncrement, errors.New("->wrapInsertSliceSQL生成的语句异常")
 		}
 		//value后面的字符串 例如 (?,?,?),用于循环拼接
 		//The string after the value, such as (?,?,?), is used for circular splicing
@@ -269,6 +271,7 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	//SQL语句的构造器
 	//SQL statement constructor
 	var insertSliceSQLBuilder strings.Builder
+	insertSliceSQLBuilder.Grow(100)
 	insertSliceSQLBuilder.WriteString(sqlstr)
 	for i := 1; i < sliceLen; i++ {
 		//拼接字符串
@@ -333,7 +336,7 @@ func wrapUpdateSQL(dialect string, typeOf *reflect.Type, entity IEntityStruct, c
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-
+	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
@@ -400,7 +403,7 @@ func wrapDeleteSQL(dialect string, entity IEntityStruct) (string, error) {
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-
+	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("DELETE FROM ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" WHERE ")
@@ -441,7 +444,7 @@ func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, str
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", "", nil, autoIncrement, errors.New("wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return "", "", nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL对应的参数
 	//SQL corresponding parameters
@@ -450,6 +453,7 @@ func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, str
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(100)
 	//sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
@@ -457,6 +461,7 @@ func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, str
 	//SQL语句中,VALUES(?,?,...)语句的构造器
 	//In the SQL statement, the constructor of the VALUES(?,?,...) statement.
 	var valueSQLBuilder strings.Builder
+	valueSQLBuilder.Grow(30)
 	valueSQLBuilder.WriteString(" (")
 	//是否Set了主键
 	//Whether the primary key is set.
@@ -506,12 +511,12 @@ func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, str
 func wrapUpdateEntityMapSQL(dialect string, entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return "", nil, errors.New("wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return "", nil, errors.New("->wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL语句的构造器
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
-
+	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
@@ -790,7 +795,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 	}
 	hint, ok := contextValue.(string)
 	if !ok {
-		return sqlstr, errors.New("wrapSQLHint()-->contextValue转换string失败")
+		return sqlstr, errors.New("->wrapSQLHint-->contextValue转换string失败")
 	}
 	if len(hint) < 1 {
 		return sqlstr, nil
@@ -822,6 +827,7 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, err
 		return sqlstr, nil
 	}
 	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
 		switch dialect {
@@ -888,6 +894,7 @@ func reUpdateSQL(dialect string, sqlstr *string) (*string, error) {
 		//SQL语句的构造器
 		//SQL statement constructor
 		var sqlBuilder strings.Builder
+		sqlBuilder.Grow(50)
 		sqlBuilder.WriteString("ALTER TABLE ")
 		sqls := findUpdateTableName(sqlstr)
 		if len(sqls) >= 2 { //如果是更新语句
@@ -924,7 +931,7 @@ func reTDengineSQL(dialect string, sqlstr *string, args []interface{}) (*string,
 		return sqlstr, nil
 	}
 	if len(strs)-1-len(args) != 0 { //分隔之后,字符串比值多1个
-		return sqlstr, errors.New("reTDengineSQL()-->参数数量和值不一致")
+		return sqlstr, errors.New("->reTDengineSQL-->参数数量和值不一致")
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString(strs[0])
