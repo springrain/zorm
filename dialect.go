@@ -150,7 +150,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 				//拼接字符串 | Concatenated string
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-				colName := getFieldTagName(dialect, &field)
+				colName := getFieldTagName(&field)
 				sqlBuilder.WriteString(colName)
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(sequence)
@@ -191,7 +191,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		//Concatenated string.
 		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 		// sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-		colName := getFieldTagName(dialect, &field)
+		colName := getFieldTagName(&field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString(",")
 		//if dialect == "tdengine" && field.Type.Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
@@ -331,7 +331,7 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 //数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 //wrapUpdateSQL Package update Struct statement
 //Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapUpdateSQL(dialect string, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 
 	//SQL语句的构造器
 	//SQL statement constructor
@@ -378,7 +378,7 @@ func wrapUpdateSQL(dialect string, typeOf *reflect.Type, entity IEntityStruct, c
 		}
 		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
 		// sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-		colName := getFieldTagName(dialect, &field)
+		colName := getFieldTagName(&field)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString("=?,")
 
@@ -398,7 +398,7 @@ func wrapUpdateSQL(dialect string, typeOf *reflect.Type, entity IEntityStruct, c
 
 //wrapDeleteSQL 包装删除Struct语句
 //wrapDeleteSQL Package delete Struct statement
-func wrapDeleteSQL(dialect string, entity IEntityStruct) (string, error) {
+func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 
 	//SQL语句的构造器
 	//SQL statement constructor
@@ -776,13 +776,14 @@ func generateStringID() string {
 */
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
-func getFieldTagName(dialect string, field *reflect.StructField) string {
+func getFieldTagName(field *reflect.StructField) string {
 	colName := field.Tag.Get(tagColumnName)
-	if dialect == "kingbase" {
-		// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错
-		colName = strings.ReplaceAll(colName, "\"", "")
-		colName = fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
-	}
+	/*
+		if dialect == "kingbase" {
+			// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错
+			colName = strings.ReplaceAll(colName, "\"", "")
+			colName = fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
+		}*/
 	return colName
 }
 

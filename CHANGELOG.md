@@ -1,4 +1,6 @@
 v1.6.1
+ - zorm公开的方法统一为变量,用于扩展复写,暴露WrapUpdateStructFinder函数
+ - 去掉kingbase列的大写转换,修改字符串拼接方式,提升性能
  - BindContextDisableTransaction 用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
  - 增加查询没有返回列的判断,极端情况,可以使用Query执行更新语句,绕过事务检查(不建议)  
  - 更新官网 https://zorm.cn 
