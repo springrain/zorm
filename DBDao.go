@@ -112,7 +112,7 @@ var defaultDao *DBDao = nil
 // 第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
 // NewDBDao Creates dbDao, a database must be executed only once, and the business is controlled by itself
 // The first database to be executed is defaultDao, and the subsequent zorm.xxx method is defaultDao by default
-var NewDBDao = func(config *DataSourceConfig) (*DBDao, error) {
+func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	dataSource, err := newDataSource(config)
 
 	if err != nil {
@@ -231,7 +231,11 @@ Transaction 的示例代码
 // an exception will be thrown. If there is a db Connection, the actual It is an object
 // The impact is limited. Anonymous functions can also be extracted outside
 // If the return error is not nil, the transaction will be rolled back
-var Transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
+func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
+	return transaction(ctx, doTransaction)
+}
+
+var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
 	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
 	localTxOpen := false
@@ -446,7 +450,11 @@ var Transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 // QueryRow Don't be lazy to call Query to return the first one
 // Question 1. A selice needs to be constructed, and question 2. Other values ​​of the object passed by the caller will be discarded or overwritten
 // context must be passed in and cannot be empty
-var QueryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
+func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
+	return queryRow(ctx, finder, entity)
+}
+
+var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
 
 	has := false
 	typeOf, checkerr := checkEntityKind(entity)
@@ -657,6 +665,9 @@ var QueryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 // According to the Finder and encapsulation for the specified entity type, the entity must be of the *[]struct type, which has been initialized,This method only Append elements, so the caller does not need to force type conversion
 // context must be passed in and cannot be empty
 var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
+	return query(ctx, finder, rowsSlicePtr, page)
+}
+var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 
 	if rowsSlicePtr == nil { //如果为nil
 		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
@@ -914,7 +925,11 @@ var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 // context必须传入,不能为空
 // QueryRowMap encapsulates Map according to Finder query
 // context must be passed in and cannot be empty
-var QueryRowMap = func(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
+func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
+	return queryRowMap(ctx, finder)
+}
+
+var queryRowMap = func(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
 
 	if finder == nil {
 		return nil, errors.New("->QueryRowMap-->finder参数不能为nil")
@@ -942,7 +957,11 @@ var QueryRowMap = func(ctx context.Context, finder *Finder) (map[string]interfac
 // QueryMap According to Finder query, encapsulate Map array
 //According to the type of database field, the mapping from []byte to Go type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
 //context must be passed in and cannot be empty
-var QueryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+	return queryMap(ctx, finder, page)
+}
+
+var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 
 	if finder == nil {
 		return nil, errors.New("->QueryMap-->finder参数不能为nil")
@@ -1141,8 +1160,12 @@ var QueryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // UpdateFinder Update Finder statement
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
-// The number of rows affected by affected, if it is abnormal or the driver does not support it, return-1
-var UpdateFinder = func(ctx context.Context, finder *Finder) (int, error) {
+// The number of rows affected by affected, if it is abnormal or the driver does not support it, return -1
+func UpdateFinder(ctx context.Context, finder *Finder) (int, error) {
+	return updateFinder(ctx, finder)
+}
+
+var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 	affected := -1
 	if finder == nil {
 		return affected, errors.New("->UpdateFinder-->finder不能为空")
@@ -1201,7 +1224,11 @@ var UpdateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 // Insert saves the Struct object, which must be of type IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build dbConnection yourself
 // The number of rows affected by affected, if it is abnormal or the driver does not support it, return -1
-var Insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
+func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
+	return insert(ctx, entity)
+}
+
+var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	if entity == nil {
 		return affected, errors.New("->Insert-->entity对象不能为空")
@@ -1334,7 +1361,11 @@ var Insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 //如果是自增主键,无法对Struct对象里的主键属性赋值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-var InsertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
+func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
+	return insertSlice(ctx, entityStructSlice)
+}
+
+var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
 	affected := -1
 	if entityStructSlice == nil || len(entityStructSlice) < 1 {
 		return affected, errors.New("->InsertSlice-->entityStructSlice对象数组不能为空")
@@ -1391,7 +1422,11 @@ var InsertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 
 //Update 更新struct所有属性,必须是IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-var Update = func(ctx context.Context, entity IEntityStruct) (int, error) {
+func Update(ctx context.Context, entity IEntityStruct) (int, error) {
+	return update(ctx, entity)
+}
+
+var update = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	finder, err := WrapUpdateStructFinder(ctx, entity, false)
 	if err != nil {
 		err = fmt.Errorf("->Update-->WrapUpdateStructFinder包装Finder错误:%w", err)
@@ -1403,7 +1438,11 @@ var Update = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 //UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-var UpdateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, error) {
+func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
+	return updateNotZeroValue(ctx, entity)
+}
+
+var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	finder, err := WrapUpdateStructFinder(ctx, entity, true)
 	if err != nil {
 		err = fmt.Errorf("->UpdateNotZeroValue-->WrapUpdateStructFinder包装Finder错误:%w", err)
@@ -1416,7 +1455,11 @@ var UpdateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, e
 //Delete 根据主键删除一个对象.必须是IEntityStruct类型
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-var Delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
+func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
+	return delete(ctx, entity)
+}
+
+var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -1482,7 +1525,11 @@ var Delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 //InsertEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
 //ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 //affected影响的行数,如果异常或者驱动不支持,返回-1
-var InsertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
+func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
+	return insertEntityMap(ctx, entity)
+}
+
+var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
 	affected := -1
 	//检查是否是指针对象
 	_, checkerr := checkEntityKind(entity)
@@ -1585,7 +1632,11 @@ var InsertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 // UpdateEntityMap Update IEntityMap object. Used in scenarios where struct is not convenient, the primary key must have a value
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 // The number of rows affected by "affected", if it is abnormal or the driver does not support it, return -1
-var UpdateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
+func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
+	return updateEntityMap(ctx, entity)
+}
+
+var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
 	affected := -1
 	//检查是否是指针对象
 	//Check if it is a pointer
@@ -1638,7 +1689,7 @@ var UpdateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 }
 
 //IsInTransaction 检查ctx是否包含事务
-var IsInTransaction = func(ctx context.Context) (bool, error) {
+func IsInTransaction(ctx context.Context) (bool, error) {
 	dbConnection, err := getDBConnectionFromContext(ctx)
 	if err != nil {
 		return false, err
@@ -1655,7 +1706,7 @@ var IsInTransaction = func(ctx context.Context) (bool, error) {
 // updateStructFunc Update object
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 // Finder is the Finder that executes the update, and the update statement is executed uniformly using the Finder
-var WrapUpdateStructFinder = func(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*Finder, error) {
+func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*Finder, error) {
 	//affected := -1
 	if entity == nil {
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
@@ -1915,7 +1966,7 @@ const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
 
 // BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句
 // hint 是完整的sql片段, 例如: hint:="/*+ XID('gs/aggregationSvc/2612341069705662465') */"
-var BindContextSQLHint = func(parent context.Context, hint string) (context.Context, error) {
+func BindContextSQLHint(parent context.Context, hint string) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextSQLHint-->context的parent不能为nil")
 	}
@@ -1931,7 +1982,7 @@ var BindContextSQLHint = func(parent context.Context, hint string) (context.Cont
 const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
 
 // BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务,必须放到本地事务开启之前调用
-var BindContextEnableGlobalTransaction = func(parent context.Context) (context.Context, error) {
+func BindContextEnableGlobalTransaction(parent context.Context) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextEnableGlobalTransaction-->context的parent不能为nil")
 	}
@@ -1943,7 +1994,7 @@ var BindContextEnableGlobalTransaction = func(parent context.Context) (context.C
 const contextDisableTransactionValueKey = wrapContextStringKey("contextDisableTransactionValueKey")
 
 // BindContextDisableTransaction  context禁用事务,必须放到事务开启之前调用.用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
-var BindContextDisableTransaction = func(parent context.Context) (context.Context, error) {
+func BindContextDisableTransaction(parent context.Context) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextDisableTransaction-->context的parent不能为nil")
 	}

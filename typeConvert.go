@@ -1,11 +1,118 @@
 package zorm
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
 	"gitee.com/chunanyong/zorm/decimal"
 )
+
+//OverrideFunc 重写ZORM的函数,用于风险监控,只要查看这个函数的调用,就知道哪些地方重写了函数,避免项目混乱
+// funcName 是需要重写的方法命,funcObject是对应的函数. 返回值bool是否重写成功,interface{}是重写前的函数实现
+func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, error) {
+	if len(funcName) < 1 {
+		return false, nil, errors.New("->OverrideFunc-->funcName不能为空")
+	}
+
+	switch funcName {
+	case "Transaction":
+		newFunc, ok := funcObject.(func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error))
+		if ok {
+			oldFunc := transaction
+			transaction = newFunc
+			return true, oldFunc, nil
+		}
+	case "QueryRow":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, entity interface{}) (bool, error))
+		if ok {
+			oldFunc := queryRow
+			queryRow = newFunc
+			return true, oldFunc, nil
+		}
+	case "Query":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error)
+		if ok {
+			oldFunc := query
+			query = newFunc
+			return true, oldFunc, nil
+		}
+
+	case "QueryRowMap":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (map[string]interface{}, error))
+		if ok {
+			oldFunc := queryRowMap
+			queryRowMap = newFunc
+			return true, oldFunc, nil
+		}
+	case "QueryMap":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error))
+		if ok {
+			oldFunc := queryMap
+			queryMap = newFunc
+			return true, oldFunc, nil
+		}
+	case "UpdateFinder":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
+		if ok {
+			oldFunc := updateFinder
+			updateFinder = newFunc
+			return true, oldFunc, nil
+		}
+	case "Insert":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
+		if ok {
+			oldFunc := insert
+			insert = newFunc
+			return true, oldFunc, nil
+		}
+	case "InsertSlice":
+		newFunc, ok := funcObject.(func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error))
+		if ok {
+			oldFunc := insertSlice
+			insertSlice = newFunc
+			return true, oldFunc, nil
+		}
+	case "Update":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
+		if ok {
+			oldFunc := update
+			update = newFunc
+			return true, oldFunc, nil
+		}
+	case "UpdateNotZeroValue":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
+		if ok {
+			oldFunc := updateNotZeroValue
+			updateNotZeroValue = newFunc
+			return true, oldFunc, nil
+		}
+	case "Delete":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
+		if ok {
+			oldFunc := delete
+			delete = newFunc
+			return true, oldFunc, nil
+		}
+
+	case "InsertEntityMap":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (int, error))
+		if ok {
+			oldFunc := insertEntityMap
+			insertEntityMap = newFunc
+			return true, oldFunc, nil
+		}
+	case "UpdateEntityMap":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (int, error))
+		if ok {
+			oldFunc := updateEntityMap
+			updateEntityMap = newFunc
+			return true, oldFunc, nil
+		}
+	}
+	return false, nil, nil
+}
 
 func typeConvertFloat32(i interface{}) (float32, error) {
 	if i == nil {
