@@ -1289,22 +1289,48 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		if dialect == "postgresql" || dialect == "kingbase" {
+		pkColumnName := entity.GetPKColumnName()
+		var sqlBuilder strings.Builder
+		sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
+		sqlBuilder.WriteString(*sqlstr)
+		switch dialect {
+		case "postgresql", "kingbase":
 			var p int64 = 0
 			lastInsertID = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
-		} else if dialect == "oracle" || dialect == "shentong" {
+			//sqlstr = sqlstr + " RETURNING " + pkColumnName
+			sqlBuilder.WriteString(" RETURNING ")
+			sqlBuilder.WriteString(pkColumnName)
+		case "oracle", "shentong":
 			var p int64 = 0
 			zormSQLOutReturningID = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
+			//sqlstr = sqlstr + " RETURNING " + pkColumnName + " INTO :zormSQLOutReturningID "
+			sqlBuilder.WriteString(" RETURNING ")
+			sqlBuilder.WriteString(pkColumnName)
+			sqlBuilder.WriteString(" INTO :zormSQLOutReturningID ")
 			v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
 			values = append(values, v)
 		}
 
+		*sqlstr = sqlBuilder.String()
+
+		/*
+			if dialect == "postgresql" || dialect == "kingbase" {
+				var p int64 = 0
+				lastInsertID = &p
+				sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
+			} else if dialect == "oracle" || dialect == "shentong" {
+				var p int64 = 0
+				zormSQLOutReturningID = &p
+				sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
+				v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
+				values = append(values, v)
+			}
+		*/
+
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1417,7 +1443,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
