@@ -562,7 +562,7 @@ func TestOther(t *testing.T) {
 	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
 	zorm.FuncReadWriteStrategy = myReadWriteStrategy
 
-	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理
+	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理. 也可以重写FuncReadWriteStrategy函数,通过ctx设置不同的key,返回自定义DBDao
 
 }
 

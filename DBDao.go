@@ -19,12 +19,17 @@ import (
 	"strings"
 )
 
-// FuncReadWriteStrategy 单个数据库的读写分离的策略,用于外部复写实现自定义的逻辑,rwType=0 read,rwType=1 write
-// 不能归属到DBDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为单数据库读写分离的处理方式
+// FuncReadWriteStrategy 数据库的读写分离的策略,用于外部复写实现自定义的逻辑,也可以使用ctx标识,处理多库的场景,rwType=0 read,rwType=1 write
+// 不能归属到DBDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为读写分离的处理方式
 // 即便是放到DBDao里,因为是多库,BindContextDBConnection函数调用少不了,业务包装一个方法,指定一下读写获取一个DBDao效果是一样的,唯一就是需要根据业务指定一下读写,其实更灵活了
 // FuncReadWriteStrategy Single database read and write separation strategy,used for external replication to implement custom logic, rwType=0 read, rwType=1 write.
 // "BindContextDBConnection" is already a connection to the specified database and will conflict with this function. As a single database read and write separation of processing
-var FuncReadWriteStrategy func(ctx context.Context, rwType int) (*DBDao, error) = getDefaultDao
+var FuncReadWriteStrategy = func(ctx context.Context, rwType int) (*DBDao, error) {
+	if defaultDao == nil {
+		return nil, errors.New("->FuncReadWriteStrategy-->defaultDao为nil")
+	}
+	return defaultDao, nil
+}
 
 // wrapContextStringKey 包装context的key,不直接使用string类型,避免外部直接注入使用
 type wrapContextStringKey string
@@ -131,6 +136,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	return &DBDao{config, dataSource}, nil
 }
 
+/*
 // getDefaultDao 获取默认的Dao,用于隔离读写的Dao
 // getDefaultDao Get the default Dao, used to isolate Dao for reading and writing
 func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
@@ -139,6 +145,7 @@ func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
 	}
 	return defaultDao, nil
 }
+*/
 
 // newDBConnection 获取一个dbConnection
 // 如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection
