@@ -11,7 +11,7 @@ import (
 
 //OverrideFunc 重写ZORM的函数,用于风险监控,只要查看这个函数的调用,就知道哪些地方重写了函数,避免项目混乱
 // funcName 是需要重写的方法命,funcObject是对应的函数. 返回值bool是否重写成功,interface{}是重写前的函数实现
-func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, error) {
+func OverrideFunc(ctx context.Context, funcName string, funcObject interface{}) (bool, interface{}, error) {
 	if len(funcName) < 1 {
 		return false, nil, errors.New("->OverrideFunc-->funcName不能为空")
 	}
