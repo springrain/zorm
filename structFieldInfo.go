@@ -303,7 +303,7 @@ func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, 
 	return getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 }
 
-//getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
+//getDBColumnFieldNameSlice 获取实体类的数据库字段,经过排序,key是数据库的字段名称.不区分大小写,
 func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 	dbColumnFieldSlice, dbmapErr := getCacheStructFieldInfo(typeOf, dbColumnNameSlicePrefix)
 	if dbmapErr != nil {
