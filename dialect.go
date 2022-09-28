@@ -273,11 +273,12 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		sqlBuilder.WriteString(" VALUES")
 		sqlBuilder.WriteString(*valuesql)
 	}
+	//获取SQL语句
+	sqlstr = sqlBuilder.String()
 	//如果只有一个Struct对象
 	//If there is only one Struct object
 	if sliceLen == 1 {
 		//sqlstr, _ = reBindSQL(dialect, sqlstr)
-		sqlstr = sqlBuilder.String()
 		return &sqlstr, autoIncrement, firstErr
 	}
 	//主键的名称
