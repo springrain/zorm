@@ -1324,43 +1324,40 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		}
 
 		var autoIncrementIDInt64 int64
-		var e error
+		var err error
 		if lastInsertID != nil {
 			autoIncrementIDInt64 = *lastInsertID
 		} else {
 			//需要数据库支持,获取自增主键
 			//Need database support, get auto-incrementing primary key
-			autoIncrementIDInt64, e = (*res).LastInsertId()
+			autoIncrementIDInt64, err = (*res).LastInsertId()
 		}
 
 		//数据库不支持自增主键,不再赋值给struct属性
 		//The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
-		if e != nil {
-			e = fmt.Errorf("->Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", e)
-			FuncLogError(ctx, e)
+		if err != nil {
+			err = fmt.Errorf("->Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", err)
+			FuncLogError(ctx, err)
 			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
-
-		var seterr error
-
 		if pktype == "int" {
 			//int64 转 int
 			//int64 to int
 			autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
 			//设置自增主键的值
 			//Set the value of the auto-incrementing primary key
-			seterr = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
+			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		} else if pktype == "int64" {
 			//设置自增主键的值
 			//Set the value of the auto-incrementing primary key
-			seterr = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
+			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
 		}
 
-		if seterr != nil {
-			seterr = fmt.Errorf("->Insert-->setFieldValueByColumnName反射赋值数据库返回的自增主键错误:%w", seterr)
-			FuncLogError(ctx, seterr)
-			return affected, seterr
+		if err != nil {
+			err = fmt.Errorf("->Insert-->setFieldValueByColumnName反射赋值数据库返回的自增主键错误:%w", err)
+			FuncLogError(ctx, err)
+			return affected, err
 		}
 	}
 
