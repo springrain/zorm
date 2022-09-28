@@ -1285,33 +1285,11 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	//处理序列产生的自增主键,例如oracle,postgresql等
-	var lastInsertID *int64
-	var zormSQLOutReturningID *int64
+	var lastInsertID, zormSQLOutReturningID *int64
+	//var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		pkColumnName := entity.GetPKColumnName()
-		var sqlBuilder strings.Builder
-		sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
-		sqlBuilder.WriteString(*sqlstr)
-		switch dialect {
-		case "postgresql", "kingbase":
-			var p int64 = 0
-			lastInsertID = &p
-			//sqlstr = sqlstr + " RETURNING " + pkColumnName
-			sqlBuilder.WriteString(" RETURNING ")
-			sqlBuilder.WriteString(pkColumnName)
-		case "oracle", "shentong":
-			var p int64 = 0
-			zormSQLOutReturningID = &p
-			//sqlstr = sqlstr + " RETURNING " + pkColumnName + " INTO :zormSQLOutReturningID "
-			sqlBuilder.WriteString(" RETURNING ")
-			sqlBuilder.WriteString(pkColumnName)
-			sqlBuilder.WriteString(" INTO :zormSQLOutReturningID ")
-			v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
-			values = append(values, v)
-		}
-
-		*sqlstr = sqlBuilder.String()
+		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
 		/*
 			if dialect == "postgresql" || dialect == "kingbase" {
@@ -1601,26 +1579,14 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	//处理序列产生的自增主键,例如oracle,postgresql等
-	var lastInsertID *int64
-	var zormSQLOutReturningID *int64
+	var lastInsertID, zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
-		if dialect == "postgresql" || dialect == "kingbase" {
-			var p int64 = 0
-			lastInsertID = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
-		} else if dialect == "oracle" || dialect == "shentong" {
-			var p int64 = 0
-			zormSQLOutReturningID = &p
-			sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
-			v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
-			values = append(values, v)
-		}
-
+		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1711,7 +1677,7 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1783,8 +1749,8 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	}
 	//finder对象
 	finder := NewFinder()
-	finder.sqlstr = sqlstr
-	finder.sqlBuilder.WriteString(sqlstr)
+	finder.sqlstr = *sqlstr
+	finder.sqlBuilder.WriteString(*sqlstr)
 	finder.values = values
 
 	/*
