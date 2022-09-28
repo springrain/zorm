@@ -548,7 +548,8 @@ func TestFunc(t *testing.T) {
 //TestOther 16.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
-	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可.
+	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可
+	//也可以重写FuncReadWriteStrategy函数,通过ctx设置不同的key,返回指定数据库的DBDao
 	newCtx, err := dbDao.BindContextDBConnection(ctx)
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -562,7 +563,8 @@ func TestOther(t *testing.T) {
 	//场景2.单个数据库的读写分离.设置读写分离的策略函数.
 	zorm.FuncReadWriteStrategy = myReadWriteStrategy
 
-	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理. 也可以重写FuncReadWriteStrategy函数,通过ctx设置不同的key,返回自定义DBDao
+	//场景3.如果是多个数据库,每个数据库还读写分离,按照 场景1 处理. 
+	//也可以重写FuncReadWriteStrategy函数,通过ctx设置不同的key,返回指定数据库的DBDao
 
 }
 
