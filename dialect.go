@@ -327,10 +327,11 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 				pkKind := field.Type.Kind()
 				//主键的值
 				//The value of the primary key
-				pkValue := valueOf.FieldByName(field.Name).Interface()
+				pkValue := valueOf.FieldByName(field.Name)
+				//pkValue := valueOf.FieldByName(field.Name).Interface()
 				//只处理字符串类型的主键,其他类型,columns中并不包含
 				//Only handle primary keys of string type, other types, not included in columns
-				if (pkKind == reflect.String) && (pkValue.(string) == "") {
+				if (pkKind == reflect.String) && pkValue.IsZero() {
 					//主键是字符串类型,并且值为"",赋值'id'
 					//生成主键字符串
 					//The primary key is a string type, and the value is "", assigned the value'id'
