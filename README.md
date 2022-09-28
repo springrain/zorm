@@ -565,7 +565,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	//Type conversion
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
-		return tempDriverValue, errors.New("Conversion to *dm.DmClob type failed")
+		return tempDriverValue, errors.New("->ConverDriverValue-->Conversion to *dm.DmClob type failed")
 	}
 
 	//Get the length

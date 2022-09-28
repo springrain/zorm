@@ -120,16 +120,16 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 //AppendFinder Add another Finder . finder.AppendFinder(f)
 func (finder *Finder) AppendFinder(f *Finder) (*Finder, error) {
 	if finder == nil {
-		return finder, errors.New("finder-->AppendFinder()finder对象为nil")
+		return finder, errors.New("->finder-->AppendFinder()finder对象为nil")
 	}
 	if f == nil {
-		return finder, errors.New("finder-->AppendFinder()参数是nil")
+		return finder, errors.New("->finder-->AppendFinder()参数是nil")
 	}
 
 	//不要自己构建finder,使用NewFinder()方法
 	//Don't build finder by yourself, use NewFinder() method
 	if finder.values == nil {
-		return finder, errors.New("finder-->AppendFinder()不要自己构建finder,使用NewFinder()方法")
+		return finder, errors.New("->finder-->AppendFinder()不要自己构建finder,使用NewFinder()方法")
 	}
 
 	//添加f的SQL
@@ -152,7 +152,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	//不要自己构建finder,使用NewFinder方法
 	//Don't build finder by yourself, use NewFinder method
 	if finder == nil || finder.values == nil {
-		return "", errors.New("finder-->GetSQL()不要自己构建finder,使用NewFinder()方法")
+		return "", errors.New("->finder-->GetSQL()不要自己构建finder,使用NewFinder()方法")
 	}
 	if len(finder.sqlstr) > 0 {
 		return finder.sqlstr, nil
@@ -162,7 +162,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	//包含单引号,属于非法字符串
 	//Contains single quotes, which are illegal strings
 	if finder.InjectionCheck && (strings.Contains(sqlstr, "'")) {
-		return "", errors.New("finder-->GetSQL()SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
+		return "", errors.New("->finder-->GetSQL()SQL语句请不要直接拼接字符串参数!!!使用标准的占位符实现,例如  finder.Append(' and id=? and name=? ','123','abc')")
 	}
 
 	//处理sql语句中的in,实际就是把数组变量展开,例如 id in(?) ["1","2","3"] 语句变更为 id in (?,?,?) 参数也展开到参数数组里
@@ -244,7 +244,7 @@ func (finder *Finder) GetSQL() (string, error) {
 		//数组类型的参数长度小于1,认为是有异常的参数
 		//The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 		if sliceLen < 1 {
-			return sqlstr, errors.New("finder-->GetSQL()语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+			return sqlstr, errors.New("->finder-->GetSQL()语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
 		}
 
 		for j := 0; j < sliceLen; j++ {

@@ -20,25 +20,25 @@ type dataSource struct {
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
 	if config == nil {
-		return nil, errors.New("config cannot be nil")
+		return nil, errors.New("->newDataSource-->config cannot be nil")
 	}
 
 	if config.DriverName == "" {
-		return nil, errors.New("DriverName cannot be empty")
+		return nil, errors.New("->newDataSource-->DriverName cannot be empty")
 	}
 	//兼容处理,DBType即将废弃,请使用Dialect属性
 	if len(config.DBType) > 0 && len(config.Dialect) == 0 {
 		config.Dialect = config.DBType
 	}
 	if config.Dialect == "" {
-		return nil, errors.New("Dialect cannot be empty")
+		return nil, errors.New("->newDataSource-->Dialect cannot be empty")
 	}
 	var db *sql.DB
 	var errSQLOpen error
 
 	if config.SQLDB == nil { //没有已经存在的数据库连接,使用DSN初始化
 		if config.DSN == "" {
-			return nil, errors.New("DSN cannot be empty")
+			return nil, errors.New("->newDataSource-->DSN cannot be empty")
 		}
 		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
 		if errSQLOpen != nil {
@@ -154,12 +154,12 @@ func (dbConnection *dataBaseConnection) rollback() error {
 func (dbConnection *dataBaseConnection) commit() error {
 	//s.rollbackSign = false
 	if dbConnection.tx == nil {
-		return errors.New("commit事务为空")
+		return errors.New("->dbConnection.commit()事务为空")
 
 	}
 	err := dbConnection.tx.Commit()
 	if err != nil {
-		err = fmt.Errorf("->commit事务提交失败:%w", err)
+		err = fmt.Errorf("->dbConnection.commit()事务提交失败:%w", err)
 		return err
 	}
 	dbConnection.tx = nil

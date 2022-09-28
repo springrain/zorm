@@ -1862,7 +1862,7 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 
 //变量名建议errFoo这样的驼峰
 //The variable name suggests a hump like "errFoo"
-var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.  读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(ctx,rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
+var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(ctx,rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
 
 // checkDBConnection 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 // context必须传入,不能为空.rwType=0 read,rwType=1 write

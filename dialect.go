@@ -23,7 +23,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 	/*
 		locOrderBy := findOrderByIndex(sqlstr)
 		if len(locOrderBy) <= 0 { //如果没有 order by
-			return "", errors.New("分页语句必须有 order by")
+			return "", errors.New("->分页语句必须有 order by")
 		}
 	*/
 	var sqlbuilder strings.Builder

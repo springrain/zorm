@@ -67,7 +67,7 @@ var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
 func structFieldInfo(typeOf *reflect.Type) error {
 
 	if typeOf == nil {
-		return errors.New("structFieldInfo数据为空")
+		return errors.New("->structFieldInfo数据为空")
 	}
 
 	entityName := (*typeOf).String()
@@ -95,7 +95,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	fieldNum := (*typeOf).NumField()
 	//如果没有字段
 	if fieldNum < 1 {
-		return errors.New("structFieldInfo-->NumField entity没有属性")
+		return errors.New("->structFieldInfo-->NumField entity没有属性")
 	}
 
 	// 声明所有字段的载体
@@ -252,21 +252,21 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 	if s == nil || len(fieldName) < 1 {
-		return nil, errors.New("structFieldValue数据为空")
+		return nil, errors.New("->structFieldValue数据为空")
 	}
 	//entity的s类型
 	valueOf := reflect.ValueOf(s)
 
 	kind := valueOf.Kind()
 	if !(kind == reflect.Ptr || kind == reflect.Struct) {
-		return nil, errors.New("structFieldValue必须是Struct或者*Struct类型")
+		return nil, errors.New("->structFieldValue必须是Struct或者*Struct类型")
 	}
 
 	if kind == reflect.Ptr {
 		//获取指针下的Struct类型
 		valueOf = valueOf.Elem()
 		if valueOf.Kind() != reflect.Struct {
-			return nil, errors.New("structFieldValue必须是Struct或者*Struct类型")
+			return nil, errors.New("->structFieldValue必须是Struct或者*Struct类型")
 		}
 	}
 
@@ -307,11 +307,11 @@ func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, 
 func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 	dbColumnFieldSlice, dbmapErr := getCacheStructFieldInfo(typeOf, dbColumnNameSlicePrefix)
 	if dbmapErr != nil {
-		return nil, fmt.Errorf("->getDBColumnFieldNameSlice()-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
+		return nil, fmt.Errorf("->getDBColumnFieldNameSlice-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
 	}
 	dbcfSlice, efOK := dbColumnFieldSlice.([]string)
 	if !efOK {
-		return dbcfSlice, errors.New("getDBColumnFieldNameSlice()-->dbColumnFieldSlice取值转[]string类型异常")
+		return dbcfSlice, errors.New("->getDBColumnFieldNameSlice-->dbColumnFieldSlice取值转[]string类型异常")
 	}
 	return dbcfSlice, nil
 
@@ -320,7 +320,7 @@ func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 //getCacheStructFieldInfo 根据类型和key,获取缓存的数据字段信息slice,已经排序
 func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{}, error) {
 	if typeOf == nil {
-		return nil, errors.New("getCacheStructFieldInfo-->typeOf不能为空")
+		return nil, errors.New("->getCacheStructFieldInfo-->typeOf不能为空")
 	}
 	key := keyPrefix + (*typeOf).String()
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
@@ -334,7 +334,7 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{
 		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
 		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 		if !dbOk {
-			return nil, errors.New("getCacheStructFieldInfo()-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
+			return nil, errors.New("->getCacheStructFieldInfo-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
 		}
 	}
 
@@ -347,11 +347,11 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{
 func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
 	dbColumnFieldMap, dbmapErr := getCacheStructFieldInfo(typeOf, keyPrefix)
 	if dbmapErr != nil {
-		return nil, fmt.Errorf("->getCacheStructFieldInfoMap()-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
+		return nil, fmt.Errorf("->getCacheStructFieldInfoMap-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
 	}
 	dbcfMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
 	if !efOK {
-		return dbcfMap, errors.New("getCacheStructFieldInfoMap()-->dbColumnFieldMap取值转map[string]reflect.StructField类型异常")
+		return dbcfMap, errors.New("->getCacheStructFieldInfoMap-->dbColumnFieldMap取值转map[string]reflect.StructField类型异常")
 	}
 	return dbcfMap, nil
 
@@ -401,7 +401,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	fLen := len(dbMap)
 	//长度不一致
 	if fLen-len(dbSlice) != 0 {
-		return typeOf, nil, nil, errors.New("columnAndValue-->缓存的数据库字段和实体类字段不对应")
+		return typeOf, nil, nil, errors.New("->columnAndValue-->缓存的数据库字段和实体类字段不对应")
 	}
 	//接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
 	columns := make([]reflect.StructField, 0, fLen)
@@ -464,11 +464,11 @@ func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, erro
 //checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
 func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	if entity == nil {
-		return nil, errors.New("checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("->checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
 	}
 	typeOf := reflect.TypeOf(entity)
 	if typeOf.Kind() != reflect.Ptr { //如果不是指针
-		return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
 	//if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
