@@ -1276,7 +1276,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	//SQL语句
 	//SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dialect, &typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)

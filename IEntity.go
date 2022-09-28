@@ -13,13 +13,10 @@ type IEntityStruct interface {
 
 	//GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
 	//key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//如果key对应的value是 "",则代表是触发器触发的序列,兼容自增关键字,例如 ["oracle"]""
 	//GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
 	//The key is the DB Type, and the value is the value of the sequence,
 	//such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
-	//If the value corresponding to the key is "", it means the sequence triggered by the trigger
-	//Compatible with auto-increment keywords, such as ["oracle"]""
-	GetPkSequence() map[string]string
+	GetPkSequence() string
 }
 
 //IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要"entityMap.Set"主键的值
@@ -36,13 +33,10 @@ type IEntityMap interface {
 
 	//GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
 	//key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//如果key对应的value是 "",则代表是触发器触发的序列,兼容自增关键字,例如 ["oracle"]""
 	//GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
 	//The key is the DB Type, and the value is the value of the sequence,
 	//such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
-	//If the value corresponding to the key is "", it means the sequence triggered by the trigger
-	//Compatible with auto-increment keywords, such as ["oracle"]""
-	GetPkSequence() map[string]string
+	GetPkSequence() string
 
 	//针对Map类型,记录数据库字段
 	//For Map type, record database fields.
@@ -79,9 +73,8 @@ func (entity *EntityStruct) GetPKColumnName() string {
 //var defaultPkSequence = make(map[string]string, 0)
 
 //GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-//如果key对应的value是 "",则代表是触发器触发的序列,兼容自增关键字,例如 ["oracle"]""
-func (entity *EntityStruct) GetPkSequence() map[string]string {
-	return nil
+func (entity *EntityStruct) GetPkSequence() string {
+	return ""
 }
 
 //-------------------------------------------------------------------------//
@@ -93,7 +86,7 @@ type EntityMap struct {
 	//主键列名
 	PkColumnName string
 	//主键序列,需要兼容多种数据库的序列,使用map,key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	PkSequence map[string]string
+	PkSequence string
 	//数据库字段,不暴露外部
 	dbFieldMap map[string]interface{}
 }
@@ -119,13 +112,10 @@ func (entity *EntityMap) GetPKColumnName() string {
 
 //GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
 //key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-//如果key对应的value是 "",则代表是触发器触发的序列,兼容自增关键字,例如 ["oracle"]""
 //GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
 //The key is the DB Type, and the value is the value of the sequence,
 //such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
-//If the value corresponding to the key is "", it means the sequence triggered by the trigger
-//Compatible with auto-increment keywords, such as ["oracle"]""
-func (entity *EntityMap) GetPkSequence() map[string]string {
+func (entity *EntityMap) GetPkSequence() string {
 	return entity.PkSequence
 }
 

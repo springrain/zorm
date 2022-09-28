@@ -1,4 +1,5 @@
 v1.6.1
+ - 简化自增序列的实现,使用string代替map[string]string
  - 使用OverrideFunc重写zorm的函数,暴露WrapUpdateStructFinder函数
  - 去掉kingbase列的大写转换,修改字符串拼接方式,提升性能
  - BindContextDisableTransaction 用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
