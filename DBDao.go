@@ -514,7 +514,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", e)
 		FuncLogError(ctx, e)
@@ -749,7 +749,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->Query-->queryContext查询rows异常:%w", e)
 		FuncLogError(ctx, e)
@@ -1015,7 +1015,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", e)
 		FuncLogError(ctx, e)
@@ -1289,7 +1289,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	//var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
+		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
 		/*
 			if dialect == "postgresql" || dialect == "kingbase" {
@@ -1308,7 +1308,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1418,7 +1418,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1520,7 +1520,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	values := make([]interface{}, 1)
 	values[0] = value
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Delete-->wrapExecUpdateValuesAffected执行删除错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1579,11 +1579,11 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	var lastInsertID, zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
-		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
+		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1674,7 +1674,7 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, err
 	}
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1746,8 +1746,8 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	}
 	//finder对象
 	finder := NewFinder()
-	finder.sqlstr = *sqlstr
-	finder.sqlBuilder.WriteString(*sqlstr)
+	finder.sqlstr = sqlstr
+	finder.sqlBuilder.WriteString(sqlstr)
 	finder.values = values
 
 	/*
