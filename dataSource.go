@@ -172,17 +172,17 @@ func (dbConnection *dataBaseConnection) commit() error {
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	execsql, err = reBindSQL(dbConnection.config.Dialect, execsql, args)
+	err = reBindSQL(dbConnection.config.Dialect, execsql, args)
 	if err != nil {
 		return nil, err
 	}
 	// 更新语句处理ClickHouse特殊语法
-	execsql, err = reUpdateSQL(dbConnection.config.Dialect, execsql)
+	err = reUpdateSQL(dbConnection.config.Dialect, execsql)
 	if err != nil {
 		return nil, err
 	}
 	//执行前加入 hint
-	execsql, err = wrapSQLHint(ctx, execsql)
+	err = wrapSQLHint(ctx, execsql)
 	if err != nil {
 		return nil, err
 	}
@@ -215,12 +215,12 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reBindSQL(dbConnection.config.Dialect, query, args)
+	err = reBindSQL(dbConnection.config.Dialect, query, args)
 	if err != nil {
 		return nil, err
 	}
 	//执行前加入 hint
-	query, err = wrapSQLHint(ctx, query)
+	err = wrapSQLHint(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -254,12 +254,12 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
 	var err error
 	//如果是TDengine,重新处理 字符类型的参数 '?'
-	query, err = reBindSQL(dbConnection.config.Dialect, query, args)
+	err = reBindSQL(dbConnection.config.Dialect, query, args)
 	if err != nil {
 		return nil, err
 	}
 	//执行前加入 hint
-	query, err = wrapSQLHint(ctx, query)
+	err = wrapSQLHint(ctx, query)
 	if err != nil {
 		return nil, err
 	}

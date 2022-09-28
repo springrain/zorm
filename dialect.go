@@ -16,7 +16,7 @@ import (
 
 //wrapPageSQL 包装分页的SQL语句
 //wrapPageSQL SQL statement for wrapping paging
-func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
+func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 	//新的分页方法都已经不需要order by了,不再强制检查
 	//The new paging method does not require 'order by' anymore, no longer mandatory check.
 	//
@@ -28,7 +28,7 @@ func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
 	*/
 	var sqlbuilder strings.Builder
 	sqlbuilder.Grow(50)
-	sqlbuilder.WriteString(sqlstr)
+	sqlbuilder.WriteString(*sqlstr)
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": //MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
@@ -48,12 +48,12 @@ func wrapPageSQL(dialect string, sqlstr string, page *Page) (string, error) {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	default:
-		return "", errors.New("->wrapPageSQL-->不支持的数据库类型:" + dialect)
+		return errors.New("->wrapPageSQL-->不支持的数据库类型:" + dialect)
 
 	}
-	sqlstr = sqlbuilder.String()
+	*sqlstr = sqlbuilder.String()
 	//return reBindSQL(dialect, sqlstr)
-	return sqlstr, nil
+	return nil
 }
 
 //wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
@@ -642,7 +642,7 @@ func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
 		return "", err
 	}
 	if page != nil {
-		sqlstr, err = wrapPageSQL(dialect, sqlstr, page)
+		err = wrapPageSQL(dialect, &sqlstr, page)
 	}
 
 	if err != nil {
@@ -859,24 +859,24 @@ func getFieldTagName(field *reflect.StructField) string {
 }
 
 // wrapSQLHint 在sql语句中增加hint
-func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
+func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	//获取hint
 	contextValue := ctx.Value(contextSQLHintValueKey)
 	if contextValue == nil { //如果没有设置hint
-		return sqlstr, nil
+		return nil
 	}
 	hint, ok := contextValue.(string)
 	if !ok {
-		return sqlstr, errors.New("->wrapSQLHint-->contextValue转换string失败")
+		return errors.New("->wrapSQLHint-->contextValue转换string失败")
 	}
 	if len(hint) < 1 {
-		return sqlstr, nil
+		return nil
 	}
 	//sql去空格
 	sqlTrim := strings.TrimSpace(*sqlstr)
 	sqlIndex := strings.Index(sqlTrim, " ")
 	if sqlIndex < 0 {
-		return sqlstr, nil
+		return nil
 	}
 	//sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
 	var sqlBuilder strings.Builder
@@ -885,17 +885,16 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 	sqlBuilder.WriteString(" ")
 	sqlBuilder.WriteString(hint)
 	sqlBuilder.WriteString(sqlTrim[sqlIndex:])
-	sql := sqlBuilder.String()
-	sqlstr = &sql
-	return sqlstr, nil
+	*sqlstr = sqlBuilder.String()
+	return nil
 }
 
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 //reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
-func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, error) {
+func reBindSQL(dialect string, sqlstr *string, args []interface{}) error {
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
-		return sqlstr, nil
+		return nil
 	}
 	//if dialect == "mysql" || dialect == "sqlite" || dialect == "dm" || dialect == "gbase" || dialect == "clickhouse" || dialect == "db2" {
 	//	return sqlstr, nil
@@ -903,7 +902,7 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, err
 
 	strs := strings.Split(*sqlstr, "?")
 	if len(strs) < 1 {
-		return sqlstr, nil
+		return nil
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
@@ -963,11 +962,11 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) (*string, err
 		sqlBuilder.WriteString(strs[i])
 	}
 	*sqlstr = sqlBuilder.String()
-	return sqlstr, nil
+	return nil
 }
 
 //reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
-func reUpdateSQL(dialect string, sqlstr *string) (*string, error) {
+func reUpdateSQL(dialect string, sqlstr *string) error {
 	//处理clickhouse的特殊更新语法
 	if dialect == "clickhouse" {
 		//SQL语句的构造器
@@ -982,7 +981,7 @@ func reUpdateSQL(dialect string, sqlstr *string) (*string, error) {
 		} else { //如果不是更新语句
 			sqls = findDeleteTableName(sqlstr)
 			if len(sqls) < 2 { //如果也不是删除语句
-				return sqlstr, nil
+				return nil
 			}
 			sqlBuilder.WriteString(sqls[1])
 			sqlBuilder.WriteString(" DELETE WHERE ")
@@ -991,10 +990,10 @@ func reUpdateSQL(dialect string, sqlstr *string) (*string, error) {
 		//截取字符串
 		content := (*sqlstr)[len(sqls[0]):]
 		sqlBuilder.WriteString(content)
-		sql := sqlBuilder.String()
-		return &sql, nil
+		*sqlstr = sqlBuilder.String()
+		return nil
 	}
-	return sqlstr, nil
+	return nil
 
 }
 
