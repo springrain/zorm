@@ -514,7 +514,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", e)
 		FuncLogError(ctx, e)
@@ -749,7 +749,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->Query-->queryContext查询rows异常:%w", e)
 		FuncLogError(ctx, e)
@@ -1015,7 +1015,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, e := dbConnection.queryContext(ctx, sqlstr, finder.values)
 	if e != nil {
 		e = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", e)
 		FuncLogError(ctx, e)

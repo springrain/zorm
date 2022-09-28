@@ -627,22 +627,18 @@ func wrapUpdateEntityMapSQL(dialect string, entity IEntityMap) (*string, []inter
 
 //wrapQuerySQL 封装查询语句
 //wrapQuerySQL Encapsulated query statement
-func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
+func wrapQuerySQL(dialect string, finder *Finder, page *Page) (*string, error) {
 
 	//获取到没有page的sql的语句
 	//Get the SQL statement without page.
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
-		return "", err
+		return &sqlstr, err
 	}
 	if page != nil {
 		err = wrapPageSQL(dialect, &sqlstr, page)
 	}
-
-	if err != nil {
-		return "", err
-	}
-	return sqlstr, err
+	return &sqlstr, err
 }
 
 //查询'order by'在sql中出现的开始位置和结束位置
