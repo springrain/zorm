@@ -656,8 +656,8 @@ var orderByRegexp, _ = regexp.Compile(orderByExpr)
 
 //findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
 // findOrderByIndex Query the start position and end position of'order by' in SQL
-func findOrderByIndex(strsql string) []int {
-	loc := orderByRegexp.FindStringIndex(strsql)
+func findOrderByIndex(strsql *string) []int {
+	loc := orderByRegexp.FindStringIndex(*strsql)
 	return loc
 }
 
@@ -668,8 +668,8 @@ var groupByRegexp, _ = regexp.Compile(groupByExpr)
 
 //findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
 //findGroupByIndex Query the start position and end position of'group by' in sql
-func findGroupByIndex(strsql string) []int {
-	loc := groupByRegexp.FindStringIndex(strsql)
+func findGroupByIndex(strsql *string) []int {
+	loc := groupByRegexp.FindStringIndex(*strsql)
 	return loc
 }
 
@@ -683,9 +683,9 @@ var fromRegexp, _ = regexp.Compile(fromExpr)
 
 //findFromIndexa 查询from在sql中出现的开始位置和结束位置
 //findSelectFromIndex Query the start position and end position of 'from' in sql
-func findSelectFromIndex(strsql string) []int {
+func findSelectFromIndex(strsql *string) []int {
 	//匹配出来的是完整的字符串,用最后的FROM即可
-	loc := fromRegexp.FindStringIndex(strsql)
+	loc := fromRegexp.FindStringIndex(*strsql)
 	if len(loc) < 2 {
 		return loc
 	}
@@ -876,7 +876,14 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) (*string, error) {
 	if sqlIndex < 0 {
 		return sqlstr, nil
 	}
-	sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
+	//sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
+	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(50)
+	sqlBuilder.WriteString(sqlTrim[:sqlIndex])
+	sqlBuilder.WriteString(" ")
+	sqlBuilder.WriteString(hint)
+	sqlBuilder.WriteString(sqlTrim[sqlIndex:])
+	sql := sqlBuilder.String()
 	sqlstr = &sql
 	return sqlstr, nil
 }

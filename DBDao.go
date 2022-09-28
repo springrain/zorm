@@ -1794,7 +1794,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 
 	//查询order by 的位置
 	//Query the position of order by
-	locOrderBy := findOrderByIndex(countsql)
+	locOrderBy := findOrderByIndex(&countsql)
 	//如果存在order by
 	//If there is order by
 	if len(locOrderBy) > 0 {
@@ -1802,24 +1802,31 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	}
 	s := strings.ToLower(countsql)
 	gbi := -1
-	locGroupBy := findGroupByIndex(countsql)
+	locGroupBy := findGroupByIndex(&countsql)
 	if len(locGroupBy) > 0 {
 		gbi = locGroupBy[0]
 	}
+	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(100)
 	//特殊关键字,包装SQL
 	//Special keywords, wrap SQL
 	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {
-		countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
+		//countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
+		sqlBuilder.WriteString("SELECT COUNT(*)  frame_row_count FROM (")
+		sqlBuilder.WriteString(countsql)
+		sqlBuilder.WriteString(") temp_frame_noob_table_name WHERE 1=1 ")
 	} else {
-		locFrom := findSelectFromIndex(countsql)
+		locFrom := findSelectFromIndex(&countsql)
 		//没有找到FROM关键字,认为是异常语句
 		//The FROM keyword was not found, which is considered an abnormal statement
 		if len(locFrom) == 0 {
 			return -1, errors.New("->selectCount-->findFromIndex没有FROM关键字,语句错误")
 		}
-		countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
+		//countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
+		sqlBuilder.WriteString("SELECT COUNT(*) ")
+		sqlBuilder.WriteString(countsql[locFrom[0]:])
 	}
-
+	countsql = sqlBuilder.String()
 	countFinder := NewFinder()
 	countFinder.Append(countsql)
 	countFinder.values = finder.values
