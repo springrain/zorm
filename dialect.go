@@ -885,7 +885,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 
 //reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 //reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
-func reBindSQL(dialect string, sqlstr *string, args []interface{}) error {
+func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
 		return nil
@@ -913,7 +913,7 @@ func reBindSQL(dialect string, sqlstr *string, args []interface{}) error {
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
 		case "tdengine": //tdengine
-			typeOf := reflect.TypeOf(args[i-1])
+			typeOf := reflect.TypeOf((*args)[i-1])
 			if typeOf.Kind() == reflect.Ptr {
 				//获取指针下的类型
 				typeOf = typeOf.Elem()
