@@ -323,15 +323,15 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 			// Get the reflection of the entity class, the struct under the pointer
 			valueOf := reflect.ValueOf(entityStruct).Elem()
 			field := (*columns)[j]
+			//字段的值
+			//The value of the primary key
+			fieldValue := valueOf.FieldByName(field.Name)
 			if field.Name == pkFieldName { //如果是主键 ｜ If it is the primary key
 				pkKind := field.Type.Kind()
-				//主键的值
-				//The value of the primary key
-				pkValue := valueOf.FieldByName(field.Name)
 				//pkValue := valueOf.FieldByName(field.Name).Interface()
 				//只处理字符串类型的主键,其他类型,columns中并不包含
 				//Only handle primary keys of string type, other types, not included in columns
-				if (pkKind == reflect.String) && pkValue.IsZero() {
+				if (pkKind == reflect.String) && fieldValue.IsZero() {
 					//主键是字符串类型,并且值为"",赋值'id'
 					//生成主键字符串
 					//The primary key is a string type, and the value is "", assigned the value'id'
@@ -340,14 +340,14 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 					*values = append(*values, id)
 					//给对象主键赋值
 					//Assign a value to the primary key of the object
-					valueOf.FieldByName(field.Name).Set(reflect.ValueOf(id))
+					fieldValue.Set(reflect.ValueOf(id))
 					continue
 				}
 			}
 
 			//给字段赋值
 			//Assign a value to the field.
-			*values = append(*values, valueOf.FieldByName(field.Name).Interface())
+			*values = append(*values, fieldValue.Interface())
 
 		}
 	}
