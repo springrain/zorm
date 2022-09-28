@@ -154,6 +154,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 			//主键的值
 			//The value of the primary key
 			pkValue := (*values)[i]
+			valueIsZero := reflect.ValueOf(pkValue).IsZero()
 			if autoIncrement == 2 { //如果是序列自增 | If it is a sequence increment
 				//拼接字符串 | Concatenated string
 				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
@@ -174,7 +175,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 
 				continue
 
-			} else if (pktype == "string") && reflect.ValueOf(pkValue).IsZero() { //主键是字符串类型,并且值为"",赋值id
+			} else if valueIsZero && (pktype == "string") { //主键是字符串类型,并且值为"",赋值id
 				//生成主键字符串
 				//Generate primary key string
 				id := FuncGenerateStringID(ctx)
@@ -187,7 +188,7 @@ func wrapInsertValueSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 				//If it is a number type and the value is 0,
 				//it is considered to be a database self-increment,
 				//delete the primary key information from the array, and let the database generate itself.
-			} else if (pktype == "int" || pktype == "int64") && reflect.ValueOf(pkValue).IsZero() {
+			} else if valueIsZero && (pktype == "int" || pktype == "int64") {
 				//标记是自增主键
 				//Mark is auto-incrementing primary key
 				autoIncrement = 1
@@ -438,7 +439,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 
 //wrapDeleteSQL 包装删除Struct语句
 //wrapDeleteSQL Package delete Struct statement
-func wrapDeleteSQL(entity IEntityStruct) (string, error) {
+func wrapDeleteSQL(entity IEntityStruct) (*string, error) {
 
 	//SQL语句的构造器
 	//SQL statement constructor
@@ -452,7 +453,7 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 	sqlstr := sqlBuilder.String()
 
 	//return reBindSQL(dialect, sqlstr)
-	return sqlstr, nil
+	return &sqlstr, nil
 
 }
 
