@@ -62,7 +62,7 @@ type EntityStruct struct {
 //Primary key column name of the default database
 const defaultPkName = "id"
 
-//获取表名称
+//GetTableName 获取表名称,必须有具体的Struct实现,类似java的抽象方法,避免手误忘记写表名.如果有扩展需求,建议使用接口进行扩展,不要默认实现GetTableName
 /*
 func (entity *EntityStruct) GetTableName() string {
 	return ""
