@@ -1261,19 +1261,6 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, errDBConnection
 	}
 
-	var dialect string = ""
-	//dbConnection为nil,使用defaultDao
-	//dbConnection is nil, use default Dao
-	if dbConnection == nil {
-		dbdao, err := FuncReadWriteStrategy(ctx, 1)
-		if err != nil {
-			return affected, err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
-	}
-
 	//SQL语句
 	//SQL statement
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, &typeOf, entity, &columns, &values)
@@ -1289,6 +1276,18 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	//var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
+		var dialect string = ""
+		//dbConnection为nil,使用defaultDao
+		//dbConnection is nil, use default Dao
+		if dbConnection == nil {
+			dbdao, err := FuncReadWriteStrategy(ctx, 1)
+			if err != nil {
+				return affected, err
+			}
+			dialect = dbdao.config.Dialect
+		} else {
+			dialect = dbConnection.config.Dialect
+		}
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
 		/*
@@ -1568,7 +1567,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	//SQL语句
-	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(dialect, entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1652,22 +1651,23 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, errDBConnection
 	}
 
-	var dialect string = ""
-	//dbConnection为nil,使用defaultDao
-	//dbConnection is nil, use default Dao
-	if dbConnection == nil {
-		dbdao, err := FuncReadWriteStrategy(ctx, 1)
-		if err != nil {
-			return affected, err
+	/*
+		var dialect string = ""
+		//dbConnection为nil,使用defaultDao
+		//dbConnection is nil, use default Dao
+		if dbConnection == nil {
+			dbdao, err := FuncReadWriteStrategy(ctx, 1)
+			if err != nil {
+				return affected, err
+			}
+			dialect = dbdao.config.Dialect
+		} else {
+			dialect = dbConnection.config.Dialect
 		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
-	}
-
+	*/
 	//SQL语句
 	//SQL statement
-	sqlstr, values, err := wrapUpdateEntityMapSQL(dialect, entity)
+	sqlstr, values, err := wrapUpdateEntityMapSQL(entity)
 	if err != nil {
 		err = fmt.Errorf("->UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)

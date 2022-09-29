@@ -453,9 +453,9 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 //wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 //wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertEntityMapSQL(dialect string, entity IEntityMap) (string, []interface{}, bool, error) {
+func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, error) {
 	sqlstr := ""
-	insertsql, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(dialect, entity)
+	insertsql, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
 		return sqlstr, nil, autoIncrement, err
 	}
@@ -482,7 +482,7 @@ func wrapInsertEntityMapSQL(dialect string, entity IEntityMap) (string, []interf
 //wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 //wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, string, []interface{}, bool, error) {
+func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface{}, bool, error) {
 	var insertsql, valuesql string
 	//是否自增,默认false
 	autoIncrement := false
@@ -566,7 +566,7 @@ func wrapInsertValueEntityMapSQL(dialect string, entity IEntityMap) (string, str
 //wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 //wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapUpdateEntityMapSQL(dialect string, entity IEntityMap) (string, []interface{}, error) {
+func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
 	if len(dbFieldMap) < 1 {
