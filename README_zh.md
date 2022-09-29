@@ -18,7 +18,6 @@ go get gitee.com/chunanyong/zorm
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 * 支持多库和读写分离
-* 更新性能zorm,gorm,xorm相当. 读取性能zorm比gorm,xorm快50%
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
 * 支持seata,hptx,dbpack分布式事务,支持全局事务托管,不修改业务代码,零侵入分布式事务
 * 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
@@ -867,12 +866,5 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 })
 
 ```
-
-
-##  性能压测
-
-   测试代码:https://github.com/springrain/goormbenchmark  
-   zorm 1.2.x 版本实现了基础功能,读性能比gorm和xorm快一倍.随着功能持续增加,造成性能下降,目前读性能只快了50%.  
-   zorm会持续优化改进性能.  
 
 
