@@ -482,17 +482,9 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		return has, errDBConnection
 	}
 
-	var dialect string = ""
-	//dbConnection为nil,使用defaultDao
-	//dbConnection is nil, use default Dao
-	if dbConnection == nil {
-		dbdao, err := FuncReadWriteStrategy(ctx, 0)
-		if err != nil {
-			return has, err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
+	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
+	if err != nil {
+		return has, err
 	}
 
 	//获取到sql语句
@@ -720,16 +712,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	if dbConnection != nil && dbConnection.db == nil {
 		return errDBConnection
 	}
-
-	var dialect string = ""
-	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbdao, err := FuncReadWriteStrategy(ctx, 0)
-		if err != nil {
-			return err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
+	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
+	if err != nil {
+		return err
 	}
 
 	sqlstr, err := wrapQuerySQL(dialect, finder, page)
@@ -985,17 +970,9 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		return nil, errDBConnection
 	}
 
-	var dialect string = ""
-	//dbConnection为nil,使用defaultDao
-	//db Connection is nil, use default Dao
-	if dbConnection == nil {
-		dbdao, err := FuncReadWriteStrategy(ctx, 0)
-		if err != nil {
-			return nil, err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
+	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
+	if err != nil {
+		return nil, err
 	}
 
 	sqlstr, err := wrapQuerySQL(dialect, finder, page)
@@ -1276,17 +1253,9 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	//var zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		var dialect string = ""
-		//dbConnection为nil,使用defaultDao
-		//dbConnection is nil, use default Dao
-		if dbConnection == nil {
-			dbdao, err := FuncReadWriteStrategy(ctx, 1)
-			if err != nil {
-				return affected, err
-			}
-			dialect = dbdao.config.Dialect
-		} else {
-			dialect = dbConnection.config.Dialect
+		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
+		if err != nil {
+			return affected, err
 		}
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
@@ -1397,16 +1366,9 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
-
-	var dialect string = ""
-	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbdao, err := FuncReadWriteStrategy(ctx, 1)
-		if err != nil {
-			return affected, err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
+	dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
+	if err != nil {
+		return affected, err
 	}
 
 	//SQL语句
@@ -1555,17 +1517,6 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, errDBConnection
 	}
 
-	var dialect string = ""
-	if dbConnection == nil { //dbConnection为nil,使用defaultDao
-		dbdao, err := FuncReadWriteStrategy(ctx, 1)
-		if err != nil {
-			return affected, err
-		}
-		dialect = dbdao.config.Dialect
-	} else {
-		dialect = dbConnection.config.Dialect
-	}
-
 	//SQL语句
 	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(entity)
 	if err != nil {
@@ -1578,6 +1529,10 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	var lastInsertID, zormSQLOutReturningID *int64
 	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
+		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
+		if err != nil {
+			return affected, err
+		}
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 

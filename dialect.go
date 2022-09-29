@@ -1061,3 +1061,20 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 
 	*sqlstr = sqlBuilder.String()
 }
+
+//getDialectFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect
+func getDialectFromConnection(ctx context.Context, dbConnection *dataBaseConnection, rwType int) (string, error) {
+	var dialect string = ""
+	//dbConnection为nil,使用defaultDao
+	//dbConnection is nil, use default Dao
+	if dbConnection == nil {
+		dbdao, err := FuncReadWriteStrategy(ctx, rwType)
+		if err != nil {
+			return dialect, err
+		}
+		dialect = dbdao.config.Dialect
+	} else {
+		dialect = dbConnection.config.Dialect
+	}
+	return dialect, nil
+}
