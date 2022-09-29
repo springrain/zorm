@@ -803,12 +803,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 //FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
-var FuncGenerateStringID func(ctx context.Context) string = generateStringID
-
-//generateStringID 生成主键字符串
-//generateStringID Generate primary key string
-func generateStringID(ctx context.Context) string {
-
+var FuncGenerateStringID = func(ctx context.Context) string {
 	// 使用 crypto/rand 真随机9位数
 	randNum, randErr := rand.Int(rand.Reader, big.NewInt(1000000000))
 	if randErr != nil {
@@ -825,19 +820,6 @@ func generateStringID(ctx context.Context) string {
 	pk = pk + rand9
 	return pk
 }
-
-//generateStringID 生成主键字符串
-//generateStringID Generate primary key string
-/*
-func generateStringID() string {
-	//pk := strconv.FormatInt(time.Now().UnixNano(), 10)
-	pk, errUUID := gouuid.NewV4()
-	if errUUID != nil {
-		return ""
-	}
-	return pk.String()
-}
-*/
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
 func getFieldTagName(field *reflect.StructField) string {
