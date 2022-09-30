@@ -543,7 +543,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	cdvMapHasBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(customDriverValueMap) > 0
 	//就查询一个字段
 	//If it is a basic type, query a field
 	//if allowBaseTypeMap[typeOf.Kind()] && len(columns) == 1 {
@@ -569,7 +569,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 			//判断是否有自定义扩展,避免无意义的反射
 			if cdvMapHasBool {
 				//根据接收的类型,获取到类型转换的接口实现
-				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
 			}
 
 			var errGetDriverValue error
@@ -759,7 +759,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	cdvMapHasBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(customDriverValueMap) > 0
 
 	//如果是基础类型,就查询一个字段
 	//If it is a basic type, query a field
@@ -790,7 +790,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 			//根据接收的类型,获取到类型转换的接口实现
 			if cdvMapHasBool {
-				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
 			}
 
 			//类型转换的临时值
@@ -1011,7 +1011,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 	}
 	//反射获取 []driver.Value的值
 	var driverValue reflect.Value
-	cdvMapHasBool := len(CustomDriverValueMap) > 0
+	cdvMapHasBool := len(customDriverValueMap) > 0
 	//判断是否有自定义扩展,避免无意义的反射
 	if cdvMapHasBool {
 		driverValue = reflect.Indirect(reflect.ValueOf(rows))
@@ -1048,7 +1048,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			if cdvMapHasBool {
 				dv := driverValue.Index(i)
 				//根据接收的类型,获取到类型转换的接口实现
-				converFunc, converOK = CustomDriverValueMap[dv.Elem().Type().String()]
+				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
 			}
 			var errGetDriverValue error
 			//如果需要类型转换

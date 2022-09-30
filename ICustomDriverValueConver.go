@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"reflect"
+	"strings"
 )
 
-//CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
+//customDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
 //一般是放到init方法里进行添加
-var CustomDriverValueMap = make(map[string]ICustomDriverValueConver)
+var customDriverValueMap = make(map[string]ICustomDriverValueConver)
 
 //ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type ICustomDriverValueConver interface {
@@ -29,6 +31,15 @@ type driverValueInfo struct {
 	tempDriverValue interface{}
 }
 
+//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
+func RegisterCustomDriverValueConver(ctx context.Context, columnType string, customDriverValueConver ICustomDriverValueConver) error {
+	if len(columnType) < 1 {
+		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
+	}
+	customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
+	return nil
+}
+
 /**
 
 //实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
@@ -46,7 +57,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	//类型转换
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
-		return tempDriverValue, errors.New("转换至*dm.DmClob类型失败")
+		return tempDriverValue, errors.New("->ConverDriverValue-->转换至*dm.DmClob类型失败")
 	}
 
 	//获取长度
@@ -66,8 +77,8 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	str, errReadString := dmClob.ReadString(1, dmlenInt)
 	return &str, errReadString
 }
-//CustomDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
+//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
 //一般是放到init方法里进行添加
-zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
+zorm.RegisterCustomDriverValueConver(nil,"TEXT", CustomDMText{})
 
 **/
