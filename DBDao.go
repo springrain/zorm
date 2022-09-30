@@ -252,7 +252,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	// If db Connection does not exist, the default datasource will be used to start the transaction
 	var checkerr error
 	var dbConnection *dataBaseConnection
-	ctx, dbConnection, checkerr = checkDBConnection(ctx, false, 1)
+	ctx, dbConnection, checkerr = checkDBConnection(ctx, dbConnection, false, 1)
 	if checkerr != nil {
 		return nil, checkerr
 	}
@@ -499,7 +499,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
 	if dbConnectionerr != nil {
 		return has, dbConnectionerr
 	}
@@ -727,7 +727,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
 	if dbConnectionerr != nil {
 		return dbConnectionerr
 	}
@@ -985,7 +985,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, false, 0)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
@@ -1820,12 +1820,15 @@ var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启
 // context必须传入,不能为空.rwType=0 read,rwType=1 write
 // checkDBConnection It is possible to create a db Connection or open a transaction, so check it as close as possible to execution
 // The context must be passed in and cannot be empty. rwType=0 read, rwType=1 write
-func checkDBConnection(ctx context.Context, hastx bool, rwType int) (context.Context, *dataBaseConnection, error) {
-
-	dbConnection, errFromContext := getDBConnectionFromContext(ctx)
-	if errFromContext != nil {
-		return ctx, nil, errFromContext
+func checkDBConnection(ctx context.Context, dbConnection *dataBaseConnection, hastx bool, rwType int) (context.Context, *dataBaseConnection, error) {
+	var errFromContext error
+	if dbConnection == nil {
+		dbConnection, errFromContext = getDBConnectionFromContext(ctx)
+		if errFromContext != nil {
+			return ctx, nil, errFromContext
+		}
 	}
+
 	//dbConnection为空
 	//dbConnection is nil
 	if dbConnection == nil {
@@ -1872,7 +1875,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
 	var dbConnection *dataBaseConnection
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, true, 1)
+	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, true, 1)
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
