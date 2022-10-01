@@ -9,8 +9,7 @@ import (
 	"strings"
 )
 
-//customDriverValueMap 用于配置driver.Value和对应的处理关系,key是 drier.Value 的字符串,例如 *dm.DmClob
-//一般是放到init方法里进行添加
+//customDriverValueMap 用于配置数据库字段类型的处理关系,key是数据库字段类型的字符串,例如 TEXT
 var customDriverValueMap = make(map[string]ICustomDriverValueConver)
 
 //ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
@@ -31,7 +30,8 @@ type driverValueInfo struct {
 	tempDriverValue         interface{}
 }
 
-//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
+//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+//一般是放到init方法里进行注册
 func RegisterCustomDriverValueConver(columnType string, customDriverValueConver ICustomDriverValueConver) error {
 	if len(columnType) < 1 {
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
