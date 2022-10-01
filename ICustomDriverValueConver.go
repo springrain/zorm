@@ -32,7 +32,7 @@ type driverValueInfo struct {
 }
 
 //RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
-func RegisterCustomDriverValueConver(ctx context.Context, columnType string, customDriverValueConver ICustomDriverValueConver) error {
+func RegisterCustomDriverValueConver(columnType string, customDriverValueConver ICustomDriverValueConver) error {
 	if len(columnType) < 1 {
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
 	}
@@ -77,8 +77,8 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	str, errReadString := dmClob.ReadString(1, dmlenInt)
 	return &str, errReadString
 }
-//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
-//一般是放到init方法里进行添加
-zorm.RegisterCustomDriverValueConver(nil,"TEXT", CustomDMText{})
+//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+//一般是放到init方法里进行注册
+zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
 
 **/
