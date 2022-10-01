@@ -525,14 +525,14 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 			//字段的反射值
 			fieldValue := valueOf.FieldByName(field.Name)
 			//根据接收的类型,获取到类型转换的接口实现
-			var converFunc ICustomDriverValueConver
+			var customDriverValueConver ICustomDriverValueConver
 			var converOK = false
 			if cdvMapHasBool {
 				databaseTypeName := columnType.DatabaseTypeName()
 				if len(databaseTypeName) < 1 {
 					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
 				}
-				converFunc, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
+				customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
 			}
 
 			//类型转换的临时值
@@ -542,9 +542,9 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 			if converOK {
 				//获取需要转换的临时值
 				typeOf := fieldValue.Type()
-				tempDriverValue, errGetDriverValue = converFunc.GetDriverValue(ctx, columnType, &typeOf, finder)
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType, &typeOf, finder)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->conver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
 					return errGetDriverValue
 				}
@@ -552,7 +552,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 				if tempDriverValue != nil {
 					values[i] = tempDriverValue
 					dvinfo := driverValueInfo{}
-					dvinfo.converFunc = converFunc
+					dvinfo.customDriverValueConver = customDriverValueConver
 					dvinfo.columnType = columnType
 					dvinfo.tempDriverValue = tempDriverValue
 					fieldTempDriverValueMap[fieldValue] = &dvinfo
@@ -580,9 +580,9 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.converFunc.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf, driverValueInfo.tempDriverValue, finder)
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf, driverValueInfo.tempDriverValue, finder)
 		if errConverDriverValue != nil {
-			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->conver.ConverDriverValue异常:%w", errConverDriverValue)
+			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return errConverDriverValue
 		}

@@ -26,9 +26,9 @@ type ICustomDriverValueConver interface {
 	ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType *reflect.Type, tempDriverValue driver.Value, finder *Finder) (interface{}, error)
 }
 type driverValueInfo struct {
-	converFunc      ICustomDriverValueConver
-	columnType      *sql.ColumnType
-	tempDriverValue interface{}
+	customDriverValueConver ICustomDriverValueConver
+	columnType              *sql.ColumnType
+	tempDriverValue         interface{}
 }
 
 //RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 text 无法直接转化成 string
