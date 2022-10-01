@@ -532,7 +532,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 				if len(databaseTypeName) < 1 {
 					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
 				}
-				converFunc, converOK = customDriverValueMap[databaseTypeName]
+				converFunc, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
 			}
 
 			//类型转换的临时值
