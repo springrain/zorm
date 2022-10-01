@@ -1,5 +1,5 @@
 v1.6.1
- - 使用RegisterCustomDriverValueConver替换暴露的CustomDriverValueMap,将 ```zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}```修改为```zorm.RegisterCustomDriverValueConver(nil,"TEXT", CustomDMText{})```
+ - 使用RegisterCustomDriverValueConver替换暴露的CustomDriverValueMap,将 ```zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}```修改为```zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})```
  - 简化自增序列的实现,使用string代替map[string]string
  - 使用OverrideFunc重写zorm的函数,暴露WrapUpdateStructFinder函数
  - 去掉kingbase列的大写转换,修改字符串拼接方式,提升性能
