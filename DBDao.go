@@ -17,6 +17,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
+
+	"gitee.com/chunanyong/zorm/decimal"
 )
 
 // FuncReadWriteStrategy 数据库的读写分离的策略,用于外部重写实现自定义的逻辑,也可以使用ctx标识,处理多库的场景,rwType=0 read,rwType=1 write
@@ -1055,14 +1058,15 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			var converOK bool = false
 			//类型转换的临时值
 			var tempDriverValue driver.Value
+			//根据接收的类型,获取到类型转换的接口实现
+			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			//判断是否有自定义扩展,避免无意义的反射
 			if cdvMapHasBool {
-				//根据接收的类型,获取到类型转换的接口实现
-				databaseTypeName := columnType.DatabaseTypeName()
+
 				if len(databaseTypeName) < 1 {
 					return nil, errors.New("->sqlRowsValues-->驱动不支持的字段类型")
 				}
-				customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
+				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 			}
 			var errGetDriverValue error
 			//如果需要类型转换
@@ -1089,8 +1093,28 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 				continue
 			}
 
-			//不需要类型转换,正常赋值
-			values[i] = new(interface{})
+			switch databaseTypeName {
+			case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG":
+				values[i] = new(string)
+			case "INT", "INT4", "INTEGER", "SERIAL", "TINYINT", "BIT", "SMALLINT", "SMALLSERIAL", "INT2":
+				values[i] = new(int)
+			case "BIGINT", "BIGSERIAL", "INT8":
+				values[i] = new(int64)
+			case "FLOAT", "REAL":
+				values[i] = new(float32)
+			case "DOUBLE":
+				values[i] = new(float64)
+			case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
+				values[i] = new(decimal.Decimal)
+			case "BOOLEAN", "BOOL":
+				values[i] = new(bool)
+			case "DATE", "TIME", "DATETIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL", "YEAR":
+				values[i] = new(time.Time)
+			default:
+				//不需要类型转换,正常赋值
+				values[i] = new(interface{})
+			}
+
 		}
 		//scan赋值
 		//scan assignment
@@ -1125,7 +1149,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			v := reflect.ValueOf(values[i]).Elem().Interface()
 			//从[]byte转化成实际的类型值,例如string,int
 			//Convert from []byte to actual type value, such as string, int
-			v = converValueColumnType(v, columnType)
+			//v = converValueColumnType(v, columnType)
 			//赋值到Map
 			//Assign to Map
 			result[columnType.Name()] = v

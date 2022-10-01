@@ -3,10 +3,7 @@ package zorm
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
-
-	"gitee.com/chunanyong/zorm/decimal"
 )
 
 //OverrideFunc 重写ZORM的函数,用于风险监控,只要查看这个函数的调用,就知道哪些地方重写了函数,避免项目混乱.当你使用这个函数时,你必须知道自己在做什么
@@ -113,7 +110,13 @@ func OverrideFunc(ctx context.Context, funcName string, funcObject interface{}) 
 	}
 	return false, nil, nil
 }
+func typeConvertInt64toInt(from int64) (int, error) {
+	//int64 转 int
+	strInt64 := strconv.FormatInt(from, 10)
+	return strconv.Atoi(strInt64)
+}
 
+/*
 func typeConvertFloat32(i interface{}) (float32, error) {
 	if i == nil {
 		return 0, nil
@@ -155,12 +158,6 @@ func typeConvertDecimal(i interface{}) (decimal.Decimal, error) {
 		return decimal.Zero, err
 	}
 	return decimal.NewFromString(v)
-}
-
-func typeConvertInt64toInt(from int64) (int, error) {
-	//int64 转 int
-	strInt64 := strconv.FormatInt(from, 10)
-	return strconv.Atoi(strInt64)
 }
 
 func typeConvertInt64(i interface{}) (int64, error) {
@@ -278,7 +275,7 @@ func typeConvertInt(i interface{}) (int, error) {
 	}
 }
 
-/*
+
 
 func typeConvertTime(i interface{}, format string, TZLocation ...*time.Location) (time.Time, error) {
 	s, err := typeConvertString(i)

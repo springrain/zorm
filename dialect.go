@@ -737,6 +737,8 @@ func findDeleteTableName(strsql *string) []string {
 
 }
 
+/*
+
 //converValueColumnType 根据数据库的字段类型,转化成Go的类型,不处理sql.Nullxxx类型
 //converValueColumnType According to the field type of the database, it is converted to the type of Go, and the sql.Nullxxx type is not processed
 func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
@@ -776,9 +778,9 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	case "BOOLEAN", "BOOL":
 		val, err = typeConvertBool(v)
 
-		//MySQL DSN加上parseTime=true参数,会自动转换为time格式,默认查询出来的是[]byte数组
+		//MySQL DSN加上parseTime=true参数,会自动转换为time格式,默认查询出来的是[]byte数组,这里不再处理
 
-		/*
+
 			case "DATE":
 				val, err = typeConvertTime(v, "2006-01-02", time.Local)
 			case "TIME":
@@ -787,7 +789,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 				val, err = typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
 			case "TIMESTAMP":
 				val, err = typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
-		*/
+
 
 	//其他类型以后再写.....
 	//Other types will be written later...
@@ -800,7 +802,7 @@ func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{
 	//返回转换后的值
 	return val
 }
-
+*/
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 //FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID = func(ctx context.Context) string {
