@@ -569,7 +569,11 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 			//判断是否有自定义扩展,避免无意义的反射
 			if cdvMapHasBool {
 				//根据接收的类型,获取到类型转换的接口实现
-				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
+				databaseTypeName := columnTypes[0].DatabaseTypeName()
+				if len(databaseTypeName) < 1 {
+					return has, errors.New("->sqlRowsValues-->驱动不支持的字段类型")
+				}
+				converFunc, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
 			}
 
 			var errGetDriverValue error
@@ -790,7 +794,12 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 			//根据接收的类型,获取到类型转换的接口实现
 			if cdvMapHasBool {
-				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
+				//根据接收的类型,获取到类型转换的接口实现
+				databaseTypeName := columnTypes[0].DatabaseTypeName()
+				if len(databaseTypeName) < 1 {
+					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
+				}
+				converFunc, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
 			}
 
 			//类型转换的临时值
@@ -1046,9 +1055,12 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			var tempDriverValue driver.Value
 			//判断是否有自定义扩展,避免无意义的反射
 			if cdvMapHasBool {
-				dv := driverValue.Index(i)
 				//根据接收的类型,获取到类型转换的接口实现
-				converFunc, converOK = customDriverValueMap[dv.Elem().Type().String()]
+				databaseTypeName := columnType.DatabaseTypeName()
+				if len(databaseTypeName) < 1 {
+					return nil, errors.New("->sqlRowsValues-->驱动不支持的字段类型")
+				}
+				converFunc, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
 			}
 			var errGetDriverValue error
 			//如果需要类型转换
