@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"gitee.com/chunanyong/zorm/decimal"
 )
@@ -1093,21 +1094,20 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			}
 
 			switch databaseTypeName {
-			/*
-				case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG", "CHARACTER", "MEMO":
-					values[i] = new(string)
-				case "INT", "INT4", "INTEGER", "SERIAL", "SERIAL4", "SERIAL2", "TINYINT", "MEDIUMINT", "SMALLINT", "SMALLSERIAL", "INT2", "VARBIT", "AUTONUMBER":
-					values[i] = new(int)
-				case "BIGINT", "BIGSERIAL", "INT8", "SERIAL8":
-					values[i] = new(int64)
-				case "FLOAT", "REAL", "FLOAT4", "SINGLE":
-					values[i] = new(float32)
-				case "DOUBLE", "FLOAT8":
-					values[i] = new(float64)
-				case "DATE", "TIME", "DATETIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL", "YEAR", "DATETIME2", "SMALLDATETIME", "DATETIMEOFFSET":
-					values[i] = new(time.Time)
 
-			*/
+			case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG", "CHARACTER", "MEMO":
+				values[i] = new(string)
+			case "INT", "INT4", "INTEGER", "SERIAL", "SERIAL4", "SERIAL2", "TINYINT", "MEDIUMINT", "SMALLINT", "SMALLSERIAL", "INT2", "VARBIT", "AUTONUMBER":
+				values[i] = new(int)
+			case "BIGINT", "BIGSERIAL", "INT8", "SERIAL8":
+				values[i] = new(int64)
+			case "FLOAT", "REAL", "FLOAT4", "SINGLE":
+				values[i] = new(float32)
+			case "DOUBLE", "FLOAT8":
+				values[i] = new(float64)
+			case "DATE", "TIME", "DATETIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL", "DATETIME2", "SMALLDATETIME", "DATETIMEOFFSET":
+				values[i] = new(time.Time)
+
 			case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
 				values[i] = new(decimal.Decimal)
 			case "BOOLEAN", "BOOL", "BIT":

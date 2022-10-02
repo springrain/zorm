@@ -1,6 +1,6 @@
 v1.6.1
  - 使用RegisterCustomDriverValueConver替换暴露的CustomDriverValueMap,将 ```zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}```修改为```zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})```
- - 简化自增序列的实现,使用string代替map[string]string.取消常见类型的转换,由驱动自行处理
+ - 简化自增序列的实现,使用string代替map[string]string
  - 使用OverrideFunc重写zorm的函数,暴露WrapUpdateStructFinder函数
  - 去掉kingbase列的大写转换,修改字符串拼接方式,提升性能
  - BindContextDisableTransaction 用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
