@@ -585,11 +585,9 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	str, errReadString := dmClob.ReadString(1, dmlenInt)
 	return &str, errReadString
 }
-//zorm.CustomDriverValueMap for configuration driver.Value and the corresponding processing relationship, key is the string of drier.Value. For example *dm.DmClob
-//It is usually added in the init method
-zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}
-
-
+//RegisterCustomDriverValueConver registers custom field processing logic to drive scenarios where direct conversion is not possible, such as Damon's TEXT cannot be directly converted to string
+//It is usually registered in the init method
+zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
 ```  
 ## Global transaction
 Implement global transactions based on seata-golang.
