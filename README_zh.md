@@ -39,8 +39,10 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 - 达梦使用time作为where条件,需要注意时区问题,建议使用字符串代替time, https://eco.dameng.com/community/question/936924eb9861e6d429114e87d6f3a854  
 - 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
 ```go
-//00.引入数据库驱动
-"gitee.com/chunanyong/dm"
+import (
+	//00.引入数据库驱动
+	"gitee.com/chunanyong/dm"
+)
 
 //实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
