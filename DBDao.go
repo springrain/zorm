@@ -789,6 +789,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 	exportFieldMap := make(map[string]reflect.StructField)
+	//反射获取 []driver.Value的值,用于处理nil值和自定义类型
+	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	driverValue = driverValue.FieldByName("lastcols")
 	//循环遍历结果集
 	//Loop through the result set
 	for rows.Next() {
@@ -796,7 +799,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		pv := reflect.New(sliceElementType)
 		pvElem := pv.Elem()
 		pvInterface := pv.Interface()
-		sliceScanner, structType, scanerr = wrapRowValues(ctx, &pv, &pvElem, &pvInterface, rows, columnTypes, sliceScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		sliceScanner, structType, scanerr = wrapRowValues(ctx, &pv, &pvElem, &pvInterface, rows, &driverValue, columnTypes, sliceScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
