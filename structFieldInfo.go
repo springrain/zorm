@@ -21,7 +21,6 @@ package zorm
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -495,6 +494,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
+/*
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
@@ -609,7 +609,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 
 	return scanerr
 }
-
+*/
 var defaultBoolPtr = new(bool)
 
 func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *reflect.Value, valueOfInterface *interface{}, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, sliceScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
