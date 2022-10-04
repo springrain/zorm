@@ -324,7 +324,7 @@ func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, 
 func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 	dbColumnFieldSlice, dbmapErr := getCacheStructFieldInfo(typeOf, dbColumnNameSlicePrefix)
 	if dbmapErr != nil {
-		return nil, fmt.Errorf("->getDBColumnFieldNameSlice-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
+		return nil, fmt.Errorf("->getDBColumnFieldNameSlice-->getCacheStructFieldInfo()取值错误:%w", dbmapErr)
 	}
 	dbcfSlice, efOK := dbColumnFieldSlice.([]string)
 	if !efOK {
@@ -364,7 +364,7 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{
 func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
 	dbColumnFieldMap, dbmapErr := getCacheStructFieldInfo(typeOf, keyPrefix)
 	if dbmapErr != nil {
-		return nil, fmt.Errorf("->getCacheStructFieldInfoMap-->getCacheStructFieldInfo()取值异常:%w", dbmapErr)
+		return nil, fmt.Errorf("->getCacheStructFieldInfoMap-->getCacheStructFieldInfo()取值错误:%w", dbmapErr)
 	}
 	dbcfMap, efOK := dbColumnFieldMap.(map[string]reflect.StructField)
 	if !efOK {
@@ -561,7 +561,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 				//获取需要转换的临时值
 				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
 					return errGetDriverValue
 				}
@@ -599,7 +599,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 		typeOf := fieldValue.Type()
 		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf)
 		if errConverDriverValue != nil {
-			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
+			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return errConverDriverValue
 		}
@@ -734,7 +734,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		//typeOf := fieldValue.Type()
 		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue)
 		if errConverDriverValue != nil {
-			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
+			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return oneColumnScanner, structType, errConverDriverValue
 		}
@@ -809,7 +809,7 @@ func sqlRowsValuesFast(rows *sql.Rows, columns []string, dbColumnFieldMap map[st
 	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 	scanerr := rows.Scan(values...)
 	if scanerr != nil {
-		scanerr = fmt.Errorf("->rows.Scan异常:%w", scanerr)
+		scanerr = fmt.Errorf("->rows.Scan错误:%w", scanerr)
 		FuncLogError(scanerr)
 		return scanerr
 	}

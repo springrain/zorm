@@ -412,7 +412,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	info, err := doTransaction(ctx)
 
 	if err != nil {
-		err = fmt.Errorf("->Transaction-->doTransaction业务执行异常:%w", err)
+		err = fmt.Errorf("->Transaction-->doTransaction业务执行错误:%w", err)
 		FuncLogError(ctx, err)
 
 		//如果禁用了事务
@@ -584,7 +584,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->sqlRowsValues异常:%w", scanerr)
+			scanerr = fmt.Errorf("->Query-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return has, scanerr
 		}
@@ -673,7 +673,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//Query based on statements and parameters
 	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if e != nil {
-		e = fmt.Errorf("->Query-->queryContext查询rows异常:%w", e)
+		e = fmt.Errorf("->Query-->queryContext查询rows错误:%w", e)
 		FuncLogError(ctx, e)
 		return e
 	}
@@ -714,7 +714,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->sqlRowsValues异常:%w", scanerr)
+			scanerr = fmt.Errorf("->Query-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return scanerr
 		}
@@ -893,7 +893,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 				//获取需要转的临时值
 				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
 				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
+					errGetDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
 					return nil, errGetDriverValue
 				}
@@ -940,7 +940,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		//scan assignment
 		scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->QueryMap-->rows.Scan异常:%w", scanerr)
+			scanerr = fmt.Errorf("->QueryMap-->rows.Scan错误:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return nil, scanerr
 		}
@@ -951,7 +951,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue)
 			if errConverDriverValue != nil {
-				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
+				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)
 				return nil, errConverDriverValue
 			}
@@ -1077,7 +1077,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("->Insert-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
+		columnAndValueErr = fmt.Errorf("->Insert-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
@@ -1208,7 +1208,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	entity := entityStructSlice[0]
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("->InsertSlice-->columnAndValue获取实体类的列和值异常:%w", columnAndValueErr)
+		columnAndValueErr = fmt.Errorf("->InsertSlice-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
