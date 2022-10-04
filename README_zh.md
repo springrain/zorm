@@ -371,7 +371,6 @@ func TestInsertEntityMap(t *testing.T) {
 //TestQueryRow 05.测试查询一个struct对象
 func TestQueryRow(t *testing.T) {
 
-    //只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
 	//声明一个对象的指针,用于承载返回的数据
 	demo := &demoStruct{}
 
@@ -420,7 +419,6 @@ func TestQueryRowMap(t *testing.T) {
 //TestQuery 07.测试查询对象列表
 func TestQuery(t *testing.T) {
 
-	//只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
 	//创建用于接收结果的slice
 	list := make([]*demoStruct, 0)
 
