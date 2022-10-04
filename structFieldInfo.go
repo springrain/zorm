@@ -612,7 +612,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 */
 var defaultBoolPtr = new(bool)
 
-func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *reflect.Value, valueOfInterface *interface{}, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, sliceScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
+func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, sliceScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
 
 	ctLen := len(columnTypes)
 	//声明载体数组,用于存放struct的属性指针
@@ -631,12 +631,12 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 		sliceScanner = defaultBoolPtr
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
-		pkgPath := valueOfElem.Type().PkgPath()
+		pkgPath := valueOf.Elem().Type().PkgPath()
 		if pkgPath == "" || pkgPath == "time" { //系统内置变量和time包
 			*sliceScanner = true
 		}
 		if !*sliceScanner {
-			_, *sliceScanner = (*valueOfInterface).(sql.Scanner)
+			_, *sliceScanner = valueOf.Interface().(sql.Scanner)
 		}
 
 	}
@@ -645,7 +645,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 	}
 
 	if structType == nil && valueOf != nil && !*sliceScanner {
-		st := valueOfElem.Type()
+		st := valueOf.Elem().Type()
 		structType = &st
 		var err error
 		//获取到类型的字段缓存
@@ -688,7 +688,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 			continue
 
 		} else if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
-			values[i] = (*valueOfInterface)
+			values[i] = valueOf.Interface()
 			continue
 		} else if structType != nil {
 
@@ -702,7 +702,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 				//fieldType := refPV.FieldByName(field.Name).Type()
 				//v := reflect.New(field.Type).Interface()
 				//字段的反射值
-				fieldValue := valueOfElem.FieldByName(field.Name)
+				fieldValue := valueOf.Elem().FieldByName(field.Name)
 				v := fieldValue.Addr().Interface()
 				//v := new(interface{})
 				values[i] = v
@@ -714,7 +714,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 	if err != nil {
 		return sliceScanner, structType, err
 	}
-	if len(fieldTempDriverValueMap) > 0 {
+	if len(fieldTempDriverValueMap) < 1 {
 		return sliceScanner, structType, err
 	}
 
@@ -722,14 +722,14 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		//typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, nil)
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return sliceScanner, structType, errConverDriverValue
 		}
 		if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
-			valueOf.Set(reflect.ValueOf(rightValue))
+			valueOf.Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
 		} else if structType != nil {
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
@@ -740,7 +740,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 				//fieldType := refPV.FieldByName(field.Name).Type()
 				//v := reflect.New(field.Type).Interface()
 				//字段的反射值
-				fieldValue := valueOfElem.FieldByName(field.Name)
+				fieldValue := valueOf.Elem().FieldByName(field.Name)
 				//给字段赋值
 				fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 			}
