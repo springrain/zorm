@@ -28,7 +28,8 @@ import (
 
 //customDriverValueMap 用于配置数据库字段类型的处理关系,key是数据库字段类型的字符串,例如 TEXT
 var customDriverValueMap = make(map[string]ICustomDriverValueConver)
-var cdvmLen int
+
+//var cdvmLen int
 var iscdvm bool
 
 //ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
@@ -55,7 +56,7 @@ func RegisterCustomDriverValueConver(columnType string, customDriverValueConver 
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
 	}
 	customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
-	cdvmLen = len(customDriverValueMap)
+	//cdvmLen = len(customDriverValueMap)
 
 	iscdvm = true
 	return nil
@@ -63,18 +64,15 @@ func RegisterCustomDriverValueConver(columnType string, customDriverValueConver 
 
 /**
 
-//实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库text类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+//实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库TEXT类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
-//GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
-//如果无法获取到structFieldType,例如Map查询,会传入nil
-//如果返回值为nil,接口扩展逻辑无效,使用原生的方式接收数据库字段值
-func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType reflect.Type, finder *zorm.Finder) (driver.Value, error) {
+//GetDriverValue 根据数据库列类型,返回driver.Value的实例
+func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.ColumnType) (driver.Value, error) {
 	return &dm.DmClob{}, nil
 }
-//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,Finder对象
-//如果无法获取到structFieldType,例如Map查询,会传入nil
+//ConverDriverValue 数据库列类型,GetDriverValue返回的driver.Value的临时接收值
 //返回符合接收类型值的指针,指针,指针!!!!
-func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType reflect.Type, tempDriverValue driver.Value, finder *zorm.Finder) (interface{}, error) {
+func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value) (interface{}, error) {
 	//类型转换
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
