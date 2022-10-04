@@ -851,7 +851,6 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 	//反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
-	cdvMapHasBool := len(customDriverValueMap) > 0
 	resultMapList := make([]map[string]interface{}, 0)
 	//循环遍历结果集
 	//Loop through the result set
@@ -865,7 +864,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 
 		//记录需要类型转换的字段信息
 		var fieldTempDriverValueMap map[int]*driverValueInfo
-		if cdvMapHasBool {
+		if iscdvm {
 			fieldTempDriverValueMap = make(map[int]*driverValueInfo)
 		}
 
@@ -888,10 +887,9 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			//根据接收的类型,获取到类型转换的接口实现
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			//判断是否有自定义扩展,避免无意义的反射
-			if cdvMapHasBool {
-
+			if iscdvm {
 				if len(databaseTypeName) < 1 {
-					return nil, errors.New("->sqlRowsValues-->驱动不支持的字段类型")
+					return nil, errors.New("->QueryMap-->驱动不支持的字段类型")
 				}
 				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 			}
