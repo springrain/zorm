@@ -600,7 +600,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 			var errGetDriverValue error
 			if converOK { //如果有类型需要转换
 				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnTypes[0], &typeOf, finder)
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnTypes[0])
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("->QueryRow-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
@@ -628,7 +628,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		//如果需要类型转换,需要把临时值转换成需要接收的类型值
 		if converOK && tempDriverValue != nil {
 			//根据接收的临时值,返回需要接收值的指针
-			rightValue, errConverDriverValue := customDriverValueConver.ConverDriverValue(ctx, columnTypes[0], &typeOf, tempDriverValue, finder)
+			rightValue, errConverDriverValue := customDriverValueConver.ConverDriverValue(ctx, columnTypes[0], &typeOf)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryRow-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)
@@ -714,6 +714,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//获取数组内的元素类型
 	//Get the element type in the array
 	sliceElementType := sliceValue.Type().Elem()
+
 	//slice数组里是否是指针,实际参数类似 *[]*struct,兼容这种类型
 	sliceElementTypePtr := false
 	//如果数组里还是指针类型
@@ -768,6 +769,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//先判断error 再关闭
 	defer rows.Close()
 
+	//_, ok := reflect.New(sliceElementType).Interface().(sql.Scanner)
+	//fmt.Println(ok)
+
 	//数据库返回的字段类型
 	columnTypes, cte := rows.ColumnTypes()
 	if cte != nil {
@@ -780,133 +784,20 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, column0Err)
 		return column0Err
 	}
-	//反射获取 []driver.Value的值
-	driverValue := reflect.Indirect(reflect.ValueOf(rows))
-	driverValue = driverValue.FieldByName("lastcols")
-
-	cdvMapHasBool := len(customDriverValueMap) > 0
-
-	//如果是基础类型,就查询一个字段
-	//If it is a basic type, query a field
-	//if allowBaseTypeMap[sliceElementType.Kind()] {
-	if len(columnTypes) == 1 {
-
-		//循环遍历结果集
-		//Loop through the result set
-		for rows.Next() {
-
-			//初始化一个基本类型,new出来的是指针
-			//Initialize a basic type, and new is a pointer
-			pv := reflect.New(sliceElementType)
-			//列表查询单个字段要处理数据库为null的情况,如果是Query,会有错误异常,不需要处理null
-			dv := driverValue.Index(0)
-			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
-				if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
-					sliceValue.Set(reflect.Append(sliceValue, pv))
-				} else {
-					sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
-				}
-				continue
-			}
-			//类型转换的接口实现
-			var customDriverValueConver ICustomDriverValueConver
-			//是否需要类型转换
-			var converOK bool = false
-
-			//根据接收的类型,获取到类型转换的接口实现
-			if cdvMapHasBool {
-				//根据接收的类型,获取到类型转换的接口实现
-				databaseTypeName := columnTypes[0].DatabaseTypeName()
-				if len(databaseTypeName) < 1 {
-					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
-				}
-				customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
-			}
-
-			//类型转换的临时值
-			var tempDriverValue driver.Value
-			var errGetDriverValue error
-			//如果需要转换
-			if converOK {
-				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnTypes[0], &sliceElementType, finder)
-				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("->Query-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
-					FuncLogError(ctx, errGetDriverValue)
-					return errGetDriverValue
-				}
-				if tempDriverValue != nil { //为nil,不做处理
-					pv = reflect.ValueOf(tempDriverValue)
-				}
-
-			}
-
-			//把数据库值赋给指针
-			//Assign database value to pointer
-			scanerr := rows.Scan(pv.Interface())
-
-			if scanerr != nil {
-				scanerr = fmt.Errorf("->Query-->rows.Scan异常:%w", scanerr)
-				FuncLogError(ctx, scanerr)
-				return scanerr
-			}
-			//如果需要类型转换,需要把临时值转换成需要接收的类型值
-			if converOK && tempDriverValue != nil {
-				//根据接收的临时值,返回需要接收值的指针
-				rightValue, errConverDriverValue := customDriverValueConver.ConverDriverValue(ctx, columnTypes[0], &sliceElementType, tempDriverValue, finder)
-				if errConverDriverValue != nil {
-					errConverDriverValue = fmt.Errorf("->Query-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
-					FuncLogError(ctx, errConverDriverValue)
-					return errConverDriverValue
-				}
-				//把正确的值赋值给pv
-				pv = reflect.ValueOf(rightValue)
-			}
-
-			//通过反射给slice添加元素.添加指针下的真实元素
-			//Add elements to slice through reflection. Add real elements under the pointer
-			if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
-				sliceValue.Set(reflect.Append(sliceValue, pv))
-			} else {
-				sliceValue.Set(reflect.Append(sliceValue, pv.Elem()))
-			}
-
-		}
-
-		//查询总条数
-		//Query total number
-		if page != nil && finder.SelectTotalCount {
-			count, counterr := selectCount(ctx, finder)
-			if counterr != nil {
-				counterr = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", counterr)
-				FuncLogError(ctx, counterr)
-				return counterr
-			}
-			page.setTotalCount(count)
-		}
-		return nil
-		//只查询一个字段的逻辑结束
-	}
-
-	//获取到类型的字段缓存
-	//Get the type field cache
-	dbColumnFieldMap, exportFieldMap, dbe := getDBColumnExportFieldMap(&sliceElementType)
-	if dbe != nil {
-		dbe = fmt.Errorf("->Query-->getDBColumnFieldMap获取字段缓存错误:%w", dbe)
-		FuncLogError(ctx, dbe)
-		return dbe
-	}
-
+	var sliceScanner *bool
+	var scanerr error
+	var structType *reflect.Type
+	dbColumnFieldMap := make(map[string]reflect.StructField)
+	exportFieldMap := make(map[string]reflect.StructField)
 	//循环遍历结果集
 	//Loop through the result set
 	for rows.Next() {
-		//deepCopy(a, entity)
-		//反射初始化一个数组内的元素
-		//new出来的是指针
-		//Reflectively initialize the elements in an array
-		pv := reflect.New(sliceElementType).Elem()
-		//设置接收值
-		scanerr := sqlRowsValues(ctx, rows, &driverValue, columnTypes, dbColumnFieldMap, exportFieldMap, &pv, finder, cdvMapHasBool)
+
+		pv := reflect.New(sliceElementType)
+		pvElem := pv.Elem()
+		pvInterface := pv.Interface()
+		sliceScanner, structType, scanerr = wrapRowValues(ctx, &pv, &pvElem, &pvInterface, rows, columnTypes, sliceScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
@@ -1090,7 +981,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 			//如果需要类型转换
 			if converOK {
 				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType, nil, finder)
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
@@ -1148,7 +1039,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		for i, driverValueInfo := range fieldTempDriverValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, nil, driverValueInfo.tempDriverValue, finder)
+			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, nil)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)

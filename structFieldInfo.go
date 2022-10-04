@@ -559,8 +559,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 			//如果需要类型转换
 			if converOK {
 				//获取需要转换的临时值
-				typeOf := fieldValue.Type()
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType, &typeOf, finder)
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue异常:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
@@ -598,7 +597,7 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf, driverValueInfo.tempDriverValue, finder)
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
@@ -609,6 +608,155 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 	}
 
 	return scanerr
+}
+
+var defaultBoolPtr = new(bool)
+
+func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *reflect.Value, valueOfInterface *interface{}, rows *sql.Rows, columnTypes []*sql.ColumnType, sliceScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
+
+	ctLen := len(columnTypes)
+	//声明载体数组,用于存放struct的属性指针
+	//Declare a carrier array to store the attribute pointer of the struct
+	values := make([]interface{}, ctLen)
+	oneColumn := ctLen == 1
+	//oneColumn := false
+	//单列查询并且可以直接映射,类似 string 或者[]string
+	if oneColumn && sliceScanner == nil && valueOf != nil { //如果是slice数组类型
+		sliceScanner = defaultBoolPtr
+		//new出来的是指针
+		//Reflectively initialize the elements in an array
+		pkgPath := valueOfElem.Type().PkgPath()
+		if pkgPath == "" || pkgPath == "time" { //系统内置变量和time包
+			*sliceScanner = true
+		}
+		if !*sliceScanner {
+			_, *sliceScanner = (*valueOfInterface).(sql.Scanner)
+		}
+
+	}
+	if sliceScanner == nil {
+		sliceScanner = defaultBoolPtr
+	}
+
+	if structType == nil && valueOf != nil && !*sliceScanner {
+		st := valueOfElem.Type()
+		structType = &st
+		var err error
+		//获取到类型的字段缓存
+		//Get the type field cache
+		*dbColumnFieldMap, *exportFieldMap, err = getDBColumnExportFieldMap(structType)
+		if err != nil {
+			err = fmt.Errorf("->wrapRowValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			return nil, nil, err
+		}
+	}
+
+	var customDriverValueConver ICustomDriverValueConver
+	var converOK bool
+
+	for i, columnType := range columnTypes {
+		if iscdvm {
+			//根据接收的类型,获取到类型转换的接口实现
+			customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(columnType.DatabaseTypeName())]
+		}
+
+		if converOK { //如果是需要转换的字段
+			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType)
+			if err != nil {
+				return sliceScanner, structType, err
+			}
+			if dv == nil {
+				return sliceScanner, structType, errors.New("->wrapRowValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
+			}
+			values[i] = dv
+			continue
+
+		} else if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
+			values[i] = (*valueOfInterface)
+			continue
+		} else {
+			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
+			if err != nil {
+				return sliceScanner, structType, err
+			}
+			if field == nil { //如果不存在这个字段
+				values[i] = new(interface{})
+			} else {
+				//fieldType := refPV.FieldByName(field.Name).Type()
+				//v := reflect.New(field.Type).Interface()
+				//字段的反射值
+				fieldValue := valueOfElem.FieldByName(field.Name)
+				v := fieldValue.Addr().Interface()
+				//v := new(interface{})
+				values[i] = v
+			}
+		}
+
+	}
+	err := rows.Scan(values...)
+	if err != nil {
+		return sliceScanner, structType, err
+	}
+	/*
+		for i, columnType := range columnTypes {
+			//根据接收的类型,获取到类型转换的接口实现
+			customDriverValueConver, converOK := customDriverValueMap[strings.ToUpper(columnType.DatabaseTypeName())]
+			if converOK { //如果是需要转换的字段
+				dv, err := customDriverValueConver.ConverDriverValue(ctx, columnType, values[i])
+				if err != nil {
+					return sliceScanner, structType, err
+				}
+				if dv == nil {
+					return sliceScanner, structType, errors.New("->wrapRowValues-->ConverDriverValue.GetDriverValue返回的driver.Value不能为nil")
+				}
+				values[i] = dv
+			}
+			if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
+				if converOK { //需要转换的列
+					//*valueOf = reflect.ValueOf(values[i])
+					valueOf.Elem().Set(reflect.ValueOf(values[i]).Elem())
+				}
+
+				continue
+			}
+			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
+			if err != nil {
+				return sliceScanner, structType, err
+			}
+			if field != nil && values[i] != nil {
+				//字段的反射值
+				//fieldValue := valueOf.Elem().FieldByName(field.Name)
+				//给字段赋值
+				//fieldValue.Set(reflect.ValueOf(values[i]).Elem())
+			}
+		}
+	*/
+	return sliceScanner, structType, err
+}
+
+//
+func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*reflect.StructField, error) {
+
+	columnName := strings.ToLower(columnType.Name())
+	//columnName := "test"
+	//从缓存中获取列名的field字段
+	//Get the field field of the column name from the cache
+	field, fok := (*dbColumnFieldMap)[columnName]
+	if !fok {
+		field, fok = (*exportFieldMap)[columnName]
+		if !fok {
+			//尝试驼峰
+			cname := strings.ReplaceAll(columnName, "_", "")
+			field, fok = (*exportFieldMap)[cname]
+
+		}
+
+	}
+	if fok {
+		return &field, nil
+	}
+	return nil, nil
+
 }
 
 /*
