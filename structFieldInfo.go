@@ -616,6 +616,7 @@ var defaultBoolPtr = new(bool)
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
+// oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
 func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, oneColumnScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
 
 	ctLen := len(columnTypes)
@@ -656,7 +657,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		//Get the type field cache
 		*dbColumnFieldMap, *exportFieldMap, err = getDBColumnExportFieldMap(structType)
 		if err != nil {
-			err = fmt.Errorf("->wrapRowValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return nil, nil, err
 		}
 	}
@@ -679,7 +680,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 				return oneColumnScanner, structType, err
 			}
 			if dv == nil {
-				return oneColumnScanner, structType, errors.New("->wrapRowValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
+				return oneColumnScanner, structType, errors.New("->sqlRowsValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
 			}
 			values[i] = dv
 

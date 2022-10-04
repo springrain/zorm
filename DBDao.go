@@ -584,13 +584,13 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->wrapRowValues异常:%w", scanerr)
+			scanerr = fmt.Errorf("->Query-->sqlRowsValues异常:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return has, scanerr
 		}
 
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->QueryRow-->wrapRowValues错误:%w", scanerr)
+			scanerr = fmt.Errorf("->QueryRow-->sqlRowsValues错误:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return has, scanerr
 		}
@@ -720,7 +720,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
 		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->wrapRowValues异常:%w", scanerr)
+			scanerr = fmt.Errorf("->Query-->sqlRowsValues异常:%w", scanerr)
 			FuncLogError(ctx, scanerr)
 			return scanerr
 		}
