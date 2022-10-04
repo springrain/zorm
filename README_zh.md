@@ -424,7 +424,7 @@ func TestQuery(t *testing.T) {
 
 	//构造查询用的finder
 	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT id FROM " + demoStructTableName) // select * from t_demo
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1   //查询第1页,默认是1

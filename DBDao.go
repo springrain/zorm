@@ -560,7 +560,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		FuncLogError(ctx, column0Err)
 		return has, column0Err
 	}
-	var sliceScanner *bool
+	var oneColumnScanner *bool
 	var scanerr error
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
@@ -578,7 +578,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		}
 
 		pv := reflect.ValueOf(entity)
-		sliceScanner, structType, scanerr = wrapRowValues(ctx, &pv, rows, &driverValue, columnTypes, sliceScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, scanerr = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
@@ -701,7 +701,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, column0Err)
 		return column0Err
 	}
-	var sliceScanner *bool
+	var oneColumnScanner *bool
 	var scanerr error
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
@@ -714,7 +714,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	for rows.Next() {
 
 		pv := reflect.New(sliceElementType)
-		sliceScanner, structType, scanerr = wrapRowValues(ctx, &pv, rows, &driverValue, columnTypes, sliceScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, scanerr = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values

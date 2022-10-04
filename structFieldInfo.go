@@ -612,7 +612,11 @@ func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Val
 */
 var defaultBoolPtr = new(bool)
 
-func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, sliceScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
+// sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
+// fix:converting NULL to int is unsupported
+// 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
+// 感谢@fastabler提交的pr
+func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, oneColumnScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
 
 	ctLen := len(columnTypes)
 	//声明载体数组,用于存放struct的属性指针
@@ -627,24 +631,24 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	oneColumn := ctLen == 1
 	//oneColumn := false
 	//单列查询并且可以直接映射,类似 string 或者[]string
-	if oneColumn && sliceScanner == nil && valueOf != nil { //如果是slice数组类型
-		sliceScanner = defaultBoolPtr
+	if oneColumn && oneColumnScanner == nil && valueOf != nil { //如果是slice数组类型
+		oneColumnScanner = defaultBoolPtr
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
 		pkgPath := valueOf.Elem().Type().PkgPath()
 		if pkgPath == "" || pkgPath == "time" { //系统内置变量和time包
-			*sliceScanner = true
+			*oneColumnScanner = true
 		}
-		if !*sliceScanner {
-			_, *sliceScanner = valueOf.Interface().(sql.Scanner)
+		if !*oneColumnScanner {
+			_, *oneColumnScanner = valueOf.Interface().(sql.Scanner)
 		}
 
 	}
-	if sliceScanner == nil {
-		sliceScanner = defaultBoolPtr
+	if oneColumnScanner == nil {
+		oneColumnScanner = defaultBoolPtr
 	}
 
-	if structType == nil && valueOf != nil && !*sliceScanner {
+	if structType == nil && valueOf != nil && !*oneColumnScanner {
 		st := valueOf.Elem().Type()
 		structType = &st
 		var err error
@@ -672,10 +676,10 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		} else if converOK { //如果是需要转换的字段
 			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType)
 			if err != nil {
-				return sliceScanner, structType, err
+				return oneColumnScanner, structType, err
 			}
 			if dv == nil {
-				return sliceScanner, structType, errors.New("->wrapRowValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
+				return oneColumnScanner, structType, errors.New("->wrapRowValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
 			}
 			values[i] = dv
 
@@ -687,14 +691,14 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
 
-		} else if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
+		} else if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
 			values[i] = valueOf.Interface()
 			continue
 		} else if structType != nil {
 
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 			if err != nil {
-				return sliceScanner, structType, err
+				return oneColumnScanner, structType, err
 			}
 			if field == nil { //如果不存在这个字段
 				values[i] = new(interface{})
@@ -712,10 +716,10 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	}
 	err := rows.Scan(values...)
 	if err != nil {
-		return sliceScanner, structType, err
+		return oneColumnScanner, structType, err
 	}
 	if len(fieldTempDriverValueMap) < 1 {
-		return sliceScanner, structType, err
+		return oneColumnScanner, structType, err
 	}
 
 	//循环需要替换的值
@@ -726,19 +730,17 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
-			return sliceScanner, structType, errConverDriverValue
+			return oneColumnScanner, structType, errConverDriverValue
 		}
-		if *sliceScanner && oneColumn { //查询一个字段,并且可以直接接收
+		if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
 			valueOf.Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
-		} else if structType != nil {
+		} else if structType != nil { //如果是Struct类型接收
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 			if err != nil {
-				return sliceScanner, structType, err
+				return oneColumnScanner, structType, err
 			}
 			if field != nil { //如果存在这个字段
-				//fieldType := refPV.FieldByName(field.Name).Type()
-				//v := reflect.New(field.Type).Interface()
 				//字段的反射值
 				fieldValue := valueOf.Elem().FieldByName(field.Name)
 				//给字段赋值
@@ -748,7 +750,7 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 
 	}
 
-	return sliceScanner, structType, err
+	return oneColumnScanner, structType, err
 }
 
 //
