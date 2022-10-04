@@ -714,6 +714,9 @@ func wrapRowValues(ctx context.Context, valueOf *reflect.Value, valueOfElem *ref
 	if err != nil {
 		return sliceScanner, structType, err
 	}
+	if len(fieldTempDriverValueMap) > 0 {
+		return sliceScanner, structType, err
+	}
 
 	//循环需要替换的值
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
