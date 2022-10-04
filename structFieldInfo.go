@@ -754,7 +754,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	return oneColumnScanner, structType, err
 }
 
-//
+//getStructFieldByColumnType 获取Struct的字段Filed对象,兼容驼峰
 func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*reflect.StructField, error) {
 
 	columnName := strings.ToLower(columnType.Name())
