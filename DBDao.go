@@ -955,7 +955,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		for i, driverValueInfo := range fieldTempDriverValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, nil)
+			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue异常:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)
