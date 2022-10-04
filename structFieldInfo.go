@@ -619,6 +619,11 @@ var defaultBoolPtr = new(bool)
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
 func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, oneColumnScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
 
+	if valueOf == nil {
+		return nil, nil, errors.New("->sqlRowsValues-->valueOf为nil")
+	}
+	valueOfElem := valueOf.Elem()
+	valueOfInterface := valueOf.Interface()
 	ctLen := len(columnTypes)
 	//声明载体数组,用于存放struct的属性指针
 	//Declare a carrier array to store the attribute pointer of the struct
@@ -632,16 +637,16 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	oneColumn := ctLen == 1
 	//oneColumn := false
 	//单列查询并且可以直接映射,类似 string 或者[]string
-	if oneColumn && oneColumnScanner == nil && valueOf != nil { //如果是slice数组类型
+	if oneColumn && oneColumnScanner == nil {
 		oneColumnScanner = defaultBoolPtr
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
-		pkgPath := valueOf.Elem().Type().PkgPath()
+		pkgPath := valueOfElem.Type().PkgPath()
 		if pkgPath == "" || pkgPath == "time" { //系统内置变量和time包
 			*oneColumnScanner = true
 		}
 		if !*oneColumnScanner {
-			_, *oneColumnScanner = valueOf.Interface().(sql.Scanner)
+			_, *oneColumnScanner = valueOfInterface.(sql.Scanner)
 		}
 
 	}
@@ -649,8 +654,8 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		oneColumnScanner = defaultBoolPtr
 	}
 
-	if structType == nil && valueOf != nil && !*oneColumnScanner {
-		st := valueOf.Elem().Type()
+	if structType == nil && !*oneColumnScanner {
+		st := valueOfElem.Type()
 		structType = &st
 		var err error
 		//获取到类型的字段缓存
@@ -693,7 +698,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			continue
 
 		} else if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
-			values[i] = valueOf.Interface()
+			values[i] = valueOfInterface
 			continue
 		} else if structType != nil {
 
@@ -707,7 +712,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 				//fieldType := refPV.FieldByName(field.Name).Type()
 				//v := reflect.New(field.Type).Interface()
 				//字段的反射值
-				fieldValue := valueOf.Elem().FieldByName(field.Name)
+				fieldValue := valueOfElem.FieldByName(field.Name)
 				v := fieldValue.Addr().Interface()
 				//v := new(interface{})
 				values[i] = v
@@ -734,7 +739,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			return oneColumnScanner, structType, errConverDriverValue
 		}
 		if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
-			valueOf.Elem().Set(reflect.ValueOf(rightValue).Elem())
+			valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
 			continue
 		} else if structType != nil { //如果是Struct类型接收
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
@@ -743,7 +748,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			}
 			if field != nil { //如果存在这个字段
 				//字段的反射值
-				fieldValue := valueOf.Elem().FieldByName(field.Name)
+				fieldValue := valueOfElem.FieldByName(field.Name)
 				//给字段赋值
 				fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 			}
