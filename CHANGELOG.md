@@ -1,4 +1,5 @@
 v1.6.1
+ - 改进Query和QueryRow方法,支持查询单个字段,Struct类型接收
  - 使用RegisterCustomDriverValueConver替换暴露的CustomDriverValueMap,将 ```zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}```修改为```zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})```
  - 简化自增序列的实现,使用string代替map[string]string
  - 使用OverrideFunc重写zorm的函数,暴露WrapUpdateStructFinder函数
