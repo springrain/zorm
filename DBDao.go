@@ -589,12 +589,6 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 			return has, scanerr
 		}
 
-		if scanerr != nil {
-			scanerr = fmt.Errorf("->QueryRow-->sqlRowsValues错误:%w", scanerr)
-			FuncLogError(ctx, scanerr)
-			return has, scanerr
-		}
-
 	}
 
 	return has, nil
