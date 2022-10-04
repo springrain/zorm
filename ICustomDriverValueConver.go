@@ -80,7 +80,9 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	if !isok {
 		return tempDriverValue, errors.New("->ConverDriverValue-->转换至*dm.DmClob类型失败")
 	}
-
+	if dmClob == nil || !dmClob.Valid {
+		return new(string), nil
+	}
 	//获取长度
 	dmlen, errLength := dmClob.GetLength()
 	if errLength != nil {

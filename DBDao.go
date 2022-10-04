@@ -623,8 +623,6 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 	}
 
-	//获取数组元素
-	//Get array elements
 	sliceValue := reflect.Indirect(pv1)
 
 	//如果不是数组
