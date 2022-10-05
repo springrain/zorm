@@ -609,11 +609,18 @@ func TestOther(t *testing.T) {
 
 }
 
-//单个数据库的读写分离的策略 rwType=0 read,rwType=1 write
-func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao,error) {
+//myReadWriteStrategy 数据库的读写分离的策略 rwType=0 read,rwType=1 write
+//也可以通过ctx设置不同的key,返回指定数据库的DBDao
+func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 	//根据自己的业务场景,返回需要的读写dao,每次需要数据库的连接的时候,会调用这个函数
-	return dbDao, nil
+	// if rwType == 0 {
+	// 	return dbReadDao
+	// }
+	// return dbWriteDao
+
+	return DbDao, nil
 }
+
 //--------------------------------------------
 //ICustomDriverValueConver接口,参见达梦的例子
 

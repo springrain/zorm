@@ -29,28 +29,6 @@ import (
 	"sync"
 )
 
-//allowBaseTypeMap 允许基础类型查询,用于查询单个基础类型字段,例如 select id from t_user 查询返回的是字符串类型
-/*
-var allowBaseTypeMap = map[reflect.Kind]bool{
-	reflect.String: true,
-
-	reflect.Int:   true,
-	reflect.Int8:  true,
-	reflect.Int16: true,
-	reflect.Int32: true,
-	reflect.Int64: true,
-
-	reflect.Uint:   true,
-	reflect.Uint8:  true,
-	reflect.Uint16: true,
-	reflect.Uint32: true,
-	reflect.Uint64: true,
-
-	reflect.Float32: true,
-	reflect.Float64: true,
-}
-*/
-
 const (
 	//tag标签的名称
 	tagColumnName = "column"
@@ -294,17 +272,6 @@ func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 
 }
 
-/*
-//deepCopy 深度拷贝对象.Go没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
-func deepCopy(dst, src interface{}) error {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
-	}
-	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
-}
-*/
-
 //getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
 func getDBColumnExportFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
 	dbColumnFieldMap, err := getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
@@ -374,24 +341,6 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 
 	//return dbColumnFieldMap, nil
 }
-
-/*
-//获取 fileName 属性 中 tag column的值
-func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string {
-	entityName := typeOf.String()
-	structFieldTagMap, dbOk := cacheStructFieldTagInfoMap[structFieldTagPrefix+entityName]
-	if !dbOk { //缓存不存在
-		//获取实体类的输出字段和私有 字段
-		err := structFieldInfo(typeOf)
-		if err != nil {
-			return ""
-		}
-		structFieldTagMap, dbOk = cacheStructFieldTagInfoMap[structFieldTagPrefix+entityName]
-	}
-
-	return structFieldTagMap[fieldName]
-}
-*/
 
 //columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
 func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
@@ -494,122 +443,6 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-/*
-// sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
-// fix:converting NULL to int is unsupported
-// 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
-// 感谢@fastabler提交的pr
-func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf *reflect.Value, finder *Finder, cdvMapHasBool bool) error {
-	//声明载体数组,用于存放struct的属性指针
-	//Declare a carrier array to store the attribute pointer of the struct
-	values := make([]interface{}, len(columnTypes))
-
-	//记录需要类型转换的字段信息
-	var fieldTempDriverValueMap map[reflect.Value]*driverValueInfo
-	if cdvMapHasBool {
-		fieldTempDriverValueMap = make(map[reflect.Value]*driverValueInfo)
-	}
-
-	//反射获取 []driver.Value的值
-	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
-	//driverValue = driverValue.FieldByName("lastcols")
-	//遍历数据库的列名
-	//Traverse the database column names
-	for i, columnType := range columnTypes {
-		columnName := strings.ToLower(columnType.Name())
-		//从缓存中获取列名的field字段
-		//Get the field field of the column name from the cache
-		field, fok := dbColumnFieldMap[columnName]
-		//如果列名不存在,就尝试去获取实体类属性,兼容处理临时字段,如果还找不到,就初始化为空指
-		//If the column name does not exist, initialize a null value
-		if !fok {
-			field, fok = exportFieldMap[columnName]
-			if !fok {
-				//尝试驼峰
-				cname := strings.ReplaceAll(columnName, "_", "")
-				field, fok = exportFieldMap[cname]
-				if !fok {
-					values[i] = new(interface{})
-					continue
-				}
-			}
-
-		}
-		dv := driverValue.Index(i)
-		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
-			values[i] = new(interface{})
-		} else {
-
-			//字段的反射值
-			fieldValue := valueOf.FieldByName(field.Name)
-			//根据接收的类型,获取到类型转换的接口实现
-			var customDriverValueConver ICustomDriverValueConver
-			var converOK = false
-			if cdvMapHasBool {
-				databaseTypeName := columnType.DatabaseTypeName()
-				if len(databaseTypeName) < 1 {
-					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
-				}
-				customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
-			}
-
-			//类型转换的临时值
-			var tempDriverValue driver.Value
-			var errGetDriverValue error
-			//如果需要类型转换
-			if converOK {
-				//获取需要转换的临时值
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
-				if errGetDriverValue != nil {
-					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
-					FuncLogError(ctx, errGetDriverValue)
-					return errGetDriverValue
-				}
-				//如果需要类型转换
-				if tempDriverValue != nil {
-					values[i] = tempDriverValue
-					dvinfo := driverValueInfo{}
-					dvinfo.customDriverValueConver = customDriverValueConver
-					dvinfo.columnType = columnType
-					dvinfo.tempDriverValue = tempDriverValue
-					fieldTempDriverValueMap[fieldValue] = &dvinfo
-					continue
-				}
-			}
-
-			//不需要类型转换,正常逻辑
-			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
-			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
-			value := fieldValue.Addr().Interface()
-			//把指针地址放到数组
-			//Put the pointer address into the array
-			values[i] = value
-		}
-	}
-	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-	//Scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct.The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
-	scanerr := rows.Scan(values...)
-	if scanerr != nil {
-		return scanerr
-	}
-
-	//循环需要替换的值
-	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
-		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf)
-		if errConverDriverValue != nil {
-			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
-			FuncLogError(ctx, errConverDriverValue)
-			return errConverDriverValue
-		}
-		//给字段赋值
-		fieldValue.Set(reflect.ValueOf(rightValue).Elem())
-	}
-
-	return scanerr
-}
-*/
 var defaultBoolPtr = new(bool)
 
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
@@ -785,6 +618,166 @@ func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *ma
 }
 
 /*
+
+//allowBaseTypeMap 允许基础类型查询,用于查询单个基础类型字段,例如 select id from t_user 查询返回的是字符串类型
+var allowBaseTypeMap = map[reflect.Kind]bool{
+	reflect.String: true,
+
+	reflect.Int:   true,
+	reflect.Int8:  true,
+	reflect.Int16: true,
+	reflect.Int32: true,
+	reflect.Int64: true,
+
+	reflect.Uint:   true,
+	reflect.Uint8:  true,
+	reflect.Uint16: true,
+	reflect.Uint32: true,
+	reflect.Uint64: true,
+
+	reflect.Float32: true,
+	reflect.Float64: true,
+}
+
+//deepCopy 深度拷贝对象.Go没有构造函数,反射复制对象时,对象中struct类型的属性无法初始化,指针属性也会收到影响.使用深度对象拷贝
+func deepCopy(dst, src interface{}) error {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+		return err
+	}
+	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
+}
+
+//获取 fileName 属性 中 tag column的值
+func getStructFieldTagColumnValue(typeOf reflect.Type, fieldName string) string {
+	entityName := typeOf.String()
+	structFieldTagMap, dbOk := cacheStructFieldTagInfoMap[structFieldTagPrefix+entityName]
+	if !dbOk { //缓存不存在
+		//获取实体类的输出字段和私有 字段
+		err := structFieldInfo(typeOf)
+		if err != nil {
+			return ""
+		}
+		structFieldTagMap, dbOk = cacheStructFieldTagInfoMap[structFieldTagPrefix+entityName]
+	}
+
+	return structFieldTagMap[fieldName]
+}
+
+// sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值
+// fix:converting NULL to int is unsupported
+// 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
+// 感谢@fastabler提交的pr
+func sqlRowsValues(ctx context.Context, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, dbColumnFieldMap map[string]reflect.StructField, exportFieldMap map[string]reflect.StructField, valueOf *reflect.Value, finder *Finder, cdvMapHasBool bool) error {
+	//声明载体数组,用于存放struct的属性指针
+	//Declare a carrier array to store the attribute pointer of the struct
+	values := make([]interface{}, len(columnTypes))
+
+	//记录需要类型转换的字段信息
+	var fieldTempDriverValueMap map[reflect.Value]*driverValueInfo
+	if cdvMapHasBool {
+		fieldTempDriverValueMap = make(map[reflect.Value]*driverValueInfo)
+	}
+
+	//反射获取 []driver.Value的值
+	//driverValue := reflect.Indirect(reflect.ValueOf(rows))
+	//driverValue = driverValue.FieldByName("lastcols")
+	//遍历数据库的列名
+	//Traverse the database column names
+	for i, columnType := range columnTypes {
+		columnName := strings.ToLower(columnType.Name())
+		//从缓存中获取列名的field字段
+		//Get the field field of the column name from the cache
+		field, fok := dbColumnFieldMap[columnName]
+		//如果列名不存在,就尝试去获取实体类属性,兼容处理临时字段,如果还找不到,就初始化为空指
+		//If the column name does not exist, initialize a null value
+		if !fok {
+			field, fok = exportFieldMap[columnName]
+			if !fok {
+				//尝试驼峰
+				cname := strings.ReplaceAll(columnName, "_", "")
+				field, fok = exportFieldMap[cname]
+				if !fok {
+					values[i] = new(interface{})
+					continue
+				}
+			}
+
+		}
+		dv := driverValue.Index(i)
+		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
+			values[i] = new(interface{})
+		} else {
+
+			//字段的反射值
+			fieldValue := valueOf.FieldByName(field.Name)
+			//根据接收的类型,获取到类型转换的接口实现
+			var customDriverValueConver ICustomDriverValueConver
+			var converOK = false
+			if cdvMapHasBool {
+				databaseTypeName := columnType.DatabaseTypeName()
+				if len(databaseTypeName) < 1 {
+					return errors.New("->sqlRowsValues-->驱动不支持的字段类型")
+				}
+				customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(databaseTypeName)]
+			}
+
+			//类型转换的临时值
+			var tempDriverValue driver.Value
+			var errGetDriverValue error
+			//如果需要类型转换
+			if converOK {
+				//获取需要转换的临时值
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
+				if errGetDriverValue != nil {
+					errGetDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
+					FuncLogError(ctx, errGetDriverValue)
+					return errGetDriverValue
+				}
+				//如果需要类型转换
+				if tempDriverValue != nil {
+					values[i] = tempDriverValue
+					dvinfo := driverValueInfo{}
+					dvinfo.customDriverValueConver = customDriverValueConver
+					dvinfo.columnType = columnType
+					dvinfo.tempDriverValue = tempDriverValue
+					fieldTempDriverValueMap[fieldValue] = &dvinfo
+					continue
+				}
+			}
+
+			//不需要类型转换,正常逻辑
+			//获取struct的属性值的指针地址,字段不会重名,不使用FieldByIndex()函数
+			//Get the pointer address of the attribute value of the struct,the field will not have the same name, and the Field By Index() function is not used
+			value := fieldValue.Addr().Interface()
+			//把指针地址放到数组
+			//Put the pointer address into the array
+			values[i] = value
+		}
+	}
+	//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+	//Scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct.The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
+	scanerr := rows.Scan(values...)
+	if scanerr != nil {
+		return scanerr
+	}
+
+	//循环需要替换的值
+	for fieldValue, driverValueInfo := range fieldTempDriverValueMap {
+		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+		typeOf := fieldValue.Type()
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, &typeOf)
+		if errConverDriverValue != nil {
+			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
+			FuncLogError(ctx, errConverDriverValue)
+			return errConverDriverValue
+		}
+		//给字段赋值
+		fieldValue.Set(reflect.ValueOf(rightValue).Elem())
+	}
+
+	return scanerr
+}
 
 // sqlRowsValuesFast 包装接收sqlRows的Values数组,快速模式,数据库表不能有null值
 // Deprecated: 暂时不用
