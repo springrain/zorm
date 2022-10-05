@@ -443,8 +443,6 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	return typeOf, nil
 }
 
-var defaultBoolPtr = new(bool)
-
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
 // fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
@@ -471,7 +469,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	//oneColumn := false
 	//单列查询并且可以直接映射,类似 string 或者[]string
 	if oneColumn && oneColumnScanner == nil {
-		oneColumnScanner = defaultBoolPtr
+		oneColumnScanner = new(bool)
 		//new出来的是指针
 		//Reflectively initialize the elements in an array
 		pkgPath := valueOfElem.Type().PkgPath()
@@ -484,7 +482,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 
 	}
 	if oneColumnScanner == nil {
-		oneColumnScanner = defaultBoolPtr
+		oneColumnScanner = new(bool)
 	}
 
 	if structType == nil && !*oneColumnScanner {
