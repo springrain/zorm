@@ -34,19 +34,12 @@ var iscdvm bool
 
 //ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type ICustomDriverValueConver interface {
-	//GetDriverValue 根据数据库列类型,实体类属性类型,Finder对象,返回driver.Value的实例
-	//如果无法获取到structFieldType,例如Map查询,会传入nil
+	//GetDriverValue 根据数据库列类型,返回driver.Value的实例
 	GetDriverValue(ctx context.Context, columnType *sql.ColumnType) (driver.Value, error)
 
-	//ConverDriverValue 数据库列类型,实体类属性类型,GetDriverValue返回的driver.Value的临时接收值,Finder对象
-	//如果无法获取到structFieldType,例如Map查询,会传入nil
+	//ConverDriverValue 数据库列类型,GetDriverValue返回的driver.Value的临时接收值
 	//返回符合接收类型值的指针,指针,指针!!!!
 	ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value) (interface{}, error)
-}
-type driverValueInfo struct {
-	customDriverValueConver ICustomDriverValueConver
-	columnType              *sql.ColumnType
-	tempDriverValue         interface{}
 }
 
 //RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
@@ -60,6 +53,12 @@ func RegisterCustomDriverValueConver(columnType string, customDriverValueConver 
 
 	iscdvm = true
 	return nil
+}
+
+type driverValueInfo struct {
+	customDriverValueConver ICustomDriverValueConver
+	columnType              *sql.ColumnType
+	tempDriverValue         interface{}
 }
 
 /**
