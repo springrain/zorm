@@ -34,11 +34,12 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
 
 ## 支持国产数据库  
+zorm对国产数据库的适配不遗余力,遇到没有适配或者有问题的国产数据库,请反馈到社区,携手共建国产软件生态.        
 ### 达梦(dm)  
 - 配置zorm.DataSourceConfig的 ```DriverName:dm ,Dialect:dm```  
-- 达梦数据库驱动: https://gitee.com/chunanyong/dm    
+- 达梦数据库驱动: gitee.com/chunanyong/dm    
 - 达梦使用time作为where条件,需要注意时区问题,建议使用字符串代替time, https://eco.dameng.com/community/question/936924eb9861e6d429114e87d6f3a854  
-- 达梦的text类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
+- 达梦的TEXT类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
 ```go
 import (
 	//00.引入数据库驱动
@@ -84,7 +85,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
 ```
 
-### 人大金仓(kingbase)  
+### 金仓(kingbase)  
 - 配置zorm.DataSourceConfig的 ```DriverName:kingbase ,Dialect:kingbase```    
 - 金仓官方驱动: https://www.kingbase.com.cn/qd/index.htm   https://bbs.kingbase.com.cn/thread-14457-1-1.html?_dsign=87f12756      
 - 金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.    
