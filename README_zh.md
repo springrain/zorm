@@ -5,6 +5,7 @@ Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase)
 官网: https://zorm.cn  
 源码地址: https://gitee.com/chunanyong/zorm        
 测试用例: https://gitee.com/wuxiangege/zorm-examples/      
+视频教程: https://www.bilibili.com/video/BV1L24y1976U/   
 
 交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨  
 社区微信: [LAUV927]()   
@@ -444,7 +445,7 @@ func TestQueryMap(t *testing.T) {
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1   //查询第1页,默认是1
-	page.PageSize = 2 //每页20条,默认是20
+	page.PageSize = 20 //每页20条,默认是20
 	//执行查询
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
