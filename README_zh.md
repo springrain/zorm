@@ -417,7 +417,7 @@ func TestQueryRowMap(t *testing.T) {
 func TestQuery(t *testing.T) {
 
 	//创建用于接收结果的slice
-	list := make([]*demoStruct, 0)
+	list := make([]demoStruct, 0)
 
 	//构造查询用的finder
 	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -425,7 +425,7 @@ func TestQuery(t *testing.T) {
 	//创建分页对象,查询完成后,page对象可以直接给前端分页组件使用
 	page := zorm.NewPage()
 	page.PageNo = 1   //查询第1页,默认是1
-	page.PageSize = 2 //每页20条,默认是20
+	page.PageSize = 20 //每页20条,默认是20
 
 	//执行查询
 	err := zorm.Query(ctx, finder, &list, page)
