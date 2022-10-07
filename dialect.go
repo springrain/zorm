@@ -62,7 +62,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	case "mssql", "oracle": //sqlserver 2012+,oracle 12c+
+	case "mssql", "oracle": //sqlserver 2012+,oracle 12c+  查询语句需要有order by
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
