@@ -44,6 +44,9 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 			return "", errors.New("->分页语句必须有 order by")
 		}
 	*/
+	if page.PageNo < 1 { //默认第一页
+		page.PageNo = 1
+	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.Grow(50)
 	sqlbuilder.WriteString(*sqlstr)
