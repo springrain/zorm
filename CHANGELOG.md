@@ -1,3 +1,7 @@
+v1.6.2
+ - 录制视频教程:https://www.bilibili.com/video/BV1L24y1976U/
+ - 完善文档,注释
+
 v1.6.1
  - 使用RegisterCustomDriverValueConver函数替代CustomDriverValueMap变量,将 ```zorm.CustomDriverValueMap["*dm.DmClob"] = CustomDMText{}```修改为```zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})```,达梦数据库重新复制示例代码,重新复制!!重新复制!!!
  - 重写sqlRowsValues函数,支持查询单个字段,Struct类型接收
