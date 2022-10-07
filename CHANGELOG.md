@@ -1,4 +1,5 @@
 v1.6.2
+ - 增加sqlserver 和 oracle 分页默认order by
  - 录制视频教程:https://www.bilibili.com/video/BV1L24y1976U/
  - 完善文档,注释
 
