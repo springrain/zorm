@@ -65,7 +65,11 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 	case "mssql", "oracle": //sqlserver 2012+,oracle 12c+
 		locOrderBy := findOrderByIndex(sqlstr)
 		if len(locOrderBy) <= 0 { //如果没有 order by,增加默认的排序
-			sqlbuilder.WriteString(" ORDER BY (SELECT NULL) ")
+			if dialect == "mssql" {
+				sqlbuilder.WriteString(" ORDER BY (SELECT NULL) ")
+			} else {
+				sqlbuilder.WriteString(" ORDER BY NULL ")
+			}
 		}
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
