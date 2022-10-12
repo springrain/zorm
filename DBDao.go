@@ -1032,7 +1032,7 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 		return affected, errDBConnection
 	}
 
-	//var dialect string = ""
+	//var dialect string
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	/*
@@ -1318,7 +1318,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, errDBConnection
 		}
 
-		var dialect string = ""
+		var dialect string
 		if dbConnection == nil { //dbConnection为nil,使用defaultDao
 			dbdao, err := FuncReadWriteStrategy(ctx, 1)
 			if err != nil {
@@ -1465,7 +1465,7 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	/*
-		var dialect string = ""
+		var dialect string
 		//dbConnection为nil,使用defaultDao
 		//dbConnection is nil, use default Dao
 		if dbConnection == nil {
@@ -1533,7 +1533,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 			return affected, errDBConnection
 		}
 
-		var dialect string = ""
+		var dialect string
 		//dbConnection为nil,使用defaultDao
 		//dbConnection is nil, use default Dao
 		if dbConnection == nil {

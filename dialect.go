@@ -64,7 +64,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 	case "mssql": //sqlserver 2012+
 		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) <= 0 { //如果没有 order by,增加默认的排序
+		if len(locOrderBy) < 1 { //如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY (SELECT NULL) ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -74,7 +74,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	case "oracle": //oracle 12c+
 		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) <= 0 { //如果没有 order by,增加默认的排序
+		if len(locOrderBy) < 1 { //如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY NULL ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -1083,7 +1083,7 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 
 //getDialectFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect
 func getDialectFromConnection(ctx context.Context, dbConnection *dataBaseConnection, rwType int) (string, error) {
-	var dialect string = ""
+	var dialect string
 	//dbConnection为nil,使用defaultDao
 	//dbConnection is nil, use default Dao
 	if dbConnection == nil {
