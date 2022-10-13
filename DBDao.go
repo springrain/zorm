@@ -263,7 +263,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return transaction(ctx, doTransaction)
 }
 
-var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
+var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (info interface{}, err error) {
 	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
 	localTxOpen := false
@@ -377,12 +377,14 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			//if _, ok := r.(runtime.Error); ok {
 			//	panic(r)
 			//}
-			err, errOk := r.(error)
+			var errOk bool
+			err, errOk = r.(error)
 			if errOk {
-				err = fmt.Errorf("->recover异常:%w", err)
+				err = fmt.Errorf("->Transaction-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
 			} else {
-				FuncLogPanic(ctx, fmt.Errorf("->recover异常:%v", r))
+				err = fmt.Errorf("->Transaction-->recover异常:%v", r)
+				FuncLogPanic(ctx, err)
 			}
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
@@ -409,7 +411,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	}()
 
 	//执行业务的事务函数
-	info, err := doTransaction(ctx)
+	info, err = doTransaction(ctx)
 
 	if err != nil {
 		err = fmt.Errorf("->Transaction-->doTransaction业务执行错误:%w", err)
@@ -482,14 +484,12 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	return queryRow(ctx, finder, entity)
 }
 
-var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
-
-	has := false
-	_, checkerr := checkEntityKind(entity)
-	if checkerr != nil {
-		checkerr = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", checkerr)
-		FuncLogError(ctx, checkerr)
-		return has, checkerr
+var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (has bool, err error) {
+	_, err = checkEntityKind(entity)
+	if err != nil {
+		err = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", err)
+		FuncLogError(ctx, err)
+		return has, err
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
@@ -534,7 +534,23 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		return has, e
 	}
 	//先判断error 再关闭
-	defer rows.Close()
+	defer func() {
+		//先判断error 再关闭
+		rows.Close()
+		//捕获panic,赋值给err,避免程序崩溃
+		if r := recover(); r != nil {
+			has = false
+			var errOk bool
+			err, errOk = r.(error)
+			if errOk {
+				err = fmt.Errorf("->QueryRow-->recover异常:%w", err)
+				FuncLogPanic(ctx, err)
+			} else {
+				err = fmt.Errorf("->QueryRow-->recover异常:%v", r)
+				FuncLogPanic(ctx, err)
+			}
+		}
+	}()
 
 	//typeOf := reflect.TypeOf(entity).Elem()
 
@@ -604,7 +620,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 	return query(ctx, finder, rowsSlicePtr, page)
 }
-var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
+var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) (err error) {
 
 	if rowsSlicePtr == nil { //如果为nil
 		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
@@ -678,7 +694,22 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		return e
 	}
 	//先判断error 再关闭
-	defer rows.Close()
+	defer func() {
+		//先判断error 再关闭
+		rows.Close()
+		//捕获panic,赋值给err,避免程序崩溃
+		if r := recover(); r != nil {
+			var errOk bool
+			err, errOk = r.(error)
+			if errOk {
+				err = fmt.Errorf("->Query-->recover异常:%w", err)
+				FuncLogPanic(ctx, err)
+			} else {
+				err = fmt.Errorf("->Query-->recover异常:%v", r)
+				FuncLogPanic(ctx, err)
+			}
+		}
+	}()
 
 	//_, ok := reflect.New(sliceElementType).Interface().(sql.Scanner)
 	//fmt.Println(ok)
@@ -786,7 +817,7 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	return queryMap(ctx, finder, page)
 }
 
-var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
+var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapList []map[string]interface{}, err error) {
 
 	if finder == nil {
 		return nil, errors.New("->QueryMap-->finder参数不能为nil")
@@ -832,7 +863,22 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		return nil, e
 	}
 	//先判断error 再关闭
-	defer rows.Close()
+	defer func() {
+		//先判断error 再关闭
+		rows.Close()
+		//捕获panic,赋值给err,避免程序崩溃
+		if r := recover(); r != nil {
+			var errOk bool
+			err, errOk = r.(error)
+			if errOk {
+				err = fmt.Errorf("->QueryMap-->recover异常:%w", err)
+				FuncLogPanic(ctx, err)
+			} else {
+				err = fmt.Errorf("->QueryMap-->recover异常:%v", r)
+				FuncLogPanic(ctx, err)
+			}
+		}
+	}()
 
 	//数据库返回的列类型
 	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
@@ -845,7 +891,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 	//反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
-	resultMapList := make([]map[string]interface{}, 0)
+	resultMapList = make([]map[string]interface{}, 0)
 	//循环遍历结果集
 	//Loop through the result set
 	for rows.Next() {

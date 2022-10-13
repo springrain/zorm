@@ -209,7 +209,6 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		//logger.Info("printSQL", logger.String("sql", execsql), logger.Any("args", args))
 		FuncPrintSQL(ctx, *execsql, args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
@@ -248,7 +247,6 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(ctx, *query, args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
@@ -288,7 +286,6 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 	//小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		//logger.Info("printSQL", logger.String("sql", query), logger.Any("args", args))
 		FuncPrintSQL(ctx, *query, args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
