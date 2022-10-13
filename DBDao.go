@@ -271,11 +271,11 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	globalTxOpen := false
 	//如果dbConnection不存在,则会用默认的datasource开启事务
 	// If db Connection does not exist, the default datasource will be used to start the transaction
-	var checkerr error
 	var dbConnection *dataBaseConnection
-	ctx, dbConnection, checkerr = checkDBConnection(ctx, dbConnection, false, 1)
-	if checkerr != nil {
-		return nil, checkerr
+	ctx, dbConnection, err = checkDBConnection(ctx, dbConnection, false, 1)
+	if err != nil {
+		FuncLogError(ctx, err)
+		return nil, err
 	}
 
 	//适配全局事务的函数
@@ -286,13 +286,12 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	//分布式事务的 rootContext,和业务的ctx区别开来,如果业务ctx使用WithValue,就会出现差异
 	var globalRootContext context.Context
 	//分布式事务的异常
-	var globalErr error
+	var errGlobal error
 
 	//如果没有事务,并且事务没有被禁用,开启事务
 	//开启本地事务前,需要拿到分布式事务对象
 	if dbConnection.tx == nil && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
 		//if dbConnection.tx == nil {
-
 		//是否使用分布式事务
 		enableGlobalTransaction := funcGlobalTx != nil
 		if enableGlobalTransaction { // 判断ctx里是否有绑定 enableGlobalTransaction
@@ -321,49 +320,49 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				globalTxOpen = true
 			}
 			//获取分布式事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
-			globalTransaction, globalRootContext, globalErr = funcGlobalTx(ctx)
-			if globalErr != nil {
-				globalErr = fmt.Errorf("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", globalErr)
-				FuncLogError(ctx, globalErr)
-				return nil, globalErr
+			globalTransaction, globalRootContext, errGlobal = funcGlobalTx(ctx)
+			if errGlobal != nil {
+				errGlobal = fmt.Errorf("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", errGlobal)
+				FuncLogError(ctx, errGlobal)
+				return nil, errGlobal
 			}
 			if globalTransaction == nil || globalRootContext == nil {
-				globalErr = errors.New("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口的实现为nil ")
-				FuncLogError(ctx, globalErr)
-				return nil, globalErr
+				errGlobal = errors.New("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口的实现为nil ")
+				FuncLogError(ctx, errGlobal)
+				return nil, errGlobal
 			}
 
 		}
 		if globalTxOpen { //如果是分布事务开启方,启动分布式事务
-			globalErr = globalTransaction.BeginGTX(ctx, globalRootContext)
-			if globalErr != nil {
-				globalErr = fmt.Errorf("->global:Transaction 分布式事务开启失败:%w ", globalErr)
-				FuncLogError(ctx, globalErr)
-				return nil, globalErr
+			errGlobal = globalTransaction.BeginGTX(ctx, globalRootContext)
+			if errGlobal != nil {
+				errGlobal = fmt.Errorf("->Transaction-->global:Transaction 分布式事务开启失败:%w ", errGlobal)
+				FuncLogError(ctx, errGlobal)
+				return nil, errGlobal
 			}
 
 			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
 			//seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
-			globalXID, globalErr := globalTransaction.GetGTXID(ctx, globalRootContext)
-			if globalErr != nil {
-				FuncLogError(ctx, globalErr)
-				return nil, globalErr
+			globalXID, errGlobal := globalTransaction.GetGTXID(ctx, globalRootContext)
+			if errGlobal != nil {
+				FuncLogError(ctx, errGlobal)
+				return nil, errGlobal
 			}
 			if len(globalXID) < 1 {
-				globalErr = errors.New("->Transaction-->global:globalTransaction.Begin无异常开启后,获取的XID为空")
-				FuncLogError(ctx, globalErr)
-				return nil, globalErr
+				errGlobal = errors.New("->Transaction-->global:globalTransaction.Begin无异常开启后,获取的XID为空")
+				FuncLogError(ctx, errGlobal)
+				return nil, errGlobal
 			}
 			ctx = context.WithValue(ctx, "XID", globalXID)
 			ctx = context.WithValue(ctx, "TX_XID", globalXID)
 		}
 
 		//开启本地事务/分支事务
-		beginerr := dbConnection.beginTx(ctx)
-		if beginerr != nil {
-			beginerr = fmt.Errorf("->Transaction 事务开启失败:%w ", beginerr)
-			FuncLogError(ctx, beginerr)
-			return nil, beginerr
+		errBeginTx := dbConnection.beginTx(ctx)
+		if errBeginTx != nil {
+			errBeginTx = fmt.Errorf("->Transaction 事务开启失败:%w ", errBeginTx)
+			FuncLogError(ctx, errBeginTx)
+			return nil, errBeginTx
 		}
 		//本方法开启的事务,由本方法提交
 		//The transaction opened by this method is submitted by this method
@@ -395,15 +394,15 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			}
 			rberr := dbConnection.rollback()
 			if rberr != nil {
-				rberr = fmt.Errorf("->recover内事务回滚失败:%w", rberr)
+				rberr = fmt.Errorf("->Transaction-->recover内事务回滚失败:%w", rberr)
 				FuncLogError(ctx, rberr)
 			}
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
-				if globalErr != nil {
-					globalErr = fmt.Errorf("->global:recover内globalTransaction事务回滚失败:%w", globalErr)
-					FuncLogError(ctx, globalErr)
+				errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
+				if errGlobal != nil {
+					errGlobal = fmt.Errorf("->Transaction-->global:recover内globalTransaction事务回滚失败:%w", errGlobal)
+					FuncLogError(ctx, errGlobal)
 				}
 			}
 
@@ -424,17 +423,17 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 
 		//不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
 		//It is not the start party to roll back the transaction, which may cause inaccurate log records,but rollback is the most important, roll back as soon as possible
-		rberr := dbConnection.rollback()
-		if rberr != nil {
-			rberr = fmt.Errorf("->Transaction-->rollback事务回滚失败:%w", rberr)
-			FuncLogError(ctx, rberr)
+		errRollback := dbConnection.rollback()
+		if errRollback != nil {
+			errRollback = fmt.Errorf("->Transaction-->rollback事务回滚失败:%w", errRollback)
+			FuncLogError(ctx, errRollback)
 		}
 		//任意一个分支事务回滚,分布式事务就整体回滚
 		if globalTransaction != nil {
-			globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
-			if globalErr != nil {
-				globalErr = fmt.Errorf("->global:Transaction-->rollback globalTransaction事务回滚失败:%w", globalErr)
-				FuncLogError(ctx, globalErr)
+			errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
+			if errGlobal != nil {
+				errGlobal = fmt.Errorf("->Transaction-->global:Transaction-->rollback globalTransaction事务回滚失败:%w", errGlobal)
+				FuncLogError(ctx, errGlobal)
 			}
 		}
 		return info, err
@@ -442,35 +441,36 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	//如果是事务开启方,提交事务
 	//If it is the transaction opener, commit the transaction
 	if localTxOpen {
-		commitError := dbConnection.commit()
+		errCommit := dbConnection.commit()
 		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
-		if commitError == nil && globalTxOpen {
-			globalErr = globalTransaction.CommitGTX(ctx, globalRootContext)
-			if globalErr != nil {
-				globalErr = fmt.Errorf("->global:Transaction-->commit globalTransaction 事务提交失败:%w", globalErr)
-				FuncLogError(ctx, globalErr)
+		if errCommit == nil && globalTxOpen {
+			errGlobal = globalTransaction.CommitGTX(ctx, globalRootContext)
+			if errGlobal != nil {
+				errGlobal = fmt.Errorf("->Transaction-->global:Transaction-->commit globalTransaction 事务提交失败:%w", errGlobal)
+				FuncLogError(ctx, errGlobal)
 			}
 		}
-		if commitError != nil {
-			commitError = fmt.Errorf("->Transaction-->commit事务提交失败:%w", commitError)
-			FuncLogError(ctx, commitError)
-
+		if errCommit != nil {
+			errCommit = fmt.Errorf("->Transaction-->commit事务提交失败:%w", errCommit)
+			FuncLogError(ctx, errCommit)
 			//任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
-				globalErr = globalTransaction.RollbackGTX(ctx, globalRootContext)
-				if globalErr != nil {
-					globalErr = fmt.Errorf("->global:Transaction-->commit失败,然后回滚globalTransaction事务也失败:%w", globalErr)
-					FuncLogError(ctx, globalErr)
+				errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
+				if errGlobal != nil {
+					errGlobal = fmt.Errorf("->Transaction-->global:Transaction-->commit失败,然后回滚globalTransaction事务也失败:%w", errGlobal)
+					FuncLogError(ctx, errGlobal)
 				}
 			}
 
-			return info, commitError
+			return info, errCommit
 		}
 
 	}
 
 	return info, err
 }
+
+var errQueryRow = errors.New("->QueryRow查询出多条数据")
 
 // QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个slice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
 // 只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
@@ -485,53 +485,57 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 }
 
 var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (has bool, err error) {
-	_, err = checkEntityKind(entity)
-	if err != nil {
-		err = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", err)
-		FuncLogError(ctx, err)
-		return has, err
+	_, errCheck := checkEntityKind(entity)
+	if errCheck != nil {
+		errCheck = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", errCheck)
+		FuncLogError(ctx, errCheck)
+		return has, errCheck
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
+		FuncLogError(ctx, errFromContxt)
 		return has, errFromContxt
 	}
 	//自己构建的dbConnection
 	//dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
+		FuncLogError(ctx, errDBConnection)
 		return has, errDBConnection
 	}
 
-	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
-	if err != nil {
-		return has, err
+	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
+	if errDialect != nil {
+		FuncLogError(ctx, errDialect)
+		return has, errDialect
 	}
 
 	//获取到sql语句
 	//Get the sql statement
-	sqlstr, err := wrapQuerySQL(dialect, finder, nil)
-	if err != nil {
-		err = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", err)
-		FuncLogError(ctx, err)
-		return has, err
+	sqlstr, errSQL := wrapQuerySQL(dialect, finder, nil)
+	if errSQL != nil {
+		errSQL = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
+		FuncLogError(ctx, errSQL)
+		return has, errSQL
 	}
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
-	if dbConnectionerr != nil {
-		return has, dbConnectionerr
+	var errDbConnection error
+	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
+	if errDbConnection != nil {
+		FuncLogError(ctx, errDbConnection)
+		return has, errDbConnection
 	}
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	if e != nil {
-		e = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", e)
-		FuncLogError(ctx, e)
-		return has, e
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	if errQueryContext != nil {
+		errQueryContext = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", errQueryContext)
+		FuncLogError(ctx, errQueryContext)
+		return has, errQueryContext
 	}
 	//先判断error 再关闭
 	defer func() {
@@ -565,19 +569,19 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 	*/
 	//数据库字段类型
-	columnTypes, cte := rows.ColumnTypes()
-	if cte != nil {
-		cte = fmt.Errorf("->QueryRow-->rows.ColumnTypes数据库类型错误:%w", cte)
-		FuncLogError(ctx, cte)
-		return has, cte
+	columnTypes, errColumnTypes := rows.ColumnTypes()
+	if errColumnTypes != nil {
+		errColumnTypes = fmt.Errorf("->QueryRow-->rows.ColumnTypes数据库类型错误:%w", errColumnTypes)
+		FuncLogError(ctx, errColumnTypes)
+		return has, errColumnTypes
 	}
 	if len(columnTypes) < 1 { //没有返回列
-		column0Err := errors.New("->QueryRow-->len(columnTypes)<1,没有返回列")
-		FuncLogError(ctx, column0Err)
-		return has, column0Err
+		errColumn0 := errors.New("->QueryRow-->len(columnTypes)<1,没有返回列")
+		FuncLogError(ctx, errColumn0)
+		return has, errColumn0
 	}
 	var oneColumnScanner *bool
-	var scanerr error
+	var errScan error
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 	exportFieldMap := make(map[string]reflect.StructField)
@@ -590,25 +594,27 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	for i := 0; rows.Next(); i++ {
 		has = true
 		if i > 0 {
-			return has, errors.New("->QueryRow查询出多条数据")
+			FuncLogError(ctx, errQueryRow)
+			return has, errQueryRow
 		}
-
 		pv := reflect.ValueOf(entity)
-		oneColumnScanner, structType, scanerr = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
-		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->sqlRowsValues错误:%w", scanerr)
-			FuncLogError(ctx, scanerr)
-			return has, scanerr
+		if errScan != nil {
+			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
+			FuncLogError(ctx, errScan)
+			return has, errScan
 		}
 
 	}
 
-	return has, nil
+	return has, err
 }
+
+var errQuerySlice = errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 
 // Query 不要偷懒调用QueryMap,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
 // 只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
@@ -623,12 +629,14 @@ var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) (err error) {
 
 	if rowsSlicePtr == nil { //如果为nil
-		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		FuncLogError(ctx, errQuerySlice)
+		return errQuerySlice
 	}
 
 	pv1 := reflect.ValueOf(rowsSlicePtr)
 	if pv1.Kind() != reflect.Ptr { //如果不是指针
-		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		FuncLogError(ctx, errQuerySlice)
+		return errQuerySlice
 	}
 
 	sliceValue := reflect.Indirect(pv1)
@@ -636,7 +644,8 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//如果不是数组
 	//If it is not an array.
 	if sliceValue.Kind() != reflect.Slice {
-		return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
+		FuncLogError(ctx, errQuerySlice)
+		return errQuerySlice
 	}
 	//获取数组内的元素类型
 	//Get the element type in the array
@@ -658,40 +667,44 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
+		FuncLogError(ctx, errFromContxt)
 		return errFromContxt
 	}
 	//自己构建的dbConnection
 	//dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
+		FuncLogError(ctx, errDBConnection)
 		return errDBConnection
 	}
-	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
-	if err != nil {
-		return err
+	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
+	if errDialect != nil {
+		FuncLogError(ctx, errDialect)
+		return errDialect
 	}
 
-	sqlstr, err := wrapQuerySQL(dialect, finder, page)
-	if err != nil {
-		err = fmt.Errorf("->Query-->wrapQuerySQL获取查询SQL语句错误:%w", err)
-		FuncLogError(ctx, err)
-		return err
+	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
+	if errSQL != nil {
+		errSQL = fmt.Errorf("->Query-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
+		FuncLogError(ctx, errSQL)
+		return errSQL
 	}
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
-	if dbConnectionerr != nil {
-		return dbConnectionerr
+	var errDbConnection error
+	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
+	if errDbConnection != nil {
+		FuncLogError(ctx, errDbConnection)
+		return errDbConnection
 	}
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	if e != nil {
-		e = fmt.Errorf("->Query-->queryContext查询rows错误:%w", e)
-		FuncLogError(ctx, e)
-		return e
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	if errQueryContext != nil {
+		errQueryContext = fmt.Errorf("->Query-->queryContext查询rows错误:%w", errQueryContext)
+		FuncLogError(ctx, errQueryContext)
+		return errQueryContext
 	}
 	//先判断error 再关闭
 	defer func() {
@@ -715,19 +728,19 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//fmt.Println(ok)
 
 	//数据库返回的字段类型
-	columnTypes, cte := rows.ColumnTypes()
-	if cte != nil {
-		cte = fmt.Errorf("->Query-->rows.ColumnTypes数据库类型错误:%w", cte)
-		FuncLogError(ctx, cte)
-		return cte
+	columnTypes, errColumnTypes := rows.ColumnTypes()
+	if errColumnTypes != nil {
+		errColumnTypes = fmt.Errorf("->Query-->rows.ColumnTypes数据库类型错误:%w", errColumnTypes)
+		FuncLogError(ctx, errColumnTypes)
+		return errColumnTypes
 	}
 	if len(columnTypes) < 1 { //没有返回列
-		column0Err := errors.New("->Query-->len(columnTypes)<1,没有返回列")
-		FuncLogError(ctx, column0Err)
-		return column0Err
+		errColumn0 := errors.New("->Query-->len(columnTypes)<1,没有返回列")
+		FuncLogError(ctx, errColumn0)
+		return errColumn0
 	}
 	var oneColumnScanner *bool
-	var scanerr error
+	var errScan error
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 	exportFieldMap := make(map[string]reflect.StructField)
@@ -737,17 +750,16 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//循环遍历结果集
 	//Loop through the result set
 	for rows.Next() {
-
 		pv := reflect.New(sliceElementType)
-		oneColumnScanner, structType, scanerr = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
-		if scanerr != nil {
-			scanerr = fmt.Errorf("->Query-->sqlRowsValues错误:%w", scanerr)
-			FuncLogError(ctx, scanerr)
-			return scanerr
+		if errScan != nil {
+			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
+			FuncLogError(ctx, errScan)
+			return errScan
 		}
 
 		//values[i] = f.Addr().Interface()
@@ -764,11 +776,11 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//查询总条数
 	//Query total number
 	if page != nil && finder.SelectTotalCount {
-		count, counterr := selectCount(ctx, finder)
-		if counterr != nil {
-			counterr = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", counterr)
-			FuncLogError(ctx, counterr)
-			return counterr
+		count, errCount := selectCount(ctx, finder)
+		if errCount != nil {
+			errCount = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", errCount)
+			FuncLogError(ctx, errCount)
+			return errCount
 		}
 		page.setTotalCount(count)
 	}
@@ -776,6 +788,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	return nil
 
 }
+
+var errQueryRowMapFinder = errors.New("->QueryRowMap-->finder参数不能为nil")
+var errQueryRowMapMany = errors.New("->QueryRowMap查询出多条数据")
 
 // QueryRowMap 根据Finder查询,封装Map
 // context必须传入,不能为空
@@ -786,26 +801,29 @@ func QueryRowMap(ctx context.Context, finder *Finder) (map[string]interface{}, e
 }
 
 var queryRowMap = func(ctx context.Context, finder *Finder) (map[string]interface{}, error) {
-
 	if finder == nil {
-		return nil, errors.New("->QueryRowMap-->finder参数不能为nil")
+		FuncLogError(ctx, errQueryRowMapFinder)
+		return nil, errQueryRowMapFinder
 	}
-	resultMapList, listerr := QueryMap(ctx, finder, nil)
-	if listerr != nil {
-		listerr = fmt.Errorf("->QueryRowMap-->QueryMap查询错误:%w", listerr)
-		FuncLogError(ctx, listerr)
-		return nil, listerr
+	resultMapList, errList := QueryMap(ctx, finder, nil)
+	if errList != nil {
+		errList = fmt.Errorf("->QueryRowMap-->QueryMap查询错误:%w", errList)
+		FuncLogError(ctx, errList)
+		return nil, errList
 	}
 	if resultMapList == nil {
 		return nil, nil
 	}
 	if len(resultMapList) > 1 {
-		return resultMapList[0], errors.New("->QueryRowMap查询出多条数据")
+		FuncLogError(ctx, errQueryRowMapMany)
+		return resultMapList[0], errQueryRowMapMany
 	} else if len(resultMapList) == 0 { //数据库不存在值
 		return nil, nil
 	}
 	return resultMapList[0], nil
 }
+
+var errQueryMapFinder = errors.New("->QueryMap-->finder参数不能为nil")
 
 // QueryMap 根据Finder查询,封装Map数组
 // 根据数据库字段的类型,完成从[]byte到Go类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
@@ -820,47 +838,51 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapList []map[string]interface{}, err error) {
 
 	if finder == nil {
-		return nil, errors.New("->QueryMap-->finder参数不能为nil")
+		FuncLogError(ctx, errQueryMapFinder)
+		return nil, errQueryMapFinder
 	}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
+		FuncLogError(ctx, errFromContxt)
 		return nil, errFromContxt
 	}
 	//自己构建的dbConnection
 	//dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
+		FuncLogError(ctx, errDBConnection)
 		return nil, errDBConnection
 	}
 
-	dialect, err := getDialectFromConnection(ctx, dbConnection, 0)
-	if err != nil {
-		return nil, err
+	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
+	if errDialect != nil {
+		FuncLogError(ctx, errDialect)
+		return nil, errDialect
 	}
 
-	sqlstr, err := wrapQuerySQL(dialect, finder, page)
-	if err != nil {
-		err = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", err)
-		FuncLogError(ctx, err)
-		return nil, err
+	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
+	if errSQL != nil {
+		errSQL = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", errSQL)
+		FuncLogError(ctx, errSQL)
+		return nil, errSQL
 	}
 
 	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
 	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
-	var dbConnectionerr error
-	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, false, 0)
-	if dbConnectionerr != nil {
-		return nil, dbConnectionerr
+	var errDbConnection error
+	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
+	if errDbConnection != nil {
+		return nil, errDbConnection
 	}
 
 	//根据语句和参数查询
 	//Query based on statements and parameters
-	rows, e := dbConnection.queryContext(ctx, &sqlstr, finder.values)
-	if e != nil {
-		e = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", e)
-		FuncLogError(ctx, e)
-		return nil, e
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	if errQueryContext != nil {
+		errQueryContext = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", errQueryContext)
+		FuncLogError(ctx, errQueryContext)
+		return nil, errQueryContext
 	}
 	//先判断error 再关闭
 	defer func() {
@@ -882,11 +904,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 
 	//数据库返回的列类型
 	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
-	columnTypes, cne := rows.ColumnTypes()
-	if cne != nil {
-		cne = fmt.Errorf("->QueryMap-->rows.ColumnTypes数据库返回列名错误:%w", cne)
-		FuncLogError(ctx, cne)
-		return nil, cne
+	columnTypes, errColumnTypes := rows.ColumnTypes()
+	if errColumnTypes != nil {
+		errColumnTypes = fmt.Errorf("->QueryMap-->rows.ColumnTypes数据库返回列名错误:%w", errColumnTypes)
+		FuncLogError(ctx, errColumnTypes)
+		return nil, errColumnTypes
 	}
 	//反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
@@ -911,13 +933,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		//给数据赋值初始化变量
 		//Initialize variables by assigning values ​​to data
 		for i, columnType := range columnTypes {
-
 			dv := driverValue.Index(i)
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,不再处理,使用默认值
 				values[i] = new(interface{})
 				continue
 			}
-
 			//类型转换的接口实现
 			var customDriverValueConver ICustomDriverValueConver
 			//是否需要类型转换
@@ -984,11 +1004,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		}
 		//scan赋值
 		//scan assignment
-		scanerr := rows.Scan(values...)
-		if scanerr != nil {
-			scanerr = fmt.Errorf("->QueryMap-->rows.Scan错误:%w", scanerr)
-			FuncLogError(ctx, scanerr)
-			return nil, scanerr
+		errScan := rows.Scan(values...)
+		if errScan != nil {
+			errScan = fmt.Errorf("->QueryMap-->rows.Scan错误:%w", errScan)
+			FuncLogError(ctx, errScan)
+			return nil, errScan
 		}
 
 		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
@@ -1031,11 +1051,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	//查询总条数
 	//Query total number
 	if page != nil && finder.SelectTotalCount {
-		count, counterr := selectCount(ctx, finder)
-		if counterr != nil {
-			counterr = fmt.Errorf("->QueryMap-->selectCount查询总条数错误:%w", counterr)
-			FuncLogError(ctx, counterr)
-			return resultMapList, counterr
+		count, errCount := selectCount(ctx, finder)
+		if errCount != nil {
+			errCount = fmt.Errorf("->QueryMap-->selectCount查询总条数错误:%w", errCount)
+			FuncLogError(ctx, errCount)
+			return resultMapList, errCount
 		}
 		page.setTotalCount(count)
 	}
