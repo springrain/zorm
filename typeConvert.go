@@ -127,7 +127,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			return true, oldFunc, nil
 		}
 	}
-	return false, nil, nil
+	return false, nil, errors.New("->OverrideFunc-->暂不支持重写的函数:" + funcName)
 }
 func typeConvertInt64toInt(from int64) (int, error) {
 	//int64 转 int
