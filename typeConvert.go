@@ -32,102 +32,96 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 		return false, nil, errors.New("->OverrideFunc-->funcName不能为空")
 	}
 
+	//oldFunc 老的函数
+	var oldFunc interface{} = nil
 	switch funcName {
 	case "Transaction":
 		newFunc, ok := funcObject.(func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error))
 		if ok {
-			oldFunc := transaction
+			oldFunc = transaction
 			transaction = newFunc
-			return true, oldFunc, nil
 		}
 	case "QueryRow":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, entity interface{}) (bool, error))
 		if ok {
-			oldFunc := queryRow
+			oldFunc = queryRow
 			queryRow = newFunc
-			return true, oldFunc, nil
 		}
 	case "Query":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error)
 		if ok {
-			oldFunc := query
+			oldFunc = query
 			query = newFunc
-			return true, oldFunc, nil
 		}
 
 	case "QueryRowMap":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (map[string]interface{}, error))
 		if ok {
-			oldFunc := queryRowMap
+			oldFunc = queryRowMap
 			queryRowMap = newFunc
-			return true, oldFunc, nil
 		}
 	case "QueryMap":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error))
 		if ok {
-			oldFunc := queryMap
+			oldFunc = queryMap
 			queryMap = newFunc
-			return true, oldFunc, nil
 		}
 	case "UpdateFinder":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
 		if ok {
-			oldFunc := updateFinder
+			oldFunc = updateFinder
 			updateFinder = newFunc
-			return true, oldFunc, nil
 		}
 	case "Insert":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc := insert
+			oldFunc = insert
 			insert = newFunc
-			return true, oldFunc, nil
 		}
 	case "InsertSlice":
 		newFunc, ok := funcObject.(func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error))
 		if ok {
-			oldFunc := insertSlice
+			oldFunc = insertSlice
 			insertSlice = newFunc
-			return true, oldFunc, nil
 		}
 	case "Update":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc := update
+			oldFunc = update
 			update = newFunc
-			return true, oldFunc, nil
 		}
 	case "UpdateNotZeroValue":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc := updateNotZeroValue
+			oldFunc = updateNotZeroValue
 			updateNotZeroValue = newFunc
-			return true, oldFunc, nil
 		}
 	case "Delete":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc := delete
+			oldFunc = delete
 			delete = newFunc
-			return true, oldFunc, nil
 		}
 
 	case "InsertEntityMap":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (int, error))
 		if ok {
-			oldFunc := insertEntityMap
+			oldFunc = insertEntityMap
 			insertEntityMap = newFunc
-			return true, oldFunc, nil
 		}
 	case "UpdateEntityMap":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (int, error))
 		if ok {
-			oldFunc := updateEntityMap
+			oldFunc = updateEntityMap
 			updateEntityMap = newFunc
-			return true, oldFunc, nil
 		}
+	default:
+		return false, oldFunc, errors.New("->OverrideFunc-->函数" + funcName + "暂不支持重写或不存在")
 	}
-	return false, nil, errors.New("->OverrideFunc-->暂不支持重写的函数:" + funcName)
+	if oldFunc == nil {
+		return false, oldFunc, errors.New("->OverrideFunc-->请检查传入的" + funcName + "函数实现,断言转换失败.")
+	}
+	return true, oldFunc, nil
 }
 func typeConvertInt64toInt(from int64) (int, error) {
 	//int64 转 int
