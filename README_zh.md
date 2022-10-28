@@ -432,6 +432,12 @@ func TestQuery(t *testing.T) {
 	page.PageNo = 1   //查询第1页,默认是1
 	page.PageSize = 20 //每页20条,默认是20
 
+    // 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
+	//countFinder := NewFinder().Append("select count(*) from (")
+	//countFinder.AppendFinder(finder)
+	//countFinder.Append(") tempcountfinder")
+	//finder.CountFinder = countFinder
+
 	//执行查询
 	err := zorm.Query(ctx, finder, &list, page)
 	if err != nil { //标记测试失败
@@ -450,6 +456,13 @@ func TestQueryMap(t *testing.T) {
 	page := zorm.NewPage()
 	page.PageNo = 1   //查询第1页,默认是1
 	page.PageSize = 20 //每页20条,默认是20
+
+    // 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
+	//countFinder := NewFinder().Append("select count(*) from (")
+	//countFinder.AppendFinder(finder)
+	//countFinder.Append(") tempcountfinder")
+	//finder.CountFinder = countFinder
+
 	//执行查询
 	listMap, err := zorm.QueryMap(ctx, finder, page)
 	if err != nil { //标记测试失败
