@@ -1,3 +1,8 @@
+v1.6.3
+ - 感谢@无泪 反馈的问题,避免IEntityMap默认实现IEntityStruct接口
+ - 感谢@cucuy 对www.zorm.cn官网的修改
+ - 完善文档,注释
+
 v1.6.2
  - 捕获panic,赋值给err,避免程序崩溃
  - 增加sqlserver 和 oracle 分页默认order by

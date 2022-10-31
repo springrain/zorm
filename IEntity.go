@@ -29,11 +29,8 @@ type IEntityStruct interface {
 	//Get the primary key field name of the database table. Because it is compatible with Map, it can only be the field name of the database
 	GetPKColumnName() string
 
-	//GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
-	//key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
-	//The key is the DB Type, and the value is the value of the sequence,
-	//such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
+	//GetPkSequence 主键序列
+	//GetPkSequence Primary key sequence
 	GetPkSequence() string
 }
 
@@ -49,12 +46,9 @@ type IEntityMap interface {
 	//Get the primary key field name of the database table. Because it is compatible with Map, it can only be the field name of the database.
 	GetPKColumnName() string
 
-	//GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
-	//key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-	//GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
-	//The key is the DB Type, and the value is the value of the sequence,
-	//such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
-	GetPkSequence() string
+	//GetEntityMapPkSequence 主键序列,不能使用GetPkSequence方法名,避免默认实现了IEntityStruct接口
+	//GetEntityMapPkSequence primary key sequence, you cannot use the GetPkSequence method name, to avoid the default implementation of IEntityStruct interface
+	GetEntityMapPkSequence() string
 
 	//针对Map类型,记录数据库字段
 	//For Map type, record database fields.
@@ -90,7 +84,8 @@ func (entity *EntityStruct) GetPKColumnName() string {
 
 //var defaultPkSequence = make(map[string]string, 0)
 
-//GetPkSequence 主键序列,需要兼容多种数据库的序列,使用map,key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+//GetPkSequence 主键序列
+//GetPkSequence Primary key sequence
 func (entity *EntityStruct) GetPkSequence() string {
 	return ""
 }
@@ -103,7 +98,7 @@ type EntityMap struct {
 	tableName string
 	//主键列名
 	PkColumnName string
-	//主键序列,需要兼容多种数据库的序列,使用map,key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
+	//主键序列,如果有值,优先级最高
 	PkSequence string
 	//数据库字段,不暴露外部
 	dbFieldMap map[string]interface{}
@@ -128,12 +123,9 @@ func (entity *EntityMap) GetPKColumnName() string {
 	return entity.PkColumnName
 }
 
-//GetPkSequence 主键序列,因为需要兼容多种数据库的序列,所以使用map
-//key是Dialect,value是序列的值,例如oracle的TESTSEQ.NEXTVAL,如果有值,优先级最高
-//GetPkSequence Primary key sequence, because it needs to be compatible with multiple database sequences, map is used
-//The key is the DB Type, and the value is the value of the sequence,
-//such as Oracle's TESTSEQ.NEXTVAL. If there is a value, the priority is the highest
-func (entity *EntityMap) GetPkSequence() string {
+//GetEntityMapPkSequence 主键序列,不能使用GetPkSequence方法名,避免默认实现了IEntityStruct接口
+//GetEntityMapPkSequence primary key sequence, you cannot use the GetPkSequence method name, to avoid the default implementation of IEntityStruct interface
+func (entity *EntityMap) GetEntityMapPkSequence() string {
 	return entity.PkSequence
 }
 
