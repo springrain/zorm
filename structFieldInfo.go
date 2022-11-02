@@ -95,7 +95,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 	// 声明所有字段的载体
 	var allFieldMap *sync.Map = &sync.Map{}
-	anonymous := make([]reflect.StructField, 0)
+	//anonymous := make([]reflect.StructField, 0)
 
 	//缓存的数据
 	exportStructFieldMap := make(map[string]reflect.StructField)
@@ -134,52 +134,59 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	// 并发锁,用于处理slice并发append
 	var lock sync.Mutex
 	//funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
-	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous []reflect.StructField)
-	funcRecursiveAnonymous = func(allFieldMap *sync.Map, anonymous []reflect.StructField) {
-		for i := 0; i < len(anonymous); i++ {
-			field := anonymous[i]
-			typeOf := field.Type
+	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous reflect.StructField)
+	funcRecursiveAnonymous = func(allFieldMap *sync.Map, anonymous reflect.StructField) {
+		//for i := 0; i < len(anonymous); i++ {
+		field := anonymous
+		typeOf := field.Type
 
-			if typeOf.Kind() == reflect.Ptr {
-				//获取指针下的Struct类型
-				typeOf = typeOf.Elem()
-			}
-
-			//只处理Struct类型
-			if typeOf.Kind() != reflect.Struct {
-				continue
-			}
-
-			//获取字段长度
-			fieldNum := typeOf.NumField()
-			//如果没有字段
-			if fieldNum < 1 {
-				continue
-			}
-
-			// 匿名struct里自身又有匿名struct
-			anonymousField := make([]reflect.StructField, 0)
-			//遍历所有字段
-			for i := 0; i < fieldNum; i++ {
-				field := typeOf.Field(i)
-				if _, ok := allFieldMap.Load(field.Name); ok { //如果存在属性名
-					continue
-				} else { //不存在属性名,加入到allFieldMap
-					allFieldMap.Store(field.Name, field)
-					lock.Lock()
-					funcMapKV(field.Name, field)
-					lock.Unlock()
-				}
-
-				if field.Anonymous { //匿名struct里自身又有匿名struct
-					lock.Lock()
-					anonymousField = append(anonymousField, field)
-					lock.Unlock()
-				}
-			}
-			//递归调用匿名struct
-			funcRecursiveAnonymous(allFieldMap, anonymousField)
+		if typeOf.Kind() == reflect.Ptr {
+			//获取指针下的Struct类型
+			typeOf = typeOf.Elem()
 		}
+
+		//只处理Struct类型
+		if typeOf.Kind() != reflect.Struct {
+			return
+		}
+
+		//获取字段长度
+		fieldNum := typeOf.NumField()
+		//如果没有字段
+		if fieldNum < 1 {
+			return
+		}
+
+		// 匿名struct里自身又有匿名struct
+		//anonymousField := make([]reflect.StructField, 0)
+		//遍历所有字段
+		for i := 0; i < fieldNum; i++ {
+			field := typeOf.Field(i)
+			//if _, ok := allFieldMap.Load(field.Name); ok { //如果存在属性名
+			//	//continue
+			//	//进行覆盖更新
+			//	allFieldMap.Store(field.Name, field)
+			//	lock.Lock()
+			//	funcMapKV(field.Name, field)
+			//	lock.Unlock()
+			//
+			//}
+
+			if field.Anonymous { //匿名struct里自身又有匿名struct
+				//lock.Lock()
+				//anonymousField = append(anonymousField, field)
+				//lock.Unlock()
+				//递归调用匿名struct
+				funcRecursiveAnonymous(allFieldMap, field)
+			} else {
+				allFieldMap.Store(field.Name, field)
+				lock.Lock()
+				funcMapKV(field.Name, field)
+				lock.Unlock()
+			}
+		}
+
+		//}
 
 	}
 
@@ -194,13 +201,13 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 		}
 		if field.Anonymous { //如果是匿名的
-			lock.Lock()
-			anonymous = append(anonymous, field)
-			lock.Unlock()
+			//lock.Lock()
+			//anonymous = append(anonymous, field)
+			//lock.Unlock()
+			//直接调用匿名struct的递归方法
+			funcRecursiveAnonymous(allFieldMap, field)
 		}
 	}
-	//调用匿名struct的递归方法
-	funcRecursiveAnonymous(allFieldMap, anonymous)
 
 	//allFieldMap.Range(f)
 
