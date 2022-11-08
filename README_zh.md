@@ -386,7 +386,7 @@ func TestInsertEntityMap(t *testing.T) {
 func TestQueryRow(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
-	demo := &demoStruct{}
+	demo := demoStruct{}
 
 	//构造查询用的finder
 	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -402,7 +402,7 @@ func TestQueryRow(t *testing.T) {
 	//finder.Append("WHERE id like ? ", "20210630163227149563000042432429%")
 
 	//执行查询,has为true表示数据库有数据
-	has, err := zorm.QueryRow(ctx, finder, demo)
+	has, err := zorm.QueryRow(ctx, finder, &demo)
 
 	if err != nil { //标记测试失败
 		t.Errorf("错误:%v", err)
@@ -492,12 +492,12 @@ func TestUpdateNotZeroValue(t *testing.T) {
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		//声明一个对象的指针,用于更新数据
-		demo := &demoStruct{}
+		demo := demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
 		//更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
-		_, err := zorm.UpdateNotZeroValue(ctx, demo)
+		_, err := zorm.UpdateNotZeroValue(ctx, &demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -517,11 +517,11 @@ func TestUpdate(t *testing.T) {
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		//声明一个对象的指针,用于更新数据
-		demo := &demoStruct{}
+		demo := demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "TestUpdate"
 
-		_, err := zorm.Update(ctx, demo)
+		_, err := zorm.Update(ctx, &demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -585,11 +585,11 @@ func TestDelete(t *testing.T) {
     //如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
 	//例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		demo := &demoStruct{}
+		demo := demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
 
 		//删除 "sql":"DELETE FROM t_demo WHERE id=?","args":["20210630163227149563000042432429"]
-		_, err := zorm.Delete(ctx, demo)
+		_, err := zorm.Delete(ctx, &demo)
 
 		//如果返回的err不是nil,事务就会回滚
 		return nil, err
@@ -602,9 +602,9 @@ func TestDelete(t *testing.T) {
 
 //TestProc 14.测试调用存储过程
 func TestProc(t *testing.T) {
-	demo := &demoStruct{}
+	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
-	zorm.QueryRow(ctx, finder, demo)
+	zorm.QueryRow(ctx, finder, &demo)
 	fmt.Println(demo)
 }
 
