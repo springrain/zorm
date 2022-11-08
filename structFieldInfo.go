@@ -518,7 +518,23 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			values[i] = new(interface{})
 			continue
 		} else if converOK { //如果是需要转换的字段
-			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType, structType)
+			//获取字段类型
+			var structFieldType *reflect.Type
+
+			if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
+				vtype := valueOfElem.Type()
+				structFieldType = &vtype
+			} else if structType != nil { //如果是struct类型
+				field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
+				if err != nil {
+					return oneColumnScanner, structType, err
+				}
+				if field != nil { //存在这个字段
+					vtype := field.Type
+					structFieldType = &vtype
+				}
+			}
+			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
 			if err != nil {
 				return oneColumnScanner, structType, err
 			}
@@ -531,6 +547,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			dvinfo := driverValueInfo{}
 			dvinfo.customDriverValueConver = customDriverValueConver
 			//dvinfo.columnType = columnType
+			dvinfo.structFieldType = structFieldType
 			dvinfo.tempDriverValue = dv
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
@@ -570,7 +587,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		//typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, structType)
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, driverValueInfo.structFieldType)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)

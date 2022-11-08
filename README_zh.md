@@ -50,7 +50,7 @@ import (
 type CustomDMText struct{}
 
 //GetDriverValue 根据数据库列类型,返回driver.Value的实例,struct属性类型
-//非struct类型接收,无法获取到structFieldType,会传入nil
+//map接收或者字段不存在,无法获取到structFieldType,会传入nil
 func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType *reflect.Type) (driver.Value, error) {
 	//如果需要使用structFieldType,需要先判断是否为nil
 	//if structFieldType != nil {
@@ -60,7 +60,7 @@ func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.C
 }
 
 //ConverDriverValue 数据库列类型,GetDriverValue返回的driver.Value的临时接收值,struct属性类型
-//非struct类型接收,无法获取到structFieldType,会传入nil
+//map接收或者字段不存在,无法获取到structFieldType,会传入nil
 //返回符合接收类型值的指针,指针,指针!!!!
 func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value, structFieldType *reflect.Type) (interface{}, error) {
 	//如果需要使用structFieldType,需要先判断是否为nil
