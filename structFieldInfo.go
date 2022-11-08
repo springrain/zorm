@@ -518,7 +518,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			values[i] = new(interface{})
 			continue
 		} else if converOK { //如果是需要转换的字段
-			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType)
+			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType, structType)
 			if err != nil {
 				return oneColumnScanner, structType, err
 			}
@@ -570,7 +570,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
 		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 		//typeOf := fieldValue.Type()
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue)
+		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, structType)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)

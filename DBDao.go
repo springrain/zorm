@@ -957,7 +957,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			//如果需要类型转换
 			if converOK {
 				//获取需要转的临时值
-				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType)
+				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType, nil)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
@@ -1015,7 +1015,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		for i, driverValueInfo := range fieldTempDriverValueMap {
 			//driverValueInfo := *driverValueInfoPtr
 			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue)
+			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue, nil)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)
