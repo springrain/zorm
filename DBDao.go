@@ -1488,8 +1488,21 @@ func InsertEntityMapSlice(ctx context.Context, entityMapSlice []IEntityMap) (int
 
 var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
 	affected := -1
+	//从contxt中获取数据库连接,可能为nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return affected, errFromContxt
+	}
+	//自己构建的dbConnection
+	if dbConnection != nil && dbConnection.db == nil {
+		return affected, errDBConnection
+	}
+	dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
+	if err != nil {
+		return affected, err
+	}
 	//SQL语句
-	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, entityMapSlice)
+	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertValueEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
