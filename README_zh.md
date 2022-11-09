@@ -389,6 +389,7 @@ func TestInsertEntityMapSlice(t *testing.T) {
 		entityMapSlice := make([]IEntityMap, 0)
 		entityMap1 := NewEntityMap(demoStructTableName)
 		entityMap1.PkColumnName = "id"
+		entityMap1.Set("id", zorm.FuncGenerateStringID(ctx))
 		entityMap1.Set("userName", "entityMap-userName1")
 		entityMap1.Set("password", "entityMap-password1")
 		entityMap1.Set("createTime", time.Now())
@@ -396,6 +397,7 @@ func TestInsertEntityMapSlice(t *testing.T) {
 
 		entityMap2 := NewEntityMap(demoStructTableName)
 		entityMap2.PkColumnName = "id"
+		entityMap2.Set("id", zorm.FuncGenerateStringID(ctx))
 		entityMap2.Set("userName", "entityMap-userName2")
 		entityMap2.Set("password", "entityMap-password2")
 		entityMap2.Set("createTime", time.Now())
