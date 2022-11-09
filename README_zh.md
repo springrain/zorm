@@ -382,7 +382,41 @@ func TestInsertEntityMap(t *testing.T) {
 	}
 }
 
-//TestQueryRow 05.测试查询一个struct对象
+
+//TestInsertEntityMapSlice 05.测试批量保存[]IEntityMap,用于不方便使用struct的场景,使用Map作为载体
+func TestInsertEntityMapSlice(t *testing.T) {
+	_, err := Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+		entityMapSlice := make([]IEntityMap, 0)
+		entityMap1 := NewEntityMap(demoStructTableName)
+		entityMap1.PkColumnName = "id"
+		entityMap1.Set("userName", "entityMap-userName1")
+		entityMap1.Set("password", "entityMap-password1")
+		entityMap1.Set("createTime", time.Now())
+		entityMap1.Set("active", 1)
+
+		entityMap2 := NewEntityMap(demoStructTableName)
+		entityMap2.PkColumnName = "id"
+		entityMap2.Set("userName", "entityMap-userName2")
+		entityMap2.Set("password", "entityMap-password2")
+		entityMap2.Set("createTime", time.Now())
+		entityMap2.Set("active", 2)
+
+		entityMapSlice = append(entityMapSlice, entityMap1)
+		entityMapSlice = append(entityMapSlice, entityMap2)
+
+		//执行
+		_, err := InsertEntityMapSlice(ctx, entityMapSlice)
+
+		//如果返回的err不是nil,事务就会回滚
+		return nil, err
+	})
+	//标记测试失败
+	if err != nil {
+		t.Errorf("错误:%v", err)
+	}
+}
+
+//TestQueryRow 06.测试查询一个struct对象
 func TestQueryRow(t *testing.T) {
 
 	//声明一个对象的指针,用于承载返回的数据
@@ -411,7 +445,7 @@ func TestQueryRow(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestQueryRowMap 06.测试查询map接收结果,用于不太适合struct的场景,比较灵活
+//TestQueryRowMap 07.测试查询map接收结果,用于不太适合struct的场景,比较灵活
 func TestQueryRowMap(t *testing.T) {
 
 	//构造查询用的finder
@@ -430,7 +464,7 @@ func TestQueryRowMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuery 07.测试查询对象列表
+//TestQuery 08.测试查询对象列表
 func TestQuery(t *testing.T) {
 
 	//创建用于接收结果的slice
@@ -459,7 +493,7 @@ func TestQuery(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", list)
 }
 
-//TestQueryMap 08.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
+//TestQueryMap 09.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
 func TestQueryMap(t *testing.T) {
 	//构造查询用的finder
 	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -484,7 +518,7 @@ func TestQueryMap(t *testing.T) {
 	fmt.Println("总条数:", page.TotalCount, "  列表:", listMap)
 }
 
-//TestUpdateNotZeroValue 09.更新struct对象,只更新不为零值的字段.主键必须有值
+//TestUpdateNotZeroValue 10.更新struct对象,只更新不为零值的字段.主键必须有值
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
@@ -508,7 +542,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 }
 
-//TestUpdate 10.更新struct对象,更新所有字段.主键必须有值
+//TestUpdate 11.更新struct对象,更新所有字段.主键必须有值
 func TestUpdate(t *testing.T) {
 
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
@@ -531,7 +565,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-//TestUpdateFinder 11.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
+//TestUpdateFinder 12.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     //如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -554,7 +588,7 @@ func TestUpdateFinder(t *testing.T) {
 
 }
 
-//TestUpdateEntityMap 12.更新一个EntityMap,主键必须有值
+//TestUpdateEntityMap 13.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     //如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -579,7 +613,7 @@ func TestUpdateEntityMap(t *testing.T) {
 
 }
 
-//TestDelete 13.删除一个struct对象,主键必须有值
+//TestDelete 14.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
 	//需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     //如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -600,7 +634,7 @@ func TestDelete(t *testing.T) {
 
 }
 
-//TestProc 14.测试调用存储过程
+//TestProc 15.测试调用存储过程
 func TestProc(t *testing.T) {
 	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
@@ -608,7 +642,7 @@ func TestProc(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestFunc 15.测试调用自定义函数
+//TestFunc 16.测试调用自定义函数
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
@@ -616,7 +650,7 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
-//TestOther 16.其他的一些说明.非常感谢您能看到这一行
+//TestOther 17.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 
 	//场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可

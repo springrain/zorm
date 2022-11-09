@@ -303,47 +303,31 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		sqlBuilder.WriteString(valuesql)
 	}
 	//获取SQL语句
-	sqlstr = sqlBuilder.String()
+	//sqlstr = sqlBuilder.String()
 	//如果只有一个Struct对象
 	//If there is only one Struct object
 	if sliceLen == 1 {
 		//sqlstr, _ = reBindSQL(dialect, sqlstr)
-		return sqlstr, autoIncrement, firstErr
+		return sqlBuilder.String(), autoIncrement, firstErr
 	}
 	//主键的名称
 	//The name of the primary key
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return sqlstr, autoIncrement, e
+		return sqlBuilder.String(), autoIncrement, e
 	}
 
-	//截取生成的SQL语句中 VALUES 后面的字符串值
-	//Intercept the string value after VALUES in the generated SQL statement
-	/*
-		valueIndex := strings.Index(sqlstr, " VALUES (")
-		if valueIndex < 1 { //生成的语句异常
-			return "", autoIncrement, errors.New("->wrapInsertSliceSQL生成的语句异常")
-		}
-		//value后面的字符串 例如 (?,?,?),用于循环拼接
-		//The string after the value, such as (?,?,?), is used for circular splicing
-		valuestr := sqlstr[valueIndex+8:]
-	*/
-	//SQL语句的构造器
-	//SQL statement constructor
-	var insertSliceSQLBuilder strings.Builder
-	insertSliceSQLBuilder.Grow(100)
-	insertSliceSQLBuilder.WriteString(sqlstr)
 	for i := 1; i < sliceLen; i++ {
 		//拼接字符串
 		//Splicing string
 		if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-			insertSliceSQLBuilder.WriteString(" ")
-			insertSliceSQLBuilder.WriteString(entityStructSlice[i].GetTableName())
-			insertSliceSQLBuilder.WriteString(" VALUES")
-			insertSliceSQLBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(" ")
+			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
+			sqlBuilder.WriteString(" VALUES")
+			sqlBuilder.WriteString(valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
-			insertSliceSQLBuilder.WriteString(",")
-			insertSliceSQLBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(",")
+			sqlBuilder.WriteString(valuesql)
 		}
 
 		entityStruct := entityStructSlice[i]
@@ -384,9 +368,55 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	//包装sql
 	//Wrap sql
 	//savesql, err := reBindSQL(dialect, insertSliceSQLBuilder.String())
-	sqlstr = insertSliceSQLBuilder.String()
+	sqlstr = sqlBuilder.String()
 	return sqlstr, autoIncrement, nil
 
+}
+
+//wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
+func wrapInsertEntityMapSliceSQL(ctx context.Context, entityMapSlice []IEntityMap) (string, []interface{}, error) {
+	sliceLen := len(entityMapSlice)
+	sqlstr := ""
+	if entityMapSlice == nil || sliceLen < 1 {
+		return sqlstr, nil, errors.New("->wrapInsertSliceSQL对象数组不能为空")
+	}
+	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
+	entity := entityMapSlice[0]
+	//检查是否是指针对象
+	_, err := checkEntityKind(entity)
+	if err != nil {
+		return sqlstr, nil, err
+	}
+
+	//SQL语句
+	insertsql, valuesql, values, dbFieldMapKey, _, err := wrapInsertValueEntityMapSQL(entity)
+	if err != nil {
+		return sqlstr, values, err
+	}
+
+	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(len(insertsql) + len(valuesql) + 19)
+	sqlBuilder.WriteString("INSERT INTO ")
+
+	//sqlstr = sqlstr + insertsql + " VALUES" + valuesql
+	sqlBuilder.WriteString(insertsql)
+	sqlBuilder.WriteString(" VALUES")
+	sqlBuilder.WriteString(valuesql)
+	for i := 1; i < sliceLen; i++ {
+		// 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
+		sqlBuilder.WriteString(",")
+		sqlBuilder.WriteString(valuesql)
+
+		entityMap := entityMapSlice[i]
+		for j := 0; j < len(dbFieldMapKey); j++ {
+			key := dbFieldMapKey[j]
+			value := entityMap.GetDBFieldMap()[key]
+			values = append(values, value)
+		}
+	}
+
+	sqlstr = sqlBuilder.String()
+	return sqlstr, values, err
 }
 
 //wrapUpdateSQL 包装更新Struct语句
@@ -490,7 +520,7 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, error) {
 	sqlstr := ""
-	insertsql, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
+	insertsql, valuesql, values, _, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
 		return sqlstr, nil, autoIncrement, err
 	}
@@ -517,13 +547,13 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 //wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 //wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 //it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface{}, bool, error) {
+func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface{}, []string, bool, error) {
 	var insertsql, valuesql string
 	//是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return insertsql, insertsql, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return insertsql, insertsql, nil, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	//SQL对应的参数
 	//SQL corresponding parameters
@@ -559,6 +589,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	}
 
 	dbFieldMapIndex := 0
+	dbFieldMapKey := make([]string, 0)
 	for k, v := range dbFieldMap {
 		if dbFieldMapIndex > 0 {
 			sqlBuilder.WriteString(",")
@@ -575,6 +606,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 		//}
 
 		values = append(values, v)
+		dbFieldMapKey = append(dbFieldMapKey, k)
 		dbFieldMapIndex++
 	}
 	/*
@@ -595,7 +627,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	valueSQLBuilder.WriteString(")")
 	insertsql = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
-	return insertsql, valuesql, values, autoIncrement, nil
+	return insertsql, valuesql, values, dbFieldMapKey, autoIncrement, nil
 }
 
 //wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的

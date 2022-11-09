@@ -534,21 +534,21 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 					structFieldType = &vtype
 				}
 			}
-			dv, err := customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
+			tempDriverValue, err := customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
 			if err != nil {
 				return oneColumnScanner, structType, err
 			}
-			if dv == nil {
+			if tempDriverValue == nil {
 				return oneColumnScanner, structType, errors.New("->sqlRowsValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
 			}
-			values[i] = dv
+			values[i] = tempDriverValue
 
 			//如果需要类型转换
 			dvinfo := driverValueInfo{}
 			dvinfo.customDriverValueConver = customDriverValueConver
 			//dvinfo.columnType = columnType
 			dvinfo.structFieldType = structFieldType
-			dvinfo.tempDriverValue = dv
+			dvinfo.tempDriverValue = tempDriverValue
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
 

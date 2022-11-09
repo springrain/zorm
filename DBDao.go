@@ -1373,28 +1373,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(ctx, e)
 		return affected, e
 	}
-	/*
-		//从contxt中获取数据库连接,可能为nil
-		dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
-		if errFromContxt != nil {
-			return affected, errFromContxt
-		}
-		//自己构建的dbConnection
-		if dbConnection != nil && dbConnection.db == nil {
-			return affected, errDBConnection
-		}
 
-		var dialect string
-		if dbConnection == nil { //dbConnection为nil,使用defaultDao
-			dbdao, err := FuncReadWriteStrategy(ctx, 1)
-			if err != nil {
-				return affected, err
-			}
-			dialect = dbdao.config.Dialect
-		} else {
-			dialect = dbConnection.config.Dialect
-		}
-	*/
 	//SQL语句
 	sqlstr, err := wrapDeleteSQL(entity)
 	if err != nil {
@@ -1498,6 +1477,33 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 
 	return affected, nil
 
+}
+
+//InsertEntityMapSlice 保存[]IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
+//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+//affected影响的行数,如果异常或者驱动不支持,返回-1
+func InsertEntityMapSlice(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
+	return insertEntityMapSlice(ctx, entityMapSlice)
+}
+
+var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
+	affected := -1
+	//SQL语句
+	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, entityMapSlice)
+	if err != nil {
+		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertValueEntityMapSQL获取SQL语句错误:%w", err)
+		FuncLogError(ctx, err)
+		return affected, err
+	}
+
+	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	if errexec != nil {
+		errexec = fmt.Errorf("->InsertEntityMapSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
+		FuncLogError(ctx, errexec)
+		return affected, errexec
+	}
+	return affected, errexec
 }
 
 // UpdateEntityMap 更新IEntityMap对象.用于不方便使用struct的场景,主键必须有值

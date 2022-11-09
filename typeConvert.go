@@ -109,6 +109,12 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			oldFunc = insertEntityMap
 			insertEntityMap = newFunc
 		}
+	case "InsertEntityMapSlice":
+		newFunc, ok := funcObject.(func(ctx context.Context, entity []IEntityMap) (int, error))
+		if ok {
+			oldFunc = insertEntityMapSlice
+			insertEntityMapSlice = newFunc
+		}
 	case "UpdateEntityMap":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (int, error))
 		if ok {
