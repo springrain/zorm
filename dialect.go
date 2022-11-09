@@ -588,41 +588,21 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 		}
 	}
 
-	dbFieldMapIndex := 0
-	dbFieldMapKey := make([]string, 0)
-	for k, v := range dbFieldMap {
+	dbFieldMapKey := entity.GetDBFieldMapKey()
+	for dbFieldMapIndex := 0; dbFieldMapIndex < len(dbFieldMapKey); dbFieldMapIndex++ {
 		if dbFieldMapIndex > 0 {
 			sqlBuilder.WriteString(",")
 			valueSQLBuilder.WriteString(",")
 		}
+		k := dbFieldMapKey[dbFieldMapIndex]
+		v := dbFieldMap[k]
 		//拼接字符串
 		//Concatenated string
 		sqlBuilder.WriteString(k)
-
-		//if dialect == "tdengine" && reflect.TypeOf(v).Kind() == reflect.String { //tdengine数据库,而且是字符串类型的数据,拼接 '?' ,这实际是驱动的问题,交给zorm解决了
-		//	valueSQLBuilder.WriteString("'?',")
-		//} else {
 		valueSQLBuilder.WriteString("?")
-		//}
-
 		values = append(values, v)
-		dbFieldMapKey = append(dbFieldMapKey, k)
-		dbFieldMapIndex++
 	}
-	/*
-		//去掉字符串最后的 ','
-		//Remove the',' at the end of the string
-		insertsql := sqlBuilder.String()
-		if len(insertsql) > 0 {
-			insertsql = insertsql[:len(insertsql)-1]
-		}
-		valuesql := valueSQLBuilder.String()
-		if len(valuesql) > 0 {
-			valuesql = valuesql[:len(valuesql)-1]
-		}
-		insertsql = insertsql + ")"
-		valuesql = valuesql + ")"
-	*/
+
 	sqlBuilder.WriteString(")")
 	valueSQLBuilder.WriteString(")")
 	insertsql = sqlBuilder.String()

@@ -50,9 +50,13 @@ type IEntityMap interface {
 	//GetEntityMapPkSequence primary key sequence, you cannot use the GetPkSequence method name, to avoid the default implementation of IEntityStruct interface
 	GetEntityMapPkSequence() string
 
-	//针对Map类型,记录数据库字段
-	//For Map type, record database fields.
+	//GetDBFieldMap 针对Map类型,记录数据库字段
+	//GetDBFieldMap For Map type, record database fields.
 	GetDBFieldMap() map[string]interface{}
+
+	//GetDBFieldMapKey 按照Set的先后顺序记录key值,也就是数据库字段,用于SQL排序
+	//GetDBFieldMapKey records the key value, that is, the database field, in the order of the Set, which is used for SQL sorting
+	GetDBFieldMapKey() []string
 	//设置数据库字段的值
 	//Set the value of a database field.
 	Set(key string, value interface{}) map[string]interface{}
@@ -102,6 +106,8 @@ type EntityMap struct {
 	PkSequence string
 	//数据库字段,不暴露外部
 	dbFieldMap map[string]interface{}
+	//列名,记录顺序
+	dbFieldMapKey []string
 }
 
 //NewEntityMap 初始化Map,必须传入表名称
@@ -110,6 +116,7 @@ func NewEntityMap(tbName string) *EntityMap {
 	entityMap.dbFieldMap = map[string]interface{}{}
 	entityMap.tableName = tbName
 	entityMap.PkColumnName = defaultPkName
+	entityMap.dbFieldMapKey = make([]string, 0)
 	return &entityMap
 }
 
@@ -135,9 +142,20 @@ func (entity *EntityMap) GetDBFieldMap() map[string]interface{} {
 	return entity.dbFieldMap
 }
 
+//GetDBFieldMapKey 按照Set的先后顺序记录key值,也就是数据库字段,用于SQL排序
+//GetDBFieldMapKey records the key value, that is, the database field, in the order of the Set, which is used for SQL sorting
+func (entity *EntityMap) GetDBFieldMapKey() []string {
+	return entity.dbFieldMapKey
+}
+
 //Set 设置数据库字段
 //Set Set database fields
 func (entity *EntityMap) Set(key string, value interface{}) map[string]interface{} {
+	_, ok := entity.dbFieldMap[key]
+	if !ok { //如果不存在
+		entity.dbFieldMapKey = append(entity.dbFieldMapKey, key)
+	}
 	entity.dbFieldMap[key] = value
+
 	return entity.dbFieldMap
 }
