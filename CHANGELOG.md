@@ -2,7 +2,7 @@ v1.6.3
  - 感谢@rebens 的场景反馈,增加InsertEntityMapSlice函数,批量保存EntityMap
  - 感谢@haifengat 的场景反馈,ICustomDriverValueConver增加structFieldType *reflect.Type入参
  - 感谢@zhou-a-xing 调整匿名结构体字段顺序
- - 感谢@无泪 反馈的问题,避免IEntityMap默认实现IEntityStruct接口
+ - 感谢@rebens 反馈的问题,避免IEntityMap默认实现IEntityStruct接口
  - 感谢@cucuy 对www.zorm.cn官网的修改
  - 完善文档,注释
 
