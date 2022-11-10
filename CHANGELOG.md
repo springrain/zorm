@@ -1,3 +1,6 @@
+v1.6.4
+ - 完善文档,注释
+
 v1.6.3
  - 感谢@rebens 的场景反馈,增加InsertEntityMapSlice函数,批量保存EntityMap
  - 感谢@haifengat 的场景反馈,ICustomDriverValueConver增加structFieldType *reflect.Type入参

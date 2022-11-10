@@ -1504,7 +1504,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	//SQL语句
 	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice)
 	if err != nil {
-		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertValueEntityMapSQL获取SQL语句错误:%w", err)
+		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertEntityMapSliceSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
