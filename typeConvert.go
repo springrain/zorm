@@ -129,8 +129,9 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 	}
 	return true, oldFunc, nil
 }
+
+// typeConvertInt64toInt int64 转 int
 func typeConvertInt64toInt(from int64) (int, error) {
-	//int64 转 int
 	strInt64 := strconv.FormatInt(from, 10)
 	return strconv.Atoi(strInt64)
 }

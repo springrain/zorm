@@ -1084,39 +1084,7 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-	/*
-				//从contxt中获取数据库连接,可能为nil
-				//Get database connection from contxt, may be nil
-				dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
-				if errFromContxt != nil {
-					return affected, errFromContxt
-				}
 
-				//自己构建的dbConnection
-				//dbConnection built by yourself
-				if dbConnection != nil && dbConnection.db == nil {
-					return affected, errDBConnection
-				}
-
-				//var dialect string
-				//dbConnection为nil,使用defaultDao
-				//dbConnection is nil, use default Dao
-
-					if dbConnection == nil {
-						dialect = FuncReadWriteStrategy(ctx,1).config.Dialect
-					} else {
-						dialect = dbConnection.config.Dialect
-					}
-
-
-			sqlstr, err = reBindSQL(dialect, sqlstr)
-
-		if err != nil {
-			err = fmt.Errorf("->UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
-			FuncLogError(ctx, err)
-			return affected, err
-		}
-	*/
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
@@ -1183,20 +1151,6 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, err
 		}
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
-
-		/*
-			if dialect == "postgresql" || dialect == "kingbase" {
-				var p int64 = 0
-				lastInsertID = &p
-				sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName()
-			} else if dialect == "oracle" || dialect == "shentong" {
-				var p int64 = 0
-				zormSQLOutReturningID = &p
-				sqlstr = sqlstr + " RETURNING " + entity.GetPKColumnName() + " INTO :zormSQLOutReturningID "
-				v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
-				values = append(values, v)
-			}
-		*/
 
 	}
 
@@ -1548,20 +1502,6 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, errDBConnection
 	}
 
-	/*
-		var dialect string
-		//dbConnection为nil,使用defaultDao
-		//dbConnection is nil, use default Dao
-		if dbConnection == nil {
-			dbdao, err := FuncReadWriteStrategy(ctx, 1)
-			if err != nil {
-				return affected, err
-			}
-			dialect = dbdao.config.Dialect
-		} else {
-			dialect = dbConnection.config.Dialect
-		}
-	*/
 	//SQL语句
 	//SQL statement
 	sqlstr, values, err := wrapUpdateEntityMapSQL(entity)
@@ -1604,32 +1544,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	if entity == nil {
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
 	}
-	/*
-		//从contxt中获取数据库连接,可能为nil
-		//Get database connection from contxt, may be nil
-		dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
-		if errFromContxt != nil {
-			return affected, errFromContxt
-		}
-		//自己构建的dbConnection
-		//dbConnection built by yourself
-		if dbConnection != nil && dbConnection.db == nil {
-			return affected, errDBConnection
-		}
 
-		var dialect string
-		//dbConnection为nil,使用defaultDao
-		//dbConnection is nil, use default Dao
-		if dbConnection == nil {
-			dbdao, err := FuncReadWriteStrategy(ctx, 1)
-			if err != nil {
-				return affected, err
-			}
-			dialect = dbdao.config.Dialect
-		} else {
-			dialect = dbConnection.config.Dialect
-		}
-	*/
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
 		return nil, columnAndValueErr
@@ -1646,18 +1561,6 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	finder.sqlstr = sqlstr
 	finder.sqlBuilder.WriteString(sqlstr)
 	finder.values = values
-
-	/*
-		//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-		_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
-		if errexec != nil {
-			errexec = fmt.Errorf("->updateStruct-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
-			FuncLogError(ctx, errexec)
-		}
-
-		return affected, errexec
-	*/
-
 	return finder, nil
 }
 
@@ -1821,16 +1724,6 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	if dbConnectionerr != nil {
 		return nil, dbConnectionerr
 	}
-
-	// 数据库语法兼容处理
-	/*
-		sqlstr, reUpdateFinderSQLErr := reUpdateFinderSQL(dbConnection.config.Dialect, sqlstrptr)
-		if reUpdateFinderSQLErr != nil {
-			reUpdateFinderSQLErr = fmt.Errorf("->wrapExecUpdateValuesAffected-->reUpdateFinderSQL获取SQL语句错误:%w", reUpdateFinderSQLErr)
-			FuncLogError(ctx,reUpdateFinderSQLErr)
-			return nil, reUpdateFinderSQLErr
-		}
-	*/
 
 	var res *sql.Result
 	var errexec error

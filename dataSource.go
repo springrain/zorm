@@ -104,8 +104,6 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 // 事务参照:https://www.jianshu.com/p/2a144332c3db
 //Transaction reference: https://www.jianshu.com/p/2a144332c3db
 
-// const beginStatus = 1
-
 // dataBaseConnection 数据库dbConnection会话,可以原生查询或者事务
 // dataBaseConnection Database session, native query or transaction.
 type dataBaseConnection struct {
@@ -114,13 +112,10 @@ type dataBaseConnection struct {
 	// native db
 	db *sql.DB
 	// 原生事务
-	// native Transaction
+	// native transaction
 	tx *sql.Tx
 	// 数据库配置
 	config *DataSourceConfig
-
-	//commitSign   int8    // 提交标记,控制是否提交事务
-	//rollbackSign bool    // 回滚标记,控制是否回滚事务
 }
 
 // beginTx 开启事务
@@ -188,9 +183,8 @@ func (dbConnection *dataBaseConnection) commit() error {
 // execContext 执行sql语句,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // execContext Execute sql statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
-	var err error
-	//如果是TDengine,重新处理 字符类型的参数 '?'
-	err = reBindSQL(dbConnection.config.Dialect, execsql, &args)
+	//reBindSQL 重新处理参数代入方式
+	err := reBindSQL(dbConnection.config.Dialect, execsql, &args)
 	if err != nil {
 		return nil, err
 	}
@@ -231,9 +225,8 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
-	var err error
-	//如果是TDengine,重新处理 字符类型的参数 '?'
-	err = reBindSQL(dbConnection.config.Dialect, query, &args)
+	//reBindSQL 重新处理参数代入方式
+	err := reBindSQL(dbConnection.config.Dialect, query, &args)
 	if err != nil {
 		return nil, err
 	}
@@ -270,9 +263,8 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
-	var err error
-	//如果是TDengine,重新处理 字符类型的参数 '?'
-	err = reBindSQL(dbConnection.config.Dialect, query, &args)
+	//reBindSQL 重新处理参数代入方式
+	err := reBindSQL(dbConnection.config.Dialect, query, &args)
 	if err != nil {
 		return nil, err
 	}

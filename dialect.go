@@ -35,15 +35,6 @@ import (
 //wrapPageSQL 包装分页的SQL语句
 //wrapPageSQL SQL statement for wrapping paging
 func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
-	//新的分页方法都已经不需要order by了,不再强制检查
-	//The new paging method does not require 'order by' anymore, no longer mandatory check.
-	//
-	/*
-		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) <= 0 { //如果没有 order by
-			return "", errors.New("->分页语句必须有 order by")
-		}
-	*/
 	if page.PageNo < 1 { //默认第一页
 		page.PageNo = 1
 	}
@@ -128,7 +119,6 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	//SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
-	//sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
@@ -184,10 +174,6 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 			pkValue := (*values)[i]
 			valueIsZero := reflect.ValueOf(pkValue).IsZero()
 			if autoIncrement == 2 { //如果是序列自增 | If it is a sequence increment
-				//拼接字符串 | Concatenated string
-				//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-				//sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
-
 				//去掉这一列,后续不再处理
 				//Remove this column and will not process it later.
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
@@ -228,10 +214,6 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				continue
 			}
 		}
-		//拼接字符串
-		//Concatenated string.
-		//sqlBuilder.WriteString(getStructFieldTagColumnValue(typeOf, field.Name))
-		// sqlBuilder.WriteString(field.Tag.Get(tagColumnName))
 
 		if i > 0 { // i+1<len(*columns) 风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
 			sqlBuilder.WriteString(",")
@@ -243,27 +225,12 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 		valueSQLBuilder.WriteString("?")
 
 	}
-	/*
-		//去掉字符串最后的 ','
-		//Remove the',' at the end of the string
-		insertsql := sqlBuilder.String()
-		if len(insertsql) > 0 {
-			insertsql = insertsql[:len(insertsql)-1]
-		}
-		valuesql := valueSQLBuilder.String()
-		if len(valuesql) > 0 {
-			valuesql = valuesql[:len(valuesql)-1]
-		}
-		insertsql = insertsql + ")"
-		valuesql = valuesql + ")"
-		//savesql, err := wrapSQL(dialect, sqlstr)
-	*/
+
 	sqlBuilder.WriteString(")")
 	valueSQLBuilder.WriteString(")")
 	insertsql = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
 	return insertsql, valuesql, autoIncrement, pktype, nil
-
 }
 
 //wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
@@ -302,12 +269,10 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		sqlBuilder.WriteString(" VALUES")
 		sqlBuilder.WriteString(valuesql)
 	}
-	//获取SQL语句
-	//sqlstr = sqlBuilder.String()
+
 	//如果只有一个Struct对象
 	//If there is only one Struct object
 	if sliceLen == 1 {
-		//sqlstr, _ = reBindSQL(dialect, sqlstr)
 		return sqlBuilder.String(), autoIncrement, firstErr
 	}
 	//主键的名称
@@ -365,9 +330,6 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		}
 	}
 
-	//包装sql
-	//Wrap sql
-	//savesql, err := reBindSQL(dialect, insertSliceSQLBuilder.String())
 	sqlstr = sqlBuilder.String()
 	return sqlstr, autoIncrement, nil
 
@@ -489,10 +451,6 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	//主键的值是最后一个
 	//The value of the primary key is the last
 	*values = append(*values, pkValue)
-	//去掉字符串最后的 ','
-	//Remove the',' at the end of the string
-	//sqlstr := sqlBuilder.String()
-	//sqlstr = sqlstr[:len(sqlstr)-1]
 
 	//sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 	sqlBuilder.WriteString(" WHERE ")
@@ -542,13 +500,7 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 	sqlBuilder.WriteString(" VALUES")
 	sqlBuilder.WriteString(valuesql)
 	sqlstr = sqlBuilder.String()
-	/*
-		var e error
-		sqlstr, e = reBindSQL(dialect, sqlstr)
-		if e != nil {
-			return "", nil, autoIncrement, e
-		}
-	*/
+
 	return sqlstr, values, autoIncrement, nil
 }
 
@@ -661,22 +613,12 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	//主键的值是最后一个
 	//The value of the primary key is the last
 	values = append(values, pkValue)
-	//去掉字符串最后的 ','
-	//Remove the',' at the end of the string
-	//sqlstr := sqlBuilder.String()
-	//sqlstr = sqlstr[:len(sqlstr)-1]
-	//sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
+
 	sqlBuilder.WriteString(" WHERE ")
 	sqlBuilder.WriteString(entity.GetPKColumnName())
 	sqlBuilder.WriteString("=?")
 	sqlstr = sqlBuilder.String()
-	/*
-		var e error
-		sqlstr, e = reBindSQL(dialect, sqlstr)
-		if e != nil {
-			return "", nil, e
-		}
-	*/
+
 	return sqlstr, values, nil
 }
 
@@ -792,72 +734,6 @@ func findDeleteTableName(strsql *string) []string {
 
 }
 
-/*
-
-//converValueColumnType 根据数据库的字段类型,转化成Go的类型,不处理sql.Nullxxx类型
-//converValueColumnType According to the field type of the database, it is converted to the type of Go, and the sql.Nullxxx type is not processed
-func converValueColumnType(v interface{}, columnType *sql.ColumnType) interface{} {
-
-	if v == nil {
-		return nil
-	}
-
-	//如果是字节数组
-	//If it is a byte array
-	value, ok := v.([]byte)
-	if !ok { //转化失败,不是字节数组,例如:string,直接返回值.日期格式一般数据库驱动都不解析为[]byte
-		return v
-	}
-	if len(value) < 1 { //值为空,为nil
-		return value
-	}
-
-	//获取数据库类型,自己对应Go的基础类型值,不处理sql.Nullxxx类型
-	//Get the database type, corresponding to the basic type value of Go, and do not process the sql.Nullxxx type.
-	databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-	var val interface{}
-	var err error
-	switch databaseTypeName {
-	case "CHAR", "NCHAR", "VARCHAR", "NVARCHAR", "VARCHAR2", "NVARCHAR2", "TINYTEXT", "MEDIUMTEXT", "TEXT", "NTEXT", "LONGTEXT", "LONG":
-		val, err = typeConvertString(v)
-	case "INT", "INT4", "INTEGER", "SERIAL", "TINYINT", "BIT", "SMALLINT", "SMALLSERIAL", "INT2":
-		val, err = typeConvertInt(v)
-	case "BIGINT", "BIGSERIAL", "INT8":
-		val, err = typeConvertInt64(v)
-	case "FLOAT", "REAL":
-		val, err = typeConvertFloat32(v)
-	case "DOUBLE":
-		val, err = typeConvertFloat64(v)
-	case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
-		val, err = typeConvertDecimal(v)
-	case "BOOLEAN", "BOOL":
-		val, err = typeConvertBool(v)
-
-		//MySQL DSN加上parseTime=true参数,会自动转换为time格式,默认查询出来的是[]byte数组,这里不再处理
-
-
-			case "DATE":
-				val, err = typeConvertTime(v, "2006-01-02", time.Local)
-			case "TIME":
-				val, err = typeConvertTime(v, "15:04:05", time.Local)
-			case "DATETIME":
-				val, err = typeConvertTime(v, "2006-01-02 15:04:05", time.Local)
-			case "TIMESTAMP":
-				val, err = typeConvertTime(v, "2006-01-02 15:04:05.000", time.Local)
-
-
-	//其他类型以后再写.....
-	//Other types will be written later...
-	default: //其他情况返回原值
-		return v
-	}
-	if err != nil { //如果格式转换失败,返回原值
-		return v
-	}
-	//返回转换后的值
-	return val
-}
-*/
 //FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 //FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID = func(ctx context.Context) string {
@@ -886,7 +762,8 @@ func getFieldTagName(field *reflect.StructField) string {
 			// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错
 			colName = strings.ReplaceAll(colName, "\"", "")
 			colName = fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
-		}*/
+		}
+	*/
 	return colName
 }
 
@@ -928,9 +805,6 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
 		return nil
 	}
-	//if dialect == "mysql" || dialect == "sqlite" || dialect == "dm" || dialect == "gbase" || dialect == "clickhouse" || dialect == "db2" {
-	//	return sqlstr, nil
-	//}
 
 	strs := strings.Split(*sqlstr, "?")
 	if len(strs) < 1 {
@@ -950,7 +824,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 		case "oracle", "shentong": //oracle,神通
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		case "tdengine": //tdengine
+		case "tdengine": //tdengine,重新处理 字符类型的参数 '?'
 			typeOf := reflect.TypeOf((*args)[i-1])
 			if typeOf.Kind() == reflect.Ptr {
 				//获取指针下的类型
@@ -964,33 +838,6 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 		default: //其他情况,还是使用 ? | In other cases, or use  ?
 			sqlBuilder.WriteString("?")
 		}
-
-		/*
-			if dialect == "postgresql" || dialect == "kingbase" { //postgresql,kingbase
-				sqlBuilder.WriteString("$")
-				sqlBuilder.WriteString(strconv.Itoa(i))
-			} else if dialect == "mssql" { //mssql
-				sqlBuilder.WriteString("@p")
-				sqlBuilder.WriteString(strconv.Itoa(i))
-			} else if dialect == "oracle" || dialect == "shentong" { //oracle,神州通用
-				sqlBuilder.WriteString(":")
-				sqlBuilder.WriteString(strconv.Itoa(i))
-			} else if dialect == "tdengine" {
-				typeOf := reflect.TypeOf(args[i-1])
-				if typeOf.Kind() == reflect.Ptr {
-					//获取指针下的类型
-					typeOf = typeOf.Elem()
-				}
-				if typeOf.Kind() == reflect.String { //如果值是字符串
-					sqlBuilder.WriteString("'?'")
-				} else { //其他情况,还是使用 ?
-					sqlBuilder.WriteString("?")
-				}
-			} else { //其他情况,还是使用 ? | In other cases, or use  ?
-				sqlBuilder.WriteString("?")
-			}
-		*/
-
 		sqlBuilder.WriteString(strs[i])
 	}
 	*sqlstr = sqlBuilder.String()
@@ -1028,52 +875,6 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	return nil
 
 }
-
-/*
-//reTDengineSQL 重新包装TDengine的sql语句,把 string类型的值对应的 ? 修改为 '?'
-func reTDengineSQL(dialect string, sqlstr *string, args []interface{}) (*string, error) {
-	if dialect != "tdengine" {
-		return sqlstr, nil
-	}
-
-	strs := strings.Split(*sqlstr, "?")
-	if len(strs) < 1 {
-		return sqlstr, nil
-	}
-	if len(strs)-1-len(args) != 0 { //分隔之后,字符串比值多1个
-		return sqlstr, errors.New("->reTDengineSQL-->参数数量和值不一致")
-	}
-	var sqlBuilder strings.Builder
-	sqlBuilder.WriteString(strs[0])
-	for i := 0; i < len(args); i++ {
-
-		//不允许再手动拼接 '?' 单引号了,强制统一使用?,书写统一
-
-			//pre := strings.TrimSpace(strs[i])
-			//after := strings.TrimSpace(strs[i+1])
-			//if strings.HasSuffix(pre, "'") && strings.HasPrefix(after, "'") { //用户手动拼接了 '?'
-			//	sqlBuilder.WriteString("?")
-			//	sqlBuilder.WriteString(strs[i+1])
-			//	continue
-			//}
-
-
-		typeOf := reflect.TypeOf(args[i])
-		if typeOf.Kind() == reflect.Ptr {
-			//获取指针下的类型
-			typeOf = typeOf.Elem()
-		}
-		if typeOf.Kind() == reflect.String { //如果值是字符串
-			sqlBuilder.WriteString("'?'")
-		} else { //其他情况,还是使用 ?
-			sqlBuilder.WriteString("?")
-		}
-		sqlBuilder.WriteString(strs[i+1])
-	}
-	*sqlstr = sqlBuilder.String()
-	return sqlstr, nil
-}
-*/
 
 //wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
 func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, lastInsertID, zormSQLOutReturningID *int64, values *[]interface{}) {
