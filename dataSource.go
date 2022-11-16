@@ -107,13 +107,14 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 // dataBaseConnection 数据库dbConnection会话,可以原生查询或者事务
 // dataBaseConnection Database session, native query or transaction.
 type dataBaseConnection struct {
-
 	// 原生db
 	// native db
 	db *sql.DB
+
 	// 原生事务
 	// native transaction
 	tx *sql.Tx
+
 	// 数据库配置
 	config *DataSourceConfig
 }
@@ -121,55 +122,52 @@ type dataBaseConnection struct {
 // beginTx 开启事务
 // beginTx Open transaction
 func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
-	//s.rollbackSign = true
-	if dbConnection.tx == nil {
-
-		//设置事务配置,主要是隔离级别
-		var txOptions *sql.TxOptions
-		contextTxOptions := ctx.Value(contextTxOptionsKey)
-		if contextTxOptions != nil {
-			txOptions, _ = contextTxOptions.(*sql.TxOptions)
-		} else {
-			txOptions = dbConnection.config.DefaultTxOptions
-		}
-
-		tx, err := dbConnection.db.BeginTx(ctx, txOptions)
-		if err != nil {
-			err = fmt.Errorf("->beginTx事务开启失败:%w", err)
-			return err
-		}
-		dbConnection.tx = tx
-		//s.commitSign = beginStatus
+	if dbConnection.tx != nil {
 		return nil
 	}
-	//s.commitSign++
+	//设置事务配置,主要是隔离级别
+	var txOptions *sql.TxOptions
+	contextTxOptions := ctx.Value(contextTxOptionsKey)
+	if contextTxOptions != nil {
+		txOptions, _ = contextTxOptions.(*sql.TxOptions)
+	} else {
+		txOptions = dbConnection.config.DefaultTxOptions
+	}
+
+	tx, err := dbConnection.db.BeginTx(ctx, txOptions)
+	if err != nil {
+		err = fmt.Errorf("->beginTx事务开启失败:%w", err)
+		return err
+	}
+	dbConnection.tx = tx
 	return nil
+
 }
 
 // rollback 回滚事务
 // rollback Rollback transaction
 func (dbConnection *dataBaseConnection) rollback() error {
-	//if s.tx != nil && s.rollbackSign == true {
-	if dbConnection.tx != nil {
-		err := dbConnection.tx.Rollback()
-		if err != nil {
-			err = fmt.Errorf("->rollback事务回滚失败:%w", err)
-			return err
-		}
-		dbConnection.tx = nil
+	if dbConnection.tx == nil {
 		return nil
 	}
+
+	err := dbConnection.tx.Rollback()
+	if err != nil {
+		err = fmt.Errorf("->rollback事务回滚失败:%w", err)
+		return err
+	}
+	dbConnection.tx = nil
 	return nil
+
 }
 
 // commit 提交事务
 // commit Commit transaction
 func (dbConnection *dataBaseConnection) commit() error {
-	//s.rollbackSign = false
 	if dbConnection.tx == nil {
 		return errors.New("->dbConnection.commit()事务为空")
-
 	}
+
 	err := dbConnection.tx.Commit()
 	if err != nil {
 		err = fmt.Errorf("->dbConnection.commit()事务提交失败:%w", err)
