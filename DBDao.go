@@ -599,7 +599,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 		pv := reflect.ValueOf(entity)
 		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
-		pv = pv.Elem()
+		//pv = pv.Elem()
 		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		//scanerr := rows.Scan(values...)
@@ -633,13 +633,13 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		return errQuerySlice
 	}
 
-	pv1 := reflect.ValueOf(rowsSlicePtr)
-	if pv1.Kind() != reflect.Ptr { //如果不是指针
+	pvPtr := reflect.ValueOf(rowsSlicePtr)
+	if pvPtr.Kind() != reflect.Ptr { //如果不是指针
 		FuncLogError(ctx, errQuerySlice)
 		return errQuerySlice
 	}
 
-	sliceValue := reflect.Indirect(pv1)
+	sliceValue := reflect.Indirect(pvPtr)
 
 	//如果不是数组
 	//If it is not an array.
@@ -1084,38 +1084,39 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-
-	//从contxt中获取数据库连接,可能为nil
-	//Get database connection from contxt, may be nil
-	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
-	if errFromContxt != nil {
-		return affected, errFromContxt
-	}
-
-	//自己构建的dbConnection
-	//dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
-
-	//var dialect string
-	//dbConnection为nil,使用defaultDao
-	//dbConnection is nil, use default Dao
 	/*
-		if dbConnection == nil {
-			dialect = FuncReadWriteStrategy(ctx,1).config.Dialect
-		} else {
-			dialect = dbConnection.config.Dialect
+				//从contxt中获取数据库连接,可能为nil
+				//Get database connection from contxt, may be nil
+				dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+				if errFromContxt != nil {
+					return affected, errFromContxt
+				}
+
+				//自己构建的dbConnection
+				//dbConnection built by yourself
+				if dbConnection != nil && dbConnection.db == nil {
+					return affected, errDBConnection
+				}
+
+				//var dialect string
+				//dbConnection为nil,使用defaultDao
+				//dbConnection is nil, use default Dao
+
+					if dbConnection == nil {
+						dialect = FuncReadWriteStrategy(ctx,1).config.Dialect
+					} else {
+						dialect = dbConnection.config.Dialect
+					}
+
+
+			sqlstr, err = reBindSQL(dialect, sqlstr)
+
+		if err != nil {
+			err = fmt.Errorf("->UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
+			FuncLogError(ctx, err)
+			return affected, err
 		}
 	*/
-
-	//sqlstr, err = reBindSQL(dialect, sqlstr)
-	if err != nil {
-		err = fmt.Errorf("->UpdateFinder-->reBindSQL获取SQL语句错误:%w", err)
-		FuncLogError(ctx, err)
-		return affected, err
-	}
-
 	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
@@ -1254,7 +1255,6 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	return affected, nil
-
 }
 
 //InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,使用IEntityStruct接口,兼容Struct实体类
@@ -1310,7 +1310,6 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	}
 
 	return affected, errexec
-
 }
 
 //Update 更新struct所有属性,必须是IEntityStruct类型
