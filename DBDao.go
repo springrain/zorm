@@ -176,7 +176,7 @@ func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
 // If it is multi-database, Dao manually calls new DB Connection() to obtain db Connection, and With Value is bound to the sub-context
 func (dbDao *DBDao) newDBConnection() (*dataBaseConnection, error) {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return nil, errors.New("->newDBConnection-->请不要自己创建dbDao,使用NewDBDao方法进行创建")
+		return nil, errors.New("->newDBConnection-->请不要自己创建dbDao,请使用NewDBDao方法进行创建")
 	}
 	dbConnection := new(dataBaseConnection)
 	dbConnection.db = dbDao.dataSource.DB
@@ -213,7 +213,7 @@ func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.
 //请谨慎调用这个方法,会关闭所有数据库连接,用于处理特殊场景,正常使用无需手动关闭数据库连接
 func (dbDao *DBDao) CloseDB() error {
 	if dbDao == nil || dbDao.dataSource == nil {
-		return errors.New("->CloseDB-->请不要自己创建dbDao,使用NewDBDao方法进行创建")
+		return errors.New("->CloseDB-->请不要自己创建dbDao,请使用NewDBDao方法进行创建")
 	}
 	return dbDao.dataSource.Close()
 }
