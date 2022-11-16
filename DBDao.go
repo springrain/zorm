@@ -55,23 +55,12 @@ var FuncReadWriteStrategy = func(ctx context.Context, rwType int) (*DBDao, error
 // wrapContextStringKey 包装context的key,不直接使用string类型,避免外部直接注入使用
 type wrapContextStringKey string
 
-// context WithValue的key,不能是基础类型,例如字符串,包装一下
+// contextDBConnectionValueKey context WithValue的key,不能是基础类型,例如字符串,包装一下
 // The key of context WithValue cannot be a basic type, such as a string, wrap it
 const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionValueKey")
 
-//事务选项设置TxOptions,主要是设置事务的隔离级别
+// contextTxOptionsKey 事务选项设置TxOptions的key,设置事务的隔离级别
 const contextTxOptionsKey = wrapContextStringKey("contextTxOptionsKey")
-
-//bug(springrain) 还缺少1对1的属性嵌套对象,sql别名查询,直接赋值的功能.
-
-//不再处理日期零值,会干扰反射判断零值
-//默认的零时时间1970-01-01 00:00:00 +0000 UTC,兼容数据库,避免0001-01-01 00:00:00 +0000 UTC的零值.数据库不让存值,加上1秒,跪了
-//因为mysql 5.7后,The TIMESTAMP data type is used for values that contain both date and time parts. TIMESTAMP has a range of '1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' UTC.
-//var defaultZeroTime = time.Date(1970, time.January, 1, 0, 0, 1, 0, time.UTC)
-
-//var defaultZeroTime = time.Now()
-
-//注释如果是 . 句号结尾,IDE的提示就截止了,注释结尾不要用 . 结束
 
 // DataSourceConfig 数据库连接池的配置
 // DateSourceConfig Database connection pool configuration
@@ -156,17 +145,6 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	}
 	return &DBDao{config, dataSource}, nil
 }
-
-/*
-// getDefaultDao 获取默认的Dao,用于隔离读写的Dao
-// getDefaultDao Get the default Dao, used to isolate Dao for reading and writing
-func getDefaultDao(ctx context.Context, rwType int) (*DBDao, error) {
-	if defaultDao == nil {
-		return nil, errors.New("->getDefaultDao-->defaultDao为nil")
-	}
-	return defaultDao, nil
-}
-*/
 
 // newDBConnection 获取一个dbConnection
 // 如果参数dbConnection为nil,使用默认的datasource进行获取dbConnection
