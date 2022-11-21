@@ -27,32 +27,32 @@ import (
 	"strings"
 )
 
-//customDriverValueMap 用于配置数据库字段类型的处理关系,key是数据库字段类型的字符串,例如 TEXT
+// customDriverValueMap 用于配置数据库字段类型的处理关系,key是数据库字段类型的字符串,例如 TEXT
 var customDriverValueMap = make(map[string]ICustomDriverValueConver)
 
-//var cdvmLen int
+// iscdvm 是否有自定义的DriverValueMap
 var iscdvm bool
 
-//ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
+// ICustomDriverValueConver 自定义类型转化接口,用于解决 类似达梦 text --> dm.DmClob --> string类型接收的问题
 type ICustomDriverValueConver interface {
-	//GetDriverValue 根据数据库列类型,返回driver.Value的实例,struct属性类型
-	//map接收或者字段不存在,无法获取到structFieldType,会传入nil
+	// GetDriverValue 根据数据库列类型,返回driver.Value的实例,struct属性类型
+	// map接收或者字段不存在,无法获取到structFieldType,会传入nil
 	GetDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType *reflect.Type) (driver.Value, error)
 
-	//ConverDriverValue 数据库列类型,GetDriverValue返回的driver.Value的临时接收值,struct属性类型
-	//map接收或者字段不存在,无法获取到structFieldType,会传入nil
-	//返回符合接收类型值的指针,指针,指针!!!!
+	// ConverDriverValue 数据库列类型,GetDriverValue返回的driver.Value的临时接收值,struct属性类型
+	// map接收或者字段不存在,无法获取到structFieldType,会传入nil
+	// 返回符合接收类型值的指针,指针,指针!!!!
 	ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value, structFieldType *reflect.Type) (interface{}, error)
 }
 
-//RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
-//一般是放到init方法里进行注册
+// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+// 一般是放到init方法里进行注册
 func RegisterCustomDriverValueConver(columnType string, customDriverValueConver ICustomDriverValueConver) error {
 	if len(columnType) < 1 {
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
 	}
 	customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
-	//cdvmLen = len(customDriverValueMap)
+	// cdvmLen = len(customDriverValueMap)
 
 	iscdvm = true
 	return nil

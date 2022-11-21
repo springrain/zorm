@@ -65,57 +65,57 @@ const contextTxOptionsKey = wrapContextStringKey("contextTxOptionsKey")
 // DataSourceConfig 数据库连接池的配置
 // DateSourceConfig Database connection pool configuration
 type DataSourceConfig struct {
-	//DSN dataSourceName 连接字符串
-	//DSN DataSourceName Database connection string
+	// DSN dataSourceName 连接字符串
+	// DSN DataSourceName Database connection string
 	DSN string
-	//DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
-	//DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
+	// DriverName 数据库驱动名称:mysql,postgres,oci8,sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
+	// DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
 	DriverName string
-	//Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
-	//Dialect:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
+	// Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
+	// Dialect:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
 	Dialect string
-	//Deprecated
-	//DBType 即将废弃,请使用Dialect属性
-	//DBType is about to be deprecated, please use the Dialect property
+	// Deprecated
+	// DBType 即将废弃,请使用Dialect属性
+	// DBType is about to be deprecated, please use the Dialect property
 	DBType string
-	//SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
+	// SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 	SlowSQLMillis int
-	//MaxOpenConns 数据库最大连接数,默认50
-	//MaxOpenConns Maximum number of database connections, Default 50
+	// MaxOpenConns 数据库最大连接数,默认50
+	// MaxOpenConns Maximum number of database connections, Default 50
 	MaxOpenConns int
-	//MaxIdleConns 数据库最大空闲连接数,默认50
-	//MaxIdleConns The maximum number of free connections to the database default 50
+	// MaxIdleConns 数据库最大空闲连接数,默认50
+	// MaxIdleConns The maximum number of free connections to the database default 50
 	MaxIdleConns int
-	//ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
-	//ConnMaxLifetimeSecond (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
-	//Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
+	// ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
+	// ConnMaxLifetimeSecond (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
+	// Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
 	ConnMaxLifetimeSecond int
 
-	//DefaultTxOptions 事务隔离级别的默认配置,默认为nil
+	// DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
-	//DisableTransaction 禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
-	//禁用事务应该有驱动伪造事务API,不应该由orm实现
+	// DisableTransaction 禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
+	// 禁用事务应该有驱动伪造事务API,不应该由orm实现
 	DisableTransaction bool
 
-	//MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
-	//db, mock, err := sqlmock.New()
-	//MockSQLDB *sql.DB
+	// MockSQLDB 用于mock测试的入口,如果MockSQLDB不为nil,则不使用DSN,直接使用MockSQLDB
+	// db, mock, err := sqlmock.New()
+	// MockSQLDB *sql.DB
 
-	//FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
-	//业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
+	// FuncGlobalTransaction seata/hptx全局分布式事务的适配函数,返回IGlobalTransaction接口的实现
+	// 业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
 	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, error)
-	//DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
-	//DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
-	//DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
-	//DisableAutoGlobalTransaction bool
+	// DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
+	// DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
+	// DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
+	// DisableAutoGlobalTransaction bool
 
-	//SQLDB 使用现有的数据库连接,优先级高于DSN
+	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 }
 
-//DBDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过DBDao进行
-//DBDao Database operation base class, isolate the native operation database API entry,all database operations must be performed through DB Dao
+// DBDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过DBDao进行
+// DBDao Database operation base class, isolate the native operation database API entry,all database operations must be performed through DB Dao
 type DBDao struct {
 	config     *DataSourceConfig
 	dataSource *dataSource
@@ -129,7 +129,6 @@ var defaultDao *DBDao = nil
 // The first database to be executed is defaultDao, and the subsequent zorm.xxx method is defaultDao by default
 func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	dataSource, err := newDataSource(config)
-
 	if err != nil {
 		err = fmt.Errorf("->NewDBDao创建dataSource失败:%w", err)
 		FuncLogError(nil, err)
@@ -177,7 +176,7 @@ func (dbDao *DBDao) BindContextDBConnection(parent context.Context) (context.Con
 }
 
 // BindContextTxOptions 绑定事务的隔离级别,参考sql.IsolationLevel,如果txOptions为nil,使用默认的事务隔离级别.parent不能为空
-//需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
+// 需要在事务开启前调用,也就是zorm.Transaction方法前,不然事务开启之后再调用就无效了
 func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.TxOptions) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextTxOptions-->context的parent不能为nil")
@@ -188,7 +187,7 @@ func (dbDao *DBDao) BindContextTxOptions(parent context.Context, txOptions *sql.
 }
 
 // CloseDB 关闭所有数据库连接
-//请谨慎调用这个方法,会关闭所有数据库连接,用于处理特殊场景,正常使用无需手动关闭数据库连接
+// 请谨慎调用这个方法,会关闭所有数据库连接,用于处理特殊场景,正常使用无需手动关闭数据库连接
 func (dbDao *DBDao) CloseDB() error {
 	if dbDao == nil || dbDao.dataSource == nil {
 		return errors.New("->CloseDB-->请不要自己创建dbDao,请使用NewDBDao方法进行创建")
@@ -242,12 +241,12 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 }
 
 var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (info interface{}, err error) {
-	//是否是dbConnection的开启方,如果是开启方,才可以提交事务
+	// 是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
 	localTxOpen := false
-	//是否是分布式事务的开启方.如果ctx中没有xid,认为是开启方
+	// 是否是分布式事务的开启方.如果ctx中没有xid,认为是开启方
 	globalTxOpen := false
-	//如果dbConnection不存在,则会用默认的datasource开启事务
+	// 如果dbConnection不存在,则会用默认的datasource开启事务
 	// If db Connection does not exist, the default datasource will be used to start the transaction
 	var dbConnection *dataBaseConnection
 	ctx, dbConnection, err = checkDBConnection(ctx, dbConnection, false, 1)
@@ -256,21 +255,21 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 		return nil, err
 	}
 
-	//适配全局事务的函数
+	// 适配全局事务的函数
 	funcGlobalTx := dbConnection.config.FuncGlobalTransaction
 
-	//实现IGlobalTransaction接口的事务对象
+	// 实现IGlobalTransaction接口的事务对象
 	var globalTransaction IGlobalTransaction
-	//分布式事务的 rootContext,和业务的ctx区别开来,如果业务ctx使用WithValue,就会出现差异
+	// 分布式事务的 rootContext,和业务的ctx区别开来,如果业务ctx使用WithValue,就会出现差异
 	var globalRootContext context.Context
-	//分布式事务的异常
+	// 分布式事务的异常
 	var errGlobal error
 
-	//如果没有事务,并且事务没有被禁用,开启事务
-	//开启本地事务前,需要拿到分布式事务对象
+	// 如果没有事务,并且事务没有被禁用,开启事务
+	// 开启本地事务前,需要拿到分布式事务对象
 	if dbConnection.tx == nil && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
-		//if dbConnection.tx == nil {
-		//是否使用分布式事务
+		// if dbConnection.tx == nil {
+		// 是否使用分布式事务
 		enableGlobalTransaction := funcGlobalTx != nil
 		if enableGlobalTransaction { // 判断ctx里是否有绑定 enableGlobalTransaction
 			/*
@@ -285,19 +284,19 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			enableGlobalTransaction = getContextBoolValue(ctx, contextEnableGlobalTransactionValueKey, false)
 		}
 
-		//需要开启分布式事务,初始化分布式事务对象,判断是否是分布式事务入口
+		// 需要开启分布式事务,初始化分布式事务对象,判断是否是分布式事务入口
 		if enableGlobalTransaction {
-			//获取分布式事务的XID
+			// 获取分布式事务的XID
 			ctxXIDval := ctx.Value("XID")
-			if ctxXIDval != nil { //如果本地ctx中有XID
+			if ctxXIDval != nil { // 如果本地ctx中有XID
 				globalXID, _ := ctxXIDval.(string)
-				//不知道为什么需要两个Key,还需要请教seata/hptx团队
-				//seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
+				// 不知道为什么需要两个Key,还需要请教seata/hptx团队
+				// seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
 				ctx = context.WithValue(ctx, "TX_XID", globalXID)
-			} else { //如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
+			} else { // 如果本地ctx中没有XID,也就是没有传递过来XID,认为是分布式事务的开启方.ctx中没有XID和TX_XID的值
 				globalTxOpen = true
 			}
-			//获取分布式事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
+			// 获取分布式事务实现对象,用于控制事务提交和回滚.分支事务需要ctx中TX_XID有值,将分支事务关联到主事务
 			globalTransaction, globalRootContext, errGlobal = funcGlobalTx(ctx)
 			if errGlobal != nil {
 				errGlobal = fmt.Errorf("->Transaction-->global:Transaction FuncGlobalTransaction获取IGlobalTransaction接口实现失败:%w ", errGlobal)
@@ -311,7 +310,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			}
 
 		}
-		if globalTxOpen { //如果是分布事务开启方,启动分布式事务
+		if globalTxOpen { // 如果是分布事务开启方,启动分布式事务
 			errGlobal = globalTransaction.BeginGTX(ctx, globalRootContext)
 			if errGlobal != nil {
 				errGlobal = fmt.Errorf("->Transaction-->global:Transaction 分布式事务开启失败:%w ", errGlobal)
@@ -319,8 +318,8 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				return nil, errGlobal
 			}
 
-			//分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
-			//seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
+			// 分布式事务开启成功,获取XID,设置到ctx的XID和TX_XID
+			// seata/hptx mysql驱动需要 XID,gtxContext.NewRootContext 需要 TX_XID
 			globalXID, errGlobal := globalTransaction.GetGTXID(ctx, globalRootContext)
 			if errGlobal != nil {
 				FuncLogError(ctx, errGlobal)
@@ -335,15 +334,15 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			ctx = context.WithValue(ctx, "TX_XID", globalXID)
 		}
 
-		//开启本地事务/分支事务
+		// 开启本地事务/分支事务
 		errBeginTx := dbConnection.beginTx(ctx)
 		if errBeginTx != nil {
 			errBeginTx = fmt.Errorf("->Transaction 事务开启失败:%w ", errBeginTx)
 			FuncLogError(ctx, errBeginTx)
 			return nil, errBeginTx
 		}
-		//本方法开启的事务,由本方法提交
-		//The transaction opened by this method is submitted by this method
+		// 本方法开启的事务,由本方法提交
+		// The transaction opened by this method is submitted by this method
 		localTxOpen = true
 	}
 
@@ -375,7 +374,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				rberr = fmt.Errorf("->Transaction-->recover内事务回滚失败:%w", rberr)
 				FuncLogError(ctx, rberr)
 			}
-			//任意一个分支事务回滚,分布式事务就整体回滚
+			// 任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
 				errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
 				if errGlobal != nil {
@@ -387,26 +386,26 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 		}
 	}()
 
-	//执行业务的事务函数
+	// 执行业务的事务函数
 	info, err = doTransaction(ctx)
 
 	if err != nil {
 		err = fmt.Errorf("->Transaction-->doTransaction业务执行错误:%w", err)
 		FuncLogError(ctx, err)
 
-		//如果禁用了事务
+		// 如果禁用了事务
 		if getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction) {
 			return info, err
 		}
 
-		//不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
-		//It is not the start party to roll back the transaction, which may cause inaccurate log records,but rollback is the most important, roll back as soon as possible
+		// 不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
+		// It is not the start party to roll back the transaction, which may cause inaccurate log records,but rollback is the most important, roll back as soon as possible
 		errRollback := dbConnection.rollback()
 		if errRollback != nil {
 			errRollback = fmt.Errorf("->Transaction-->rollback事务回滚失败:%w", errRollback)
 			FuncLogError(ctx, errRollback)
 		}
-		//任意一个分支事务回滚,分布式事务就整体回滚
+		// 任意一个分支事务回滚,分布式事务就整体回滚
 		if globalTransaction != nil {
 			errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
 			if errGlobal != nil {
@@ -416,11 +415,11 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 		}
 		return info, err
 	}
-	//如果是事务开启方,提交事务
-	//If it is the transaction opener, commit the transaction
+	// 如果是事务开启方,提交事务
+	// If it is the transaction opener, commit the transaction
 	if localTxOpen {
 		errCommit := dbConnection.commit()
-		//本地事务提交成功,如果是全局事务的开启方,提交分布式事务
+		// 本地事务提交成功,如果是全局事务的开启方,提交分布式事务
 		if errCommit == nil && globalTxOpen {
 			errGlobal = globalTransaction.CommitGTX(ctx, globalRootContext)
 			if errGlobal != nil {
@@ -431,7 +430,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 		if errCommit != nil {
 			errCommit = fmt.Errorf("->Transaction-->commit事务提交失败:%w", errCommit)
 			FuncLogError(ctx, errCommit)
-			//任意一个分支事务回滚,分布式事务就整体回滚
+			// 任意一个分支事务回滚,分布式事务就整体回滚
 			if globalTransaction != nil {
 				errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
 				if errGlobal != nil {
@@ -469,15 +468,15 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		FuncLogError(ctx, errCheck)
 		return has, errCheck
 	}
-	//从contxt中获取数据库连接,可能为nil
-	//Get database connection from contxt, may be nil
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		FuncLogError(ctx, errFromContxt)
 		return has, errFromContxt
 	}
-	//自己构建的dbConnection
-	//dbConnection built by yourself
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
 		FuncLogError(ctx, errDBConnection)
 		return has, errDBConnection
@@ -489,8 +488,8 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		return has, errDialect
 	}
 
-	//获取到sql语句
-	//Get the sql statement
+	// 获取到sql语句
+	// Get the sql statement
 	sqlstr, errSQL := wrapQuerySQL(dialect, finder, nil)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
@@ -498,8 +497,8 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		return has, errSQL
 	}
 
-	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
-	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
+	// 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	// Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var errDbConnection error
 	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
 	if errDbConnection != nil {
@@ -507,19 +506,19 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		return has, errDbConnection
 	}
 
-	//根据语句和参数查询
-	//Query based on statements and parameters
+	// 根据语句和参数查询
+	// Query based on statements and parameters
 	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
 		return has, errQueryContext
 	}
-	//先判断error 再关闭
+	// 先判断error 再关闭
 	defer func() {
-		//先判断error 再关闭
+		// 先判断error 再关闭
 		rows.Close()
-		//捕获panic,赋值给err,避免程序崩溃
+		// 捕获panic,赋值给err,避免程序崩溃
 		if r := recover(); r != nil {
 			has = false
 			var errOk bool
@@ -534,7 +533,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 	}()
 
-	//typeOf := reflect.TypeOf(entity).Elem()
+	// typeOf := reflect.TypeOf(entity).Elem()
 
 	//数据库返回的列名
 	//Column name returned by the database
@@ -553,7 +552,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		FuncLogError(ctx, errColumnTypes)
 		return has, errColumnTypes
 	}
-	if len(columnTypes) < 1 { //没有返回列
+	if len(columnTypes) < 1 { // 没有返回列
 		errColumn0 := errors.New("->QueryRow-->len(columnTypes)<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return has, errColumn0
@@ -563,12 +562,12 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 	exportFieldMap := make(map[string]reflect.StructField)
-	//反射获取 []driver.Value的值,用于处理nil值和自定义类型
-	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	//循环遍历结果集
-	//Loop through the result set
+	// 循环遍历结果集
+	// Loop through the result set
 	for i := 0; rows.Next(); i++ {
 		has = true
 		if i > 0 {
@@ -577,10 +576,10 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 		pv := reflect.ValueOf(entity)
 		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
-		//pv = pv.Elem()
-		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
-		//scanerr := rows.Scan(values...)
+		// pv = pv.Elem()
+		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
+		// scanerr := rows.Scan(values...)
 		if errScan != nil {
 			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
 			FuncLogError(ctx, errScan)
@@ -604,34 +603,34 @@ var errQuerySlice = errors.New("->Query数组必须是*[]struct类型或者*[]*s
 var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 	return query(ctx, finder, rowsSlicePtr, page)
 }
-var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) (err error) {
 
-	if rowsSlicePtr == nil { //如果为nil
+var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) (err error) {
+	if rowsSlicePtr == nil { // 如果为nil
 		FuncLogError(ctx, errQuerySlice)
 		return errQuerySlice
 	}
 
 	pvPtr := reflect.ValueOf(rowsSlicePtr)
-	if pvPtr.Kind() != reflect.Ptr { //如果不是指针
+	if pvPtr.Kind() != reflect.Ptr { // 如果不是指针
 		FuncLogError(ctx, errQuerySlice)
 		return errQuerySlice
 	}
 
 	sliceValue := reflect.Indirect(pvPtr)
 
-	//如果不是数组
-	//If it is not an array.
+	// 如果不是数组
+	// If it is not an array.
 	if sliceValue.Kind() != reflect.Slice {
 		FuncLogError(ctx, errQuerySlice)
 		return errQuerySlice
 	}
-	//获取数组内的元素类型
-	//Get the element type in the array
+	// 获取数组内的元素类型
+	// Get the element type in the array
 	sliceElementType := sliceValue.Type().Elem()
 
-	//slice数组里是否是指针,实际参数类似 *[]*struct,兼容这种类型
+	// slice数组里是否是指针,实际参数类似 *[]*struct,兼容这种类型
 	sliceElementTypePtr := false
-	//如果数组里还是指针类型
+	// 如果数组里还是指针类型
 	if sliceElementType.Kind() == reflect.Ptr {
 		sliceElementTypePtr = true
 		sliceElementType = sliceElementType.Elem()
@@ -648,8 +647,8 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, errFromContxt)
 		return errFromContxt
 	}
-	//自己构建的dbConnection
-	//dbConnection built by yourself
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
 		FuncLogError(ctx, errDBConnection)
 		return errDBConnection
@@ -667,8 +666,8 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		return errSQL
 	}
 
-	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
-	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
+	// 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	// Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var errDbConnection error
 	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
 	if errDbConnection != nil {
@@ -676,19 +675,19 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		return errDbConnection
 	}
 
-	//根据语句和参数查询
-	//Query based on statements and parameters
+	// 根据语句和参数查询
+	// Query based on statements and parameters
 	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->Query-->queryContext查询rows错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
 		return errQueryContext
 	}
-	//先判断error 再关闭
+	// 先判断error 再关闭
 	defer func() {
-		//先判断error 再关闭
+		// 先判断error 再关闭
 		rows.Close()
-		//捕获panic,赋值给err,避免程序崩溃
+		// 捕获panic,赋值给err,避免程序崩溃
 		if r := recover(); r != nil {
 			var errOk bool
 			err, errOk = r.(error)
@@ -705,14 +704,14 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	//_, ok := reflect.New(sliceElementType).Interface().(sql.Scanner)
 	//fmt.Println(ok)
 
-	//数据库返回的字段类型
+	// 数据库返回的字段类型
 	columnTypes, errColumnTypes := rows.ColumnTypes()
 	if errColumnTypes != nil {
 		errColumnTypes = fmt.Errorf("->Query-->rows.ColumnTypes数据库类型错误:%w", errColumnTypes)
 		FuncLogError(ctx, errColumnTypes)
 		return errColumnTypes
 	}
-	if len(columnTypes) < 1 { //没有返回列
+	if len(columnTypes) < 1 { // 没有返回列
 		errColumn0 := errors.New("->Query-->len(columnTypes)<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return errColumn0
@@ -722,28 +721,28 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	var structType *reflect.Type
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 	exportFieldMap := make(map[string]reflect.StructField)
-	//反射获取 []driver.Value的值,用于处理nil值和自定义类型
-	var driverValue = reflect.Indirect(reflect.ValueOf(rows))
+	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
+	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
-	//循环遍历结果集
-	//Loop through the result set
+	// 循环遍历结果集
+	// Loop through the result set
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
 		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
-		//scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-		//scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
-		//scanerr := rows.Scan(values...)
+		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
+		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
+		// scanerr := rows.Scan(values...)
 		if errScan != nil {
 			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
 			FuncLogError(ctx, errScan)
 			return errScan
 		}
 
-		//values[i] = f.Addr().Interface()
-		//通过反射给slice添加元素
-		//Add elements to slice through reflection
-		if sliceElementTypePtr { //如果数组里是指针地址,*[]*struct
+		// values[i] = f.Addr().Interface()
+		// 通过反射给slice添加元素
+		// Add elements to slice through reflection
+		if sliceElementTypePtr { // 如果数组里是指针地址,*[]*struct
 			sliceValue.Set(reflect.Append(sliceValue, pv.Addr()))
 		} else {
 			sliceValue.Set(reflect.Append(sliceValue, pv))
@@ -751,8 +750,8 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 	}
 
-	//查询总条数
-	//Query total number
+	// 查询总条数
+	// Query total number
 	if page != nil && finder.SelectTotalCount {
 		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
@@ -764,11 +763,12 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}
 
 	return nil
-
 }
 
-var errQueryRowMapFinder = errors.New("->QueryRowMap-->finder参数不能为nil")
-var errQueryRowMapMany = errors.New("->QueryRowMap查询出多条数据")
+var (
+	errQueryRowMapFinder = errors.New("->QueryRowMap-->finder参数不能为nil")
+	errQueryRowMapMany   = errors.New("->QueryRowMap查询出多条数据")
+)
 
 // QueryRowMap 根据Finder查询,封装Map
 // context必须传入,不能为空
@@ -795,7 +795,7 @@ var queryRowMap = func(ctx context.Context, finder *Finder) (map[string]interfac
 	if len(resultMapList) > 1 {
 		FuncLogError(ctx, errQueryRowMapMany)
 		return resultMapList[0], errQueryRowMapMany
-	} else if len(resultMapList) == 0 { //数据库不存在值
+	} else if len(resultMapList) == 0 { // 数据库不存在值
 		return nil, nil
 	}
 	return resultMapList[0], nil
@@ -807,27 +807,26 @@ var errQueryMapFinder = errors.New("->QueryMap-->finder参数不能为nil")
 // 根据数据库字段的类型,完成从[]byte到Go类型的映射,理论上其他查询方法都可以调用此方法,但是需要处理sql.Nullxxx等驱动支持的类型
 // context必须传入,不能为空
 // QueryMap According to Finder query, encapsulate Map array
-//According to the type of database field, the mapping from []byte to Go type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
-//context must be passed in and cannot be empty
+// According to the type of database field, the mapping from []byte to Go type is completed. In theory,other query methods can call this method, but need to deal with types supported by drivers such as sql.Nullxxx
+// context must be passed in and cannot be empty
 func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 	return queryMap(ctx, finder, page)
 }
 
 var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapList []map[string]interface{}, err error) {
-
 	if finder == nil {
 		FuncLogError(ctx, errQueryMapFinder)
 		return nil, errQueryMapFinder
 	}
-	//从contxt中获取数据库连接,可能为nil
-	//Get database connection from contxt, may be nil
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		FuncLogError(ctx, errFromContxt)
 		return nil, errFromContxt
 	}
-	//自己构建的dbConnection
-	//dbConnection built by yourself
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
 		FuncLogError(ctx, errDBConnection)
 		return nil, errDBConnection
@@ -846,27 +845,27 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		return nil, errSQL
 	}
 
-	//检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
-	//Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
+	// 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	// Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
 	var errDbConnection error
 	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
 	if errDbConnection != nil {
 		return nil, errDbConnection
 	}
 
-	//根据语句和参数查询
-	//Query based on statements and parameters
+	// 根据语句和参数查询
+	// Query based on statements and parameters
 	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
 		return nil, errQueryContext
 	}
-	//先判断error 再关闭
+	// 先判断error 再关闭
 	defer func() {
-		//先判断error 再关闭
+		// 先判断error 再关闭
 		rows.Close()
-		//捕获panic,赋值给err,避免程序崩溃
+		// 捕获panic,赋值给err,避免程序崩溃
 		if r := recover(); r != nil {
 			var errOk bool
 			err, errOk = r.(error)
@@ -880,51 +879,51 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		}
 	}()
 
-	//数据库返回的列类型
-	//The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
+	// 数据库返回的列类型
+	// The types returned by column Type.scan Type are all []byte, use column Type.database Type to judge one by one
 	columnTypes, errColumnTypes := rows.ColumnTypes()
 	if errColumnTypes != nil {
 		errColumnTypes = fmt.Errorf("->QueryMap-->rows.ColumnTypes数据库返回列名错误:%w", errColumnTypes)
 		FuncLogError(ctx, errColumnTypes)
 		return nil, errColumnTypes
 	}
-	//反射获取 []driver.Value的值
+	// 反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 	resultMapList = make([]map[string]interface{}, 0)
-	//循环遍历结果集
-	//Loop through the result set
+	// 循环遍历结果集
+	// Loop through the result set
 	for rows.Next() {
-		//接收数据库返回的数据,需要使用指针接收
-		//To receive the data returned by the database, you need to use the pointer to receive
+		// 接收数据库返回的数据,需要使用指针接收
+		// To receive the data returned by the database, you need to use the pointer to receive
 		values := make([]interface{}, len(columnTypes))
-		//使用指针类型接收字段值,需要使用interface{}包装一下
-		//To use the pointer type to receive the field value, you need to use interface() to wrap it
+		// 使用指针类型接收字段值,需要使用interface{}包装一下
+		// To use the pointer type to receive the field value, you need to use interface() to wrap it
 		result := make(map[string]interface{})
 
-		//记录需要类型转换的字段信息
+		// 记录需要类型转换的字段信息
 		var fieldTempDriverValueMap map[int]*driverValueInfo
 		if iscdvm {
 			fieldTempDriverValueMap = make(map[int]*driverValueInfo)
 		}
 
-		//给数据赋值初始化变量
-		//Initialize variables by assigning values ​​to data
+		// 给数据赋值初始化变量
+		// Initialize variables by assigning values ​​to data
 		for i, columnType := range columnTypes {
 			dv := driverValue.Index(i)
 			if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,不再处理,使用默认值
 				values[i] = new(interface{})
 				continue
 			}
-			//类型转换的接口实现
+			// 类型转换的接口实现
 			var customDriverValueConver ICustomDriverValueConver
-			//是否需要类型转换
+			// 是否需要类型转换
 			var converOK bool = false
-			//类型转换的临时值
+			// 类型转换的临时值
 			var tempDriverValue driver.Value
-			//根据接收的类型,获取到类型转换的接口实现
+			// 根据接收的类型,获取到类型转换的接口实现
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-			//判断是否有自定义扩展,避免无意义的反射
+			// 判断是否有自定义扩展,避免无意义的反射
 			if iscdvm {
 				if len(databaseTypeName) < 1 {
 					return nil, errors.New("->QueryMap-->驱动不支持的字段类型")
@@ -932,19 +931,19 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 			}
 			var errGetDriverValue error
-			//如果需要类型转换
+			// 如果需要类型转换
 			if converOK {
-				//获取需要转的临时值
+				// 获取需要转的临时值
 				tempDriverValue, errGetDriverValue = customDriverValueConver.GetDriverValue(ctx, columnType, nil)
 				if errGetDriverValue != nil {
 					errGetDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.GetDriverValue错误:%w", errGetDriverValue)
 					FuncLogError(ctx, errGetDriverValue)
 					return nil, errGetDriverValue
 				}
-				//返回值为nil,不做任何处理,使用原始逻辑
+				// 返回值为nil,不做任何处理,使用原始逻辑
 				if tempDriverValue == nil {
 					values[i] = new(interface{})
-				} else { //如果需要类型转换
+				} else { // 如果需要类型转换
 					values[i] = tempDriverValue
 					dvinfo := driverValueInfo{}
 					dvinfo.customDriverValueConver = customDriverValueConver
@@ -976,12 +975,12 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			case "BOOLEAN", "BOOL", "BIT":
 				values[i] = new(bool)
 			default:
-				//不需要类型转换,正常赋值
+				// 不需要类型转换,正常赋值
 				values[i] = new(interface{})
 			}
 		}
-		//scan赋值
-		//scan assignment
+		// scan赋值
+		// scan assignment
 		errScan := rows.Scan(values...)
 		if errScan != nil {
 			errScan = fmt.Errorf("->QueryMap-->rows.Scan错误:%w", errScan)
@@ -989,45 +988,45 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			return nil, errScan
 		}
 
-		//循环 需要类型转换的字段,把临时值赋值给实际的接收对象
+		// 循环 需要类型转换的字段,把临时值赋值给实际的接收对象
 		for i, driverValueInfo := range fieldTempDriverValueMap {
-			//driverValueInfo := *driverValueInfoPtr
-			//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+			// driverValueInfo := *driverValueInfoPtr
+			// 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue, nil)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)
 				return nil, errConverDriverValue
 			}
-			//result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
+			// result[driverValueInfo.columnType.Name()] = reflect.ValueOf(rightValue).Elem().Interface()
 			values[i] = rightValue
 		}
 
-		//获取每一列的值
-		//Get the value of each column
+		// 获取每一列的值
+		// Get the value of each column
 		for i, columnType := range columnTypes {
 
-			//取到指针下的值,[]byte格式
-			//Get the value under the pointer, []byte format
-			//v := *(values[i].(*interface{}))
+			// 取到指针下的值,[]byte格式
+			// Get the value under the pointer, []byte format
+			// v := *(values[i].(*interface{}))
 			v := reflect.ValueOf(values[i]).Elem().Interface()
-			//从[]byte转化成实际的类型值,例如string,int
-			//Convert from []byte to actual type value, such as string, int
-			//v = converValueColumnType(v, columnType)
-			//赋值到Map
-			//Assign to Map
+			// 从[]byte转化成实际的类型值,例如string,int
+			// Convert from []byte to actual type value, such as string, int
+			// v = converValueColumnType(v, columnType)
+			// 赋值到Map
+			// Assign to Map
 			result[columnType.Name()] = v
 
 		}
 
-		//添加Map到数组
-		//Add Map to the array
+		// 添加Map到数组
+		// Add Map to the array
 		resultMapList = append(resultMapList, result)
 
 	}
 
-	//查询总条数
-	//Query total number
+	// 查询总条数
+	// Query total number
 	if page != nil && finder.SelectTotalCount {
 		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
@@ -1063,7 +1062,7 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 		return affected, err
 	}
 
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
@@ -1097,20 +1096,20 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if len(columns) < 1 {
 		return affected, errors.New("->Insert-->没有tag信息,请检查struct中 column 的tag")
 	}
-	//从contxt中获取数据库连接,可能为nil
-	//Get database connection from contxt, may be nil
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	//自己构建的dbConnection
-	//dbConnection built by yourself
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
 
-	//SQL语句
-	//SQL statement
+	// SQL语句
+	// SQL statement
 	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, &typeOf, entity, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
@@ -1118,11 +1117,11 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, err
 	}
 
-	//oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
-	//处理序列产生的自增主键,例如oracle,postgresql等
+	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
+	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64
-	//var zormSQLOutReturningID *int64
-	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
+	// var zormSQLOutReturningID *int64
+	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
 		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
 		if err != nil {
@@ -1132,7 +1131,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	}
 
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
@@ -1140,10 +1139,10 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, errexec
 	}
 
-	//如果是自增主键
-	//If it is an auto-incrementing primary key
+	// 如果是自增主键
+	// If it is an auto-incrementing primary key
 	if autoIncrement > 0 {
-		//如果是oracle,shentong 的返回自增主键
+		// 如果是oracle,shentong 的返回自增主键
 		if lastInsertID == nil && zormSQLOutReturningID != nil {
 			lastInsertID = zormSQLOutReturningID
 		}
@@ -1153,13 +1152,13 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		if lastInsertID != nil {
 			autoIncrementIDInt64 = *lastInsertID
 		} else {
-			//需要数据库支持,获取自增主键
-			//Need database support, get auto-incrementing primary key
+			// 需要数据库支持,获取自增主键
+			// Need database support, get auto-incrementing primary key
 			autoIncrementIDInt64, err = (*res).LastInsertId()
 		}
 
-		//数据库不支持自增主键,不再赋值给struct属性
-		//The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
+		// 数据库不支持自增主键,不再赋值给struct属性
+		// The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
 		if err != nil {
 			err = fmt.Errorf("->Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", err)
 			FuncLogError(ctx, err)
@@ -1167,15 +1166,15 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		}
 		pkName := entity.GetPKColumnName()
 		if pktype == "int" {
-			//int64 转 int
-			//int64 to int
+			// int64 转 int
+			// int64 to int
 			autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
-			//设置自增主键的值
-			//Set the value of the auto-incrementing primary key
+			// 设置自增主键的值
+			// Set the value of the auto-incrementing primary key
 			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		} else if pktype == "int64" {
-			//设置自增主键的值
-			//Set the value of the auto-incrementing primary key
+			// 设置自增主键的值
+			// Set the value of the auto-incrementing primary key
 			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
 		}
 
@@ -1189,10 +1188,10 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	return affected, nil
 }
 
-//InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,使用IEntityStruct接口,兼容Struct实体类
-//如果是自增主键,无法对Struct对象里的主键属性赋值
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-//affected影响的行数,如果异常或者驱动不支持,返回-1
+// InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,使用IEntityStruct接口,兼容Struct实体类
+// 如果是自增主键,无法对Struct对象里的主键属性赋值
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// affected影响的行数,如果异常或者驱动不支持,返回-1
 func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
 	return insertSlice(ctx, entityStructSlice)
 }
@@ -1202,7 +1201,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if entityStructSlice == nil || len(entityStructSlice) < 1 {
 		return affected, errors.New("->InsertSlice-->entityStructSlice对象数组不能为空")
 	}
-	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
+	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityStructSlice[0]
 	typeOf, columns, values, columnAndValueErr := columnAndValue(entity)
 	if columnAndValueErr != nil {
@@ -1213,12 +1212,12 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if len(columns) < 1 {
 		return affected, errors.New("->InsertSlice-->columns没有tag信息,请检查struct中 column 的tag")
 	}
-	//从contxt中获取数据库连接,可能为nil
+	// 从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	//自己构建的dbConnection
+	// 自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
@@ -1227,14 +1226,14 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		return affected, err
 	}
 
-	//SQL语句
+	// SQL语句
 	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
@@ -1244,8 +1243,8 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	return affected, errexec
 }
 
-//Update 更新struct所有属性,必须是IEntityStruct类型
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// Update 更新struct所有属性,必须是IEntityStruct类型
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func Update(ctx context.Context, entity IEntityStruct) (int, error) {
 	return update(ctx, entity)
 }
@@ -1260,8 +1259,8 @@ var update = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	return UpdateFinder(ctx, finder)
 }
 
-//UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
 	return updateNotZeroValue(ctx, entity)
 }
@@ -1276,9 +1275,9 @@ var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, e
 	return UpdateFinder(ctx, finder)
 }
 
-//Delete 根据主键删除一个对象.必须是IEntityStruct类型
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-//affected影响的行数,如果异常或者驱动不支持,返回-1
+// Delete 根据主键删除一个对象.必须是IEntityStruct类型
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// affected影响的行数,如果异常或者驱动不支持,返回-1
 func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 	return delete(ctx, entity)
 }
@@ -1305,14 +1304,14 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, e
 	}
 
-	//SQL语句
+	// SQL语句
 	sqlstr, err := wrapDeleteSQL(entity)
 	if err != nil {
 		err = fmt.Errorf("->Delete-->wrapDeleteSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	values := make([]interface{}, 1)
 	values[0] = value
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
@@ -1322,36 +1321,35 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	return affected, errexec
-
 }
 
-//InsertEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-//affected影响的行数,如果异常或者驱动不支持,返回-1
+// InsertEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// affected影响的行数,如果异常或者驱动不支持,返回-1
 func InsertEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 	return insertEntityMap(ctx, entity)
 }
 
 var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
 	affected := -1
-	//检查是否是指针对象
+	// 检查是否是指针对象
 	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return affected, checkerr
 	}
 
-	//从contxt中获取数据库连接,可能为nil
+	// 从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
 
-	//自己构建的dbConnection
+	// 自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
 
-	//SQL语句
+	// SQL语句
 	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
@@ -1359,9 +1357,9 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, err
 	}
 
-	//处理序列产生的自增主键,例如oracle,postgresql等
+	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64
-	//如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
+	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
 		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
 		if err != nil {
@@ -1370,7 +1368,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertEntityMap-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
@@ -1378,9 +1376,9 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, errexec
 	}
 
-	//如果是自增主键
+	// 如果是自增主键
 	if autoIncrement {
-		//如果是oracle,shentong 的返回自增主键
+		// 如果是oracle,shentong 的返回自增主键
 		if lastInsertID == nil && zormSQLOutReturningID != nil {
 			lastInsertID = zormSQLOutReturningID
 		}
@@ -1390,41 +1388,40 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		if lastInsertID != nil {
 			autoIncrementIDInt64 = *lastInsertID
 		} else {
-			//需要数据库支持,获取自增主键
-			//Need database support, get auto-incrementing primary key
+			// 需要数据库支持,获取自增主键
+			// Need database support, get auto-incrementing primary key
 			autoIncrementIDInt64, e = (*res).LastInsertId()
 		}
-		if e != nil { //数据库不支持自增主键,不再赋值给struct属性
+		if e != nil { // 数据库不支持自增主键,不再赋值给struct属性
 			e = fmt.Errorf("->InsertEntityMap数据库不支持自增主键,不再赋值给IEntityMap:%w", e)
 			FuncLogError(ctx, e)
 			return affected, nil
 		}
-		//int64 转 int
+		// int64 转 int
 		strInt64 := strconv.FormatInt(autoIncrementIDInt64, 10)
 		autoIncrementIDInt, _ := strconv.Atoi(strInt64)
-		//设置自增主键的值
+		// 设置自增主键的值
 		entity.Set(entity.GetPKColumnName(), autoIncrementIDInt)
 	}
 
 	return affected, nil
-
 }
 
-//InsertEntityMapSlice 保存[]IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
-//ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
-//affected影响的行数,如果异常或者驱动不支持,返回-1
+// InsertEntityMapSlice 保存[]IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// affected影响的行数,如果异常或者驱动不支持,返回-1
 func InsertEntityMapSlice(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
 	return insertEntityMapSlice(ctx, entityMapSlice)
 }
 
 var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
 	affected := -1
-	//从contxt中获取数据库连接,可能为nil
+	// 从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	//自己构建的dbConnection
+	// 自己构建的dbConnection
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
@@ -1432,7 +1429,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	if err != nil {
 		return affected, err
 	}
-	//SQL语句
+	// SQL语句
 	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertEntityMapSliceSQL获取SQL语句错误:%w", err)
@@ -1440,7 +1437,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 		return affected, err
 	}
 
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertEntityMapSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
@@ -1462,33 +1459,33 @@ func UpdateEntityMap(ctx context.Context, entity IEntityMap) (int, error) {
 
 var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) {
 	affected := -1
-	//检查是否是指针对象
-	//Check if it is a pointer
+	// 检查是否是指针对象
+	// Check if it is a pointer
 	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return affected, checkerr
 	}
-	//从contxt中获取数据库连接,可能为nil
-	//Get database connection from contxt, it may be nil
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, it may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	//自己构建的dbConnection
-	//dbConnection built by yourself
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
 
-	//SQL语句
-	//SQL statement
+	// SQL语句
+	// SQL statement
 	sqlstr, values, err := wrapUpdateEntityMapSQL(entity)
 	if err != nil {
 		err = fmt.Errorf("->UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-	//包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
@@ -1496,10 +1493,9 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	return affected, errexec
-
 }
 
-//IsInTransaction 检查ctx是否包含事务
+// IsInTransaction 检查ctx是否包含事务
 func IsInTransaction(ctx context.Context) (bool, error) {
 	dbConnection, err := getDBConnectionFromContext(ctx)
 	if err != nil {
@@ -1518,7 +1514,7 @@ func IsInTransaction(ctx context.Context) (bool, error) {
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 // Finder is the Finder that executes the update, and the update statement is executed uniformly using the Finder
 func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*Finder, error) {
-	//affected := -1
+	// affected := -1
 	if entity == nil {
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
 	}
@@ -1528,13 +1524,13 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 		return nil, columnAndValueErr
 	}
 
-	//SQL语句
-	//SQL statement
+	// SQL语句
+	// SQL statement
 	sqlstr, err := wrapUpdateSQL(&typeOf, entity, &columns, &values, onlyUpdateNotZero)
 	if err != nil {
 		return nil, err
 	}
-	//finder对象
+	// finder对象
 	finder := NewFinder()
 	finder.sqlstr = sqlstr
 	finder.sqlBuilder.WriteString(sqlstr)
@@ -1547,12 +1543,11 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 // selectCount Query the total number of items according to finder
 // context must be passed in and cannot be empty
 func selectCount(ctx context.Context, finder *Finder) (int, error) {
-
 	if finder == nil {
 		return -1, errors.New("->selectCount-->finder参数为nil")
 	}
-	//自定义的查询总条数Finder,主要是为了在group by等复杂情况下,为了性能,手动编写总条数语句
-	//Customized query total number Finder,mainly for the sake of performance in complex situations such as group by, manually write the total number of statements
+	// 自定义的查询总条数Finder,主要是为了在group by等复杂情况下,为了性能,手动编写总条数语句
+	// Customized query total number Finder,mainly for the sake of performance in complex situations such as group by, manually write the total number of statements
 	if finder.CountFinder != nil {
 		count := -1
 		_, err := QueryRow(ctx, finder.CountFinder, &count)
@@ -1567,11 +1562,11 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		return -1, counterr
 	}
 
-	//查询order by 的位置
-	//Query the position of order by
+	// 查询order by 的位置
+	// Query the position of order by
 	locOrderBy := findOrderByIndex(&countsql)
-	//如果存在order by
-	//If there is order by
+	// 如果存在order by
+	// If there is order by
 	if len(locOrderBy) > 0 {
 		countsql = countsql[:locOrderBy[0]]
 	}
@@ -1583,21 +1578,21 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(100)
-	//特殊关键字,包装SQL
-	//Special keywords, wrap SQL
+	// 特殊关键字,包装SQL
+	// Special keywords, wrap SQL
 	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {
-		//countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
+		// countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
 		sqlBuilder.WriteString("SELECT COUNT(*)  frame_row_count FROM (")
 		sqlBuilder.WriteString(countsql)
 		sqlBuilder.WriteString(") temp_frame_noob_table_name WHERE 1=1 ")
 	} else {
 		locFrom := findSelectFromIndex(&countsql)
-		//没有找到FROM关键字,认为是异常语句
-		//The FROM keyword was not found, which is considered an abnormal statement
+		// 没有找到FROM关键字,认为是异常语句
+		// The FROM keyword was not found, which is considered an abnormal statement
 		if len(locFrom) == 0 {
 			return -1, errors.New("->selectCount-->findFromIndex没有FROM关键字,语句错误")
 		}
-		//countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
+		// countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
 		sqlBuilder.WriteString("SELECT COUNT(*) ")
 		sqlBuilder.WriteString(countsql[locFrom[0]:])
 	}
@@ -1612,7 +1607,6 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		return -1, cerr
 	}
 	return count, nil
-
 }
 
 // getDBConnectionFromContext 从Conext中获取数据库连接
@@ -1621,22 +1615,21 @@ func getDBConnectionFromContext(ctx context.Context) (*dataBaseConnection, error
 	if ctx == nil {
 		return nil, errors.New("->getDBConnectionFromContext-->context不能为空")
 	}
-	//获取数据库连接
-	//Get database connection
+	// 获取数据库连接
+	// Get database connection
 	value := ctx.Value(contextDBConnectionValueKey)
 	if value == nil {
 		return nil, nil
 	}
 	dbConnection, isdb := value.(*dataBaseConnection)
-	if !isdb { //不是数据库连接
+	if !isdb { // 不是数据库连接
 		return nil, errors.New("->getDBConnectionFromContext-->context传递了错误的*DBConnection类型值")
 	}
 	return dbConnection, nil
-
 }
 
-//变量名建议errFoo这样的驼峰
-//The variable name suggests a hump like "errFoo"
+// 变量名建议errFoo这样的驼峰
+// The variable name suggests a hump like "errFoo"
 var errDBConnection = errors.New("更新操作需要使用zorm.Transaction开启事务.读取操作如果ctx没有dbConnection,使用FuncReadWriteStrategy(ctx,rwType).newDBConnection(),如果dbConnection有事务,就使用事务查询")
 
 // checkDBConnection 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
@@ -1652,40 +1645,40 @@ func checkDBConnection(ctx context.Context, dbConnection *dataBaseConnection, ha
 		}
 	}
 
-	//dbConnection为空
-	//dbConnection is nil
+	// dbConnection为空
+	// dbConnection is nil
 	if dbConnection == nil {
 		dbdao, err := FuncReadWriteStrategy(ctx, rwType)
 		if err != nil {
 			return ctx, nil, err
 		}
-		//是否禁用了事务
+		// 是否禁用了事务
 		disabletx := getContextBoolValue(ctx, contextDisableTransactionValueKey, dbdao.config.DisableTransaction)
-		//如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
+		// 如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 		if hastx && (!disabletx) {
-			//if hastx {
+			// if hastx {
 			return ctx, nil, errDBConnection
 		}
 
-		//如果要求没有事务,实例化一个默认的dbConnection
-		//If no transaction is required, instantiate a default db Connection
+		// 如果要求没有事务,实例化一个默认的dbConnection
+		// If no transaction is required, instantiate a default db Connection
 		var errGetDBConnection error
 
 		dbConnection, errGetDBConnection = dbdao.newDBConnection()
 		if errGetDBConnection != nil {
 			return ctx, nil, errGetDBConnection
 		}
-		//把dbConnection放入context
-		//Put db Connection into context
+		// 把dbConnection放入context
+		// Put db Connection into context
 		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
 
-	} else { //如果dbConnection存在
-		//If db Connection exists
-		if dbConnection.db == nil { //禁止外部构建
+	} else { // 如果dbConnection存在
+		// If db Connection exists
+		if dbConnection.db == nil { // 禁止外部构建
 			return ctx, dbConnection, errDBConnection
 		}
 		if dbConnection.tx == nil && hastx && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
-			//if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
+			// if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
 		}
 	}
@@ -1694,8 +1687,8 @@ func checkDBConnection(ctx context.Context, dbConnection *dataBaseConnection, ha
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
-	//必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
-	//There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
+	// 必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
+	// There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
 	var dbConnection *dataBaseConnection
 	ctx, dbConnection, dbConnectionerr = checkDBConnection(ctx, dbConnection, true, 1)
@@ -1711,7 +1704,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 			return res, errrow
 		}
 		errexec = sqlrow.Scan(lastInsertID)
-		if errexec == nil { //如果插入成功,返回
+		if errexec == nil { // 如果插入成功,返回
 			*affected = 1
 			return res, errexec
 		}
@@ -1722,20 +1715,20 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	if errexec != nil {
 		return res, errexec
 	}
-	//影响的行数
-	//Number of rows affected
+	// 影响的行数
+	// Number of rows affected
 
 	rowsAffected, errAffected := (*res).RowsAffected()
 	if errAffected == nil {
 		*affected, errAffected = typeConvertInt64toInt(rowsAffected)
-	} else { //如果不支持返回条数,设置位nil,影响的条数设置成-1
+	} else { // 如果不支持返回条数,设置位nil,影响的条数设置成-1
 		*affected = -1
 		errAffected = nil
 	}
 	return res, errAffected
 }
 
-//contextSQLHintValueKey 把sql hint放到context里使用的key
+// contextSQLHintValueKey 把sql hint放到context里使用的key
 const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
 
 // BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句
@@ -1752,7 +1745,7 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 	return ctx, nil
 }
 
-//contextEnableGlobalTransactionValueKey 是否使用分布式事务放到context里使用的key
+// contextEnableGlobalTransactionValueKey 是否使用分布式事务放到context里使用的key
 const contextEnableGlobalTransactionValueKey = wrapContextStringKey("contextEnableGlobalTransactionValueKey")
 
 // BindContextEnableGlobalTransaction context启用分布式事务,不再自动设置,必须手动启用分布式事务,必须放到本地事务开启之前调用
@@ -1764,7 +1757,7 @@ func BindContextEnableGlobalTransaction(parent context.Context) (context.Context
 	return ctx, nil
 }
 
-//contextDisableTransactionValueKey 是否禁用事务放到context里使用的key
+// contextDisableTransactionValueKey 是否禁用事务放到context里使用的key
 const contextDisableTransactionValueKey = wrapContextStringKey("contextDisableTransactionValueKey")
 
 // BindContextDisableTransaction  context禁用事务,必须放到事务开启之前调用.用在不使用事务更新数据库的场景,强烈建议不要使用这个方法,更新数据库必须有事务!!!
@@ -1776,13 +1769,13 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 	return ctx, nil
 }
 
-//getContextBoolValue 从ctx中获取key的bool值,ctx如果没有值使用defaultValue
+// getContextBoolValue 从ctx中获取key的bool值,ctx如果没有值使用defaultValue
 func getContextBoolValue(ctx context.Context, key wrapContextStringKey, defaultValue bool) bool {
 	boolValue := false
 	ctxBoolValue := ctx.Value(key)
-	if ctxBoolValue != nil { //如果有值
+	if ctxBoolValue != nil { // 如果有值
 		boolValue = ctxBoolValue.(bool)
-	} else { //ctx如果没有值使用defaultValue
+	} else { // ctx如果没有值使用defaultValue
 		boolValue = defaultValue
 	}
 	return boolValue

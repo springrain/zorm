@@ -30,102 +30,101 @@ import (
 )
 
 const (
-	//tag标签的名称
+	// tag标签的名称
 	tagColumnName = "column"
 
-	//输出字段 缓存的前缀
+	// 输出字段 缓存的前缀
 	exportPrefix = "_exportStructFields_"
-	//私有字段 缓存的前缀
+	// 私有字段 缓存的前缀
 	privatePrefix = "_privateStructFields_"
-	//数据库列名 缓存的前缀
+	// 数据库列名 缓存的前缀
 	dbColumnNamePrefix = "_dbColumnName_"
 
-	//数据库所有列名,经过排序 缓存的前缀
+	// 数据库所有列名,经过排序 缓存的前缀
 	dbColumnNameSlicePrefix = "_dbColumnNameSlice_"
 
-	//field对应的column的tag值 缓存的前缀
-	//structFieldTagPrefix = "_structFieldTag_"
-	//数据库主键  缓存的前缀
-	//dbPKNamePrefix = "_dbPKName_"
+	// field对应的column的tag值 缓存的前缀
+	// structFieldTagPrefix = "_structFieldTag_"
+	// 数据库主键  缓存的前缀
+	// dbPKNamePrefix = "_dbPKName_"
 )
 
-//cacheStructFieldInfoMap 用于缓存反射的信息,sync.Map内部处理了并发锁
+// cacheStructFieldInfoMap 用于缓存反射的信息,sync.Map内部处理了并发锁
 var cacheStructFieldInfoMap *sync.Map = &sync.Map{}
 
-//var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
+// var cacheStructFieldInfoMap = make(map[string]map[string]reflect.StructField)
 
-//用于缓存field对应的column的tag值
-//var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
+// 用于缓存field对应的column的tag值
+// var cacheStructFieldTagInfoMap = make(map[string]map[string]string)
 
-//structFieldInfo 获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型
-//第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
+// structFieldInfo 获取StructField的信息.只对struct或者*struct判断,如果是指针,返回指针下实际的struct类型
+// 第一个返回值是可以输出的字段(首字母大写),第二个是不能输出的字段(首字母小写)
 func structFieldInfo(typeOf *reflect.Type) error {
-
 	if typeOf == nil {
 		return errors.New("->structFieldInfo数据为空")
 	}
 
 	entityName := (*typeOf).String()
 
-	//缓存的key
-	//所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
+	// 缓存的key
+	// 所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
 	exportCacheKey := exportPrefix + entityName
-	//所有私有变量的属性,key是struct属性的名称,不区分大小写
+	// 所有私有变量的属性,key是struct属性的名称,不区分大小写
 	privateCacheKey := privatePrefix + entityName
-	//所有数据库的属性,key是数据库的字段名称,不区分大小写
+	// 所有数据库的属性,key是数据库的字段名称,不区分大小写
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
-	//所有数据库字段名称的slice,经过排序,不区分大小写
+	// 所有数据库字段名称的slice,经过排序,不区分大小写
 	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
 
-	//structFieldTagCacheKey := structFieldTagPrefix + entityName
-	//dbPKNameCacheKey := dbPKNamePrefix + entityName
-	//缓存的数据库主键值
+	// structFieldTagCacheKey := structFieldTagPrefix + entityName
+	// dbPKNameCacheKey := dbPKNamePrefix + entityName
+	// 缓存的数据库主键值
 	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
 	//_, exportOk := cacheStructFieldInfoMap[exportCacheKey]
 	//如果存在值,认为缓存中有所有的信息,不再处理
 	if exportOk {
 		return nil
 	}
-	//获取字段长度
+	// 获取字段长度
 	fieldNum := (*typeOf).NumField()
-	//如果没有字段
+	// 如果没有字段
 	if fieldNum < 1 {
 		return errors.New("->structFieldInfo-->NumField entity没有属性")
 	}
 
 	// 声明所有字段的载体
 	var allFieldMap *sync.Map = &sync.Map{}
-	//anonymous := make([]reflect.StructField, 0)
+	// anonymous := make([]reflect.StructField, 0)
 
-	//缓存的数据
+	// 缓存的数据
 	exportStructFieldMap := make(map[string]reflect.StructField)
 	privateStructFieldMap := make(map[string]reflect.StructField)
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 
-	//structFieldTagMap := make(map[string]string)
+	// structFieldTagMap := make(map[string]string)
 	dbColumnFieldNameSlice := make([]string, 0)
 
-	//遍历sync.Map,要求输入一个func作为参数
-	//这个函数的入参、出参的类型都已经固定,不能修改
-	//可以在函数体内编写自己的代码,调用map中的k,v
-	//var funcMapKV func(k, v interface{}) bool
+	// 遍历sync.Map,要求输入一个func作为参数
+	// 这个函数的入参、出参的类型都已经固定,不能修改
+	// 可以在函数体内编写自己的代码,调用map中的k,v
+	// var funcMapKV func(k, v interface{}) bool
 	funcMapKV := func(k, v interface{}) bool {
 		field := v.(reflect.StructField)
 		fieldName := field.Name
-		if ast.IsExported(fieldName) { //如果是可以输出的,不区分大小写
+		if ast.IsExported(fieldName) { // 如果是可以输出的,不区分大小写
 			exportStructFieldMap[strings.ToLower(fieldName)] = field
-			//如果是数据库字段
+			// 如果是数据库字段
 			tagColumnValue := field.Tag.Get(tagColumnName)
 			if len(tagColumnValue) > 0 {
-				//dbColumnFieldMap[tagColumnValue] = field
-				//使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
+				// dbColumnFieldMap[tagColumnValue] = field
+				// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
 				tagColumnValueLower := strings.ToLower(tagColumnValue)
 				dbColumnFieldMap[tagColumnValueLower] = field
 				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
-				//structFieldTagMap[fieldName] = tagColumnValue
+				// structFieldTagMap[fieldName] = tagColumnValue
 			}
 
-		} else { //私有属性
+		} else { // 私有属性
 			privateStructFieldMap[strings.ToLower(fieldName)] = field
 		}
 
@@ -133,33 +132,33 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	}
 	// 并发锁,用于处理slice并发append
 	var lock sync.Mutex
-	//funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
+	// funcRecursiveAnonymous 递归调用struct的匿名属性,就近覆盖属性
 	var funcRecursiveAnonymous func(allFieldMap *sync.Map, anonymous reflect.StructField)
 	funcRecursiveAnonymous = func(allFieldMap *sync.Map, anonymous reflect.StructField) {
-		//for i := 0; i < len(anonymous); i++ {
+		// for i := 0; i < len(anonymous); i++ {
 		field := anonymous
 		typeOf := field.Type
 
 		if typeOf.Kind() == reflect.Ptr {
-			//获取指针下的Struct类型
+			// 获取指针下的Struct类型
 			typeOf = typeOf.Elem()
 		}
 
-		//只处理Struct类型
+		// 只处理Struct类型
 		if typeOf.Kind() != reflect.Struct {
 			return
 		}
 
-		//获取字段长度
+		// 获取字段长度
 		fieldNum := typeOf.NumField()
-		//如果没有字段
+		// 如果没有字段
 		if fieldNum < 1 {
 			return
 		}
 
 		// 匿名struct里自身又有匿名struct
-		//anonymousField := make([]reflect.StructField, 0)
-		//遍历所有字段
+		// anonymousField := make([]reflect.StructField, 0)
+		// 遍历所有字段
 		for i := 0; i < fieldNum; i++ {
 			field := typeOf.Field(i)
 			//if _, ok := allFieldMap.Load(field.Name); ok { //如果存在属性名
@@ -172,11 +171,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 			//
 			//}
 
-			if field.Anonymous { //匿名struct里自身又有匿名struct
-				//lock.Lock()
-				//anonymousField = append(anonymousField, field)
-				//lock.Unlock()
-				//递归调用匿名struct
+			if field.Anonymous { // 匿名struct里自身又有匿名struct
+				// lock.Lock()
+				// anonymousField = append(anonymousField, field)
+				// lock.Unlock()
+				// 递归调用匿名struct
 				funcRecursiveAnonymous(allFieldMap, field)
 			} else {
 				allFieldMap.Store(field.Name, field)
@@ -187,10 +186,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		}
 
 		//}
-
 	}
 
-	//遍历所有字段,记录匿名属性
+	// 遍历所有字段,记录匿名属性
 	for i := 0; i < fieldNum; i++ {
 		field := (*typeOf).Field(i)
 		if _, ok := allFieldMap.Load(field.Name); !ok {
@@ -200,40 +198,40 @@ func structFieldInfo(typeOf *reflect.Type) error {
 			lock.Unlock()
 
 		}
-		if field.Anonymous { //如果是匿名的
-			//lock.Lock()
-			//anonymous = append(anonymous, field)
-			//lock.Unlock()
-			//直接调用匿名struct的递归方法
+		if field.Anonymous { // 如果是匿名的
+			// lock.Lock()
+			// anonymous = append(anonymous, field)
+			// lock.Unlock()
+			// 直接调用匿名struct的递归方法
 			funcRecursiveAnonymous(allFieldMap, field)
 		}
 	}
 
-	//allFieldMap.Range(f)
+	// allFieldMap.Range(f)
 
-	//加入缓存
+	// 加入缓存
 	cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
 	cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
 	cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
-	//cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
-	//cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
-	//cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
+	// cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
+	// cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
+	// cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 
-	//cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
+	// cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
 
-	//不按照字母顺序,按照反射获取的Struct属性顺序,生成insert语句和update语句
-	//sort.Strings(dbColumnFieldNameSlice)
+	// 不按照字母顺序,按照反射获取的Struct属性顺序,生成insert语句和update语句
+	// sort.Strings(dbColumnFieldNameSlice)
 	cacheStructFieldInfoMap.Store(dbColumnNameSliceCacheKey, dbColumnFieldNameSlice)
 
 	return nil
 }
 
-//setFieldValueByColumnName 根据数据库的字段名,找到struct映射的字段,并赋值
+// setFieldValueByColumnName 根据数据库的字段名,找到struct映射的字段,并赋值
 func setFieldValueByColumnName(entity interface{}, columnName string, value interface{}) error {
-	//先从本地缓存中查找
+	// 先从本地缓存中查找
 	typeOf := reflect.TypeOf(entity)
 	valueOf := reflect.ValueOf(entity)
-	if typeOf.Kind() == reflect.Ptr { //如果是指针
+	if typeOf.Kind() == reflect.Ptr { // 如果是指针
 		typeOf = typeOf.Elem()
 		valueOf = valueOf.Elem()
 	}
@@ -243,20 +241,18 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 		return err
 	}
 	f, ok := dbMap[strings.ToLower(columnName)]
-	if ok { //给主键赋值
+	if ok { // 给主键赋值
 		valueOf.FieldByName(f.Name).Set(reflect.ValueOf(value))
 	}
 	return nil
-
 }
 
-//structFieldValue 获取指定字段的值
+// structFieldValue 获取指定字段的值
 func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
-
 	if s == nil || len(fieldName) < 1 {
 		return nil, errors.New("->structFieldValue数据为空")
 	}
-	//entity的s类型
+	// entity的s类型
 	valueOf := reflect.ValueOf(s)
 
 	kind := valueOf.Kind()
@@ -265,21 +261,20 @@ func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
 	}
 
 	if kind == reflect.Ptr {
-		//获取指针下的Struct类型
+		// 获取指针下的Struct类型
 		valueOf = valueOf.Elem()
 		if valueOf.Kind() != reflect.Struct {
 			return nil, errors.New("->structFieldValue必须是Struct或者*Struct类型")
 		}
 	}
 
-	//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值
+	// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值
 	value := valueOf.FieldByName(fieldName).Interface()
 
 	return value, nil
-
 }
 
-//getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
+// getDBColumnExportFieldMap 获取实体类的数据库字段,key是数据库的字段名称.同时返回所有的字段属性的map,key是实体类的属性.不区分大小写
 func getDBColumnExportFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, map[string]reflect.StructField, error) {
 	dbColumnFieldMap, err := getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 	if err != nil {
@@ -289,12 +284,12 @@ func getDBColumnExportFieldMap(typeOf *reflect.Type) (map[string]reflect.StructF
 	return dbColumnFieldMap, exportFieldMap, err
 }
 
-//getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
+// getDBColumnFieldMap 获取实体类的数据库字段,key是数据库的字段名称.不区分大小写
 func getDBColumnFieldMap(typeOf *reflect.Type) (map[string]reflect.StructField, error) {
 	return getCacheStructFieldInfoMap(typeOf, dbColumnNamePrefix)
 }
 
-//getDBColumnFieldNameSlice 获取实体类的数据库字段,经过排序,key是数据库的字段名称.不区分大小写,
+// getDBColumnFieldNameSlice 获取实体类的数据库字段,经过排序,key是数据库的字段名称.不区分大小写,
 func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 	dbColumnFieldSlice, dbmapErr := getCacheStructFieldInfo(typeOf, dbColumnNameSlicePrefix)
 	if dbmapErr != nil {
@@ -305,25 +300,24 @@ func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 		return dbcfSlice, errors.New("->getDBColumnFieldNameSlice-->dbColumnFieldSlice取值转[]string类型异常")
 	}
 	return dbcfSlice, nil
-
 }
 
-//getCacheStructFieldInfo 根据类型和key,获取缓存的数据字段信息slice,已经排序
+// getCacheStructFieldInfo 根据类型和key,获取缓存的数据字段信息slice,已经排序
 func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{}, error) {
 	if typeOf == nil {
 		return nil, errors.New("->getCacheStructFieldInfo-->typeOf不能为空")
 	}
 	key := keyPrefix + (*typeOf).String()
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
-	//dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
-	if !dbOk { //缓存不存在
-		//获取实体类的输出字段和私有 字段
+	// dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
+	if !dbOk { // 缓存不存在
+		// 获取实体类的输出字段和私有 字段
 		err := structFieldInfo(typeOf)
 		if err != nil {
 			return nil, err
 		}
 		dbColumnFieldMap, dbOk = cacheStructFieldInfoMap.Load(key)
-		//dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
+		// dbColumnFieldMap, dbOk = cacheStructFieldInfoMap[key]
 		if !dbOk {
 			return nil, errors.New("->getCacheStructFieldInfo-->cacheStructFieldInfoMap.Load()获取数据库字段dbColumnFieldMap异常")
 		}
@@ -331,10 +325,10 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (interface{
 
 	return dbColumnFieldMap, nil
 
-	//return dbColumnFieldMap, nil
+	// return dbColumnFieldMap, nil
 }
 
-//getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
+// getCacheStructFieldInfoMap 根据类型和key,获取缓存的字段信息
 func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[string]reflect.StructField, error) {
 	dbColumnFieldMap, dbmapErr := getCacheStructFieldInfo(typeOf, keyPrefix)
 	if dbmapErr != nil {
@@ -346,10 +340,10 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 	}
 	return dbcfMap, nil
 
-	//return dbColumnFieldMap, nil
+	// return dbColumnFieldMap, nil
 }
 
-//columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
+// columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
 func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
@@ -357,10 +351,10 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	}
 	// 获取实体类的反射,指针下的struct
 	valueOf := reflect.ValueOf(entity).Elem()
-	//reflect.Indirect
+	// reflect.Indirect
 
-	//先从本地缓存中查找
-	//typeOf := reflect.TypeOf(entity).Elem()
+	// 先从本地缓存中查找
+	// typeOf := reflect.TypeOf(entity).Elem()
 
 	dbMap, err := getDBColumnFieldMap(&typeOf)
 	if err != nil {
@@ -370,18 +364,18 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
-	//实体类公开字段的长度
+	// 实体类公开字段的长度
 	fLen := len(dbMap)
-	//长度不一致
+	// 长度不一致
 	if fLen-len(dbSlice) != 0 {
 		return typeOf, nil, nil, errors.New("->columnAndValue-->缓存的数据库字段和实体类字段不对应")
 	}
-	//接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
+	// 接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
 	columns := make([]reflect.StructField, 0, fLen)
-	//接收值的数组
+	// 接收值的数组
 	values := make([]interface{}, 0, fLen)
 
-	//遍历所有数据库属性
+	// 遍历所有数据库属性
 	for _, fieldName := range dbSlice {
 		//获取字段类型的Kind
 		//	fieldKind := field.Type.Kind()
@@ -390,29 +384,27 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 		//}
 		field := dbMap[fieldName]
 		columns = append(columns, field)
-		//FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
+		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
 		value := valueOf.FieldByName(field.Name).Interface()
-		//添加到记录值的数组
+		// 添加到记录值的数组
 		values = append(values, value)
 
 	}
 
-	//缓存数据库的列
+	// 缓存数据库的列
 	return typeOf, columns, values, nil
-
 }
 
-//entityPKFieldName 获取实体类主键属性名称
+// entityPKFieldName 获取实体类主键属性名称
 func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, error) {
-
 	//检查是否是指针对象
 	//typeOf, checkerr := checkEntityKind(entity)
 	//if checkerr != nil {
 	//	return "", checkerr
 	//}
 
-	//缓存的key,TypeOf和ValueOf的String()方法,返回值不一样
-	//typeOf := reflect.TypeOf(entity).Elem()
+	// 缓存的key,TypeOf和ValueOf的String()方法,返回值不一样
+	// typeOf := reflect.TypeOf(entity).Elem()
 
 	dbMap, err := getDBColumnFieldMap(typeOf)
 	if err != nil {
@@ -420,16 +412,15 @@ func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, erro
 	}
 	field := dbMap[strings.ToLower(entity.GetPKColumnName())]
 	return field.Name, nil
-
 }
 
-//checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
+// checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
 func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	if entity == nil {
 		return nil, errors.New("->checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
 	}
 	typeOf := reflect.TypeOf(entity)
-	if typeOf.Kind() != reflect.Ptr { //如果不是指针
+	if typeOf.Kind() != reflect.Ptr { // 如果不是指针
 		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
@@ -445,31 +436,30 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // 感谢@fastabler提交的pr
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
 func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, oneColumnScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
-
 	if valueOf == nil {
 		return nil, nil, errors.New("->sqlRowsValues-->valueOf为nil")
 	}
 	valueOfElem := valueOf.Elem()
 	valueOfInterface := valueOf.Interface()
 	ctLen := len(columnTypes)
-	//声明载体数组,用于存放struct的属性指针
-	//Declare a carrier array to store the attribute pointer of the struct
+	// 声明载体数组,用于存放struct的属性指针
+	// Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, ctLen)
-	//记录需要类型转换的字段信息
+	// 记录需要类型转换的字段信息
 	var fieldTempDriverValueMap map[*sql.ColumnType]*driverValueInfo
 	if iscdvm {
 		fieldTempDriverValueMap = make(map[*sql.ColumnType]*driverValueInfo)
 	}
 
 	oneColumn := ctLen == 1
-	//oneColumn := false
-	//单列查询并且可以直接映射,类似 string 或者[]string
+	// oneColumn := false
+	// 单列查询并且可以直接映射,类似 string 或者[]string
 	if oneColumn && oneColumnScanner == nil {
 		oneColumnScanner = new(bool)
-		//new出来的是指针
-		//Reflectively initialize the elements in an array
+		// new出来的是指针
+		// Reflectively initialize the elements in an array
 		pkgPath := valueOfElem.Type().PkgPath()
-		if pkgPath == "" || pkgPath == "time" { //系统内置变量和time包
+		if pkgPath == "" || pkgPath == "time" { // 系统内置变量和time包
 			*oneColumnScanner = true
 		}
 		if !*oneColumnScanner {
@@ -485,8 +475,8 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		st := valueOfElem.Type()
 		structType = &st
 		var err error
-		//获取到类型的字段缓存
-		//Get the type field cache
+		// 获取到类型的字段缓存
+		// Get the type field cache
 		*dbColumnFieldMap, *exportFieldMap, err = getDBColumnExportFieldMap(structType)
 		if err != nil {
 			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
@@ -499,26 +489,26 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 
 	for i, columnType := range columnTypes {
 		if iscdvm {
-			//根据接收的类型,获取到类型转换的接口实现
+			// 根据接收的类型,获取到类型转换的接口实现
 			customDriverValueConver, converOK = customDriverValueMap[strings.ToUpper(columnType.DatabaseTypeName())]
 		}
 		dv := driverValue.Index(i)
 		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
 			values[i] = new(interface{})
 			continue
-		} else if converOK { //如果是需要转换的字段
-			//获取字段类型
+		} else if converOK { // 如果是需要转换的字段
+			// 获取字段类型
 			var structFieldType *reflect.Type
 
-			if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
+			if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
 				vtype := valueOfElem.Type()
 				structFieldType = &vtype
-			} else if structType != nil { //如果是struct类型
+			} else if structType != nil { // 如果是struct类型
 				field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 				if err != nil {
 					return oneColumnScanner, structType, err
 				}
-				if field != nil { //存在这个字段
+				if field != nil { // 存在这个字段
 					vtype := field.Type
 					structFieldType = &vtype
 				}
@@ -532,16 +522,16 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			}
 			values[i] = tempDriverValue
 
-			//如果需要类型转换
+			// 如果需要类型转换
 			dvinfo := driverValueInfo{}
 			dvinfo.customDriverValueConver = customDriverValueConver
-			//dvinfo.columnType = columnType
+			// dvinfo.columnType = columnType
 			dvinfo.structFieldType = structFieldType
 			dvinfo.tempDriverValue = tempDriverValue
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
 
-		} else if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
+		} else if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
 			values[i] = valueOfInterface
 			continue
 		} else if structType != nil {
@@ -550,15 +540,15 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 			if err != nil {
 				return oneColumnScanner, structType, err
 			}
-			if field == nil { //如果不存在这个字段
+			if field == nil { // 如果不存在这个字段
 				values[i] = new(interface{})
 			} else {
-				//fieldType := refPV.FieldByName(field.Name).Type()
-				//v := reflect.New(field.Type).Interface()
-				//字段的反射值
+				// fieldType := refPV.FieldByName(field.Name).Type()
+				// v := reflect.New(field.Type).Interface()
+				// 字段的反射值
 				fieldValue := valueOfElem.FieldByName(field.Name)
 				v := fieldValue.Addr().Interface()
-				//v := new(interface{})
+				// v := new(interface{})
 				values[i] = v
 			}
 		}
@@ -572,28 +562,28 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 		return oneColumnScanner, structType, err
 	}
 
-	//循环需要替换的值
+	// 循环需要替换的值
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
-		//根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		//typeOf := fieldValue.Type()
+		// 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
+		// typeOf := fieldValue.Type()
 		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, driverValueInfo.structFieldType)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return oneColumnScanner, structType, errConverDriverValue
 		}
-		if *oneColumnScanner && oneColumn { //查询一个字段,并且可以直接接收
+		if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
 			valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
 			continue
-		} else if structType != nil { //如果是Struct类型接收
+		} else if structType != nil { // 如果是Struct类型接收
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 			if err != nil {
 				return oneColumnScanner, structType, err
 			}
-			if field != nil { //如果存在这个字段
-				//字段的反射值
+			if field != nil { // 如果存在这个字段
+				// 字段的反射值
 				fieldValue := valueOfElem.FieldByName(field.Name)
-				//给字段赋值
+				// 给字段赋值
 				fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 			}
 		}
@@ -603,18 +593,17 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, rows *sql.Rows, 
 	return oneColumnScanner, structType, err
 }
 
-//getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰
+// getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰
 func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*reflect.StructField, error) {
-
 	columnName := strings.ToLower(columnType.Name())
-	//columnName := "test"
-	//从缓存中获取列名的field字段
-	//Get the field field of the column name from the cache
+	// columnName := "test"
+	// 从缓存中获取列名的field字段
+	// Get the field field of the column name from the cache
 	field, fok := (*dbColumnFieldMap)[columnName]
 	if !fok {
 		field, fok = (*exportFieldMap)[columnName]
 		if !fok {
-			//尝试驼峰
+			// 尝试驼峰
 			cname := strings.ReplaceAll(columnName, "_", "")
 			field, fok = (*exportFieldMap)[cname]
 
@@ -625,5 +614,4 @@ func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *ma
 		return &field, nil
 	}
 	return nil, nil
-
 }

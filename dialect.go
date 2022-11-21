@@ -32,30 +32,30 @@ import (
 	"time"
 )
 
-//wrapPageSQL 包装分页的SQL语句
-//wrapPageSQL SQL statement for wrapping paging
+// wrapPageSQL 包装分页的SQL语句
+// wrapPageSQL SQL statement for wrapping paging
 func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
-	if page.PageNo < 1 { //默认第一页
+	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.Grow(50)
 	sqlbuilder.WriteString(*sqlstr)
 	switch dialect {
-	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": //MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
+	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": // MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 		sqlbuilder.WriteString(",")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	case "postgresql", "kingbase", "shentong": //postgresql,kingbase,神通数据库
+	case "postgresql", "kingbase", "shentong": // postgresql,kingbase,神通数据库
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-	case "mssql": //sqlserver 2012+
+	case "mssql": // sqlserver 2012+
 		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) < 1 { //如果没有 order by,增加默认的排序
+		if len(locOrderBy) < 1 { // 如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY (SELECT NULL) ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -63,9 +63,9 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 		sqlbuilder.WriteString(" ROWS FETCH NEXT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
-	case "oracle": //oracle 12c+
+	case "oracle": // oracle 12c+
 		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) < 1 { //如果没有 order by,增加默认的排序
+		if len(locOrderBy) < 1 { // 如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY NULL ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -78,14 +78,14 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 
 	}
 	*sqlstr = sqlbuilder.String()
-	//return reBindSQL(dialect, sqlstr)
+	// return reBindSQL(dialect, sqlstr)
 	return nil
 }
 
-//wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
-//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
-//wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
+// wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
+// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
+// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
 	sqlstr := ""
 	insersql, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
@@ -94,7 +94,7 @@ func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStru
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(insersql) + len(valuesql) + 19)
-	//sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
+	// sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(insersql)
 	sqlBuilder.WriteString(" VALUES")
@@ -103,32 +103,32 @@ func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStru
 	return sqlstr, autoIncrement, pktype, err
 }
 
-//wrapInsertValueSQL 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
-//数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-//Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
+// wrapInsertValueSQL 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
+// 数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
+// Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
+// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, string, int, string, error) {
 	var insertsql, valuesql string
-	//自增类型  0(不自增),1(普通自增),2(序列自增)
-	//Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment)
+	// 自增类型  0(不自增),1(普通自增),2(序列自增)
+	// Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment)
 	autoIncrement := 0
-	//主键类型
-	//Primary key type
+	// 主键类型
+	// Primary key type
 	pktype := ""
-	//SQL语句的构造器
-	//SQL statement constructor
+	// SQL语句的构造器
+	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
-	//SQL语句中,VALUES(?,?,...)语句的构造器
-	//In the SQL statement, the constructor of the VALUES(?,?,...) statement
+	// SQL语句中,VALUES(?,?,...)语句的构造器
+	// In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
 	valueSQLBuilder.Grow(50)
 	valueSQLBuilder.WriteString(" (")
-	//主键的名称
-	//The name of the primary key.
+	// 主键的名称
+	// The name of the primary key.
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
 		return insertsql, valuesql, autoIncrement, pktype, e
@@ -136,15 +136,15 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 
 	sequence := entity.GetPkSequence()
 	if len(sequence) > 0 {
-		//序列自增 Sequence increment
+		// 序列自增 Sequence increment
 		autoIncrement = 2
 	}
 
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 
-		if field.Name == pkFieldName { //如果是主键 | If it is the primary key
-			//获取主键类型 | Get the primary key type.
+		if field.Name == pkFieldName { // 如果是主键 | If it is the primary key
+			// 获取主键类型 | Get the primary key type.
 			pkKind := field.Type.Kind()
 			switch pkKind {
 			case reflect.String:
@@ -157,13 +157,13 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				return insertsql, valuesql, autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
 			}
 
-			//主键的值
-			//The value of the primary key
+			// 主键的值
+			// The value of the primary key
 			pkValue := (*values)[i]
 			valueIsZero := reflect.ValueOf(pkValue).IsZero()
-			if autoIncrement == 2 { //如果是序列自增 | If it is a sequence increment
-				//去掉这一列,后续不再处理
-				//Remove this column and will not process it later.
+			if autoIncrement == 2 { // 如果是序列自增 | If it is a sequence increment
+				// 去掉这一列,后续不再处理
+				// Remove this column and will not process it later.
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
 				i = i - 1
@@ -177,21 +177,21 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 
 				continue
 
-			} else if valueIsZero && (pktype == "string") { //主键是字符串类型,并且值为"",赋值id
-				//生成主键字符串
-				//Generate primary key string
+			} else if valueIsZero && (pktype == "string") { // 主键是字符串类型,并且值为"",赋值id
+				// 生成主键字符串
+				// Generate primary key string
 				id := FuncGenerateStringID(ctx)
 				(*values)[i] = id
-				//给对象主键赋值
-				//Assign a value to the primary key of the object
+				// 给对象主键赋值
+				// Assign a value to the primary key of the object
 				v := reflect.ValueOf(entity).Elem()
 				v.FieldByName(field.Name).Set(reflect.ValueOf(id))
 			} else if valueIsZero && (pktype == "int" || pktype == "int64") {
-				//标记是自增主键
-				//Mark is auto-incrementing primary key
+				// 标记是自增主键
+				// Mark is auto-incrementing primary key
 				autoIncrement = 1
-				//去掉这一列,后续不再处理
-				//Remove this column and will not process it later.
+				// 去掉这一列,后续不再处理
+				// Remove this column and will not process it later.
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
 				i = i - 1
@@ -217,10 +217,10 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	return insertsql, valuesql, autoIncrement, pktype, nil
 }
 
-//wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
-//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
-//wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
+// wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
+// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
+// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	sqlstr := ""
@@ -228,12 +228,12 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 		return sqlstr, 0, errors.New("->wrapInsertSliceSQL对象数组不能为空")
 	}
 
-	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
-	//The first object, get the first Struct object, used to get the database field, and also get the value
+	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
+	// The first object, get the first Struct object, used to get the database field, and also get the value
 	entity := entityStructSlice[0]
 
-	//先生成一条语句
-	//Generate a statement first
+	// 先生成一条语句
+	// Generate a statement first
 	insertsql, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
 	if firstErr != nil {
 		return sqlstr, autoIncrement, firstErr
@@ -241,34 +241,34 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(insertsql) + len(valuesql) + 19)
 	sqlBuilder.WriteString("INSERT INTO ")
-	//sqlstr := "INSERT INTO "
+	// sqlstr := "INSERT INTO "
 	if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-		//sqlstr = sqlstr + entity.GetTableName() + " VALUES" + valuesql
+		// sqlstr = sqlstr + entity.GetTableName() + " VALUES" + valuesql
 		sqlBuilder.WriteString(entity.GetTableName())
 		sqlBuilder.WriteString(" VALUES")
 		sqlBuilder.WriteString(valuesql)
 	} else {
-		//sqlstr = sqlstr + insertsql + " VALUES" + valuesql
+		// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
 		sqlBuilder.WriteString(insertsql)
 		sqlBuilder.WriteString(" VALUES")
 		sqlBuilder.WriteString(valuesql)
 	}
 
-	//如果只有一个Struct对象
-	//If there is only one Struct object
+	// 如果只有一个Struct对象
+	// If there is only one Struct object
 	if sliceLen == 1 {
 		return sqlBuilder.String(), autoIncrement, firstErr
 	}
-	//主键的名称
-	//The name of the primary key
+	// 主键的名称
+	// The name of the primary key
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
 		return sqlBuilder.String(), autoIncrement, e
 	}
 
 	for i := 1; i < sliceLen; i++ {
-		//拼接字符串
-		//Splicing string
+		// 拼接字符串
+		// Splicing string
 		if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 			sqlBuilder.WriteString(" ")
 			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
@@ -285,30 +285,30 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 			// Get the reflection of the entity class, the struct under the pointer
 			valueOf := reflect.ValueOf(entityStruct).Elem()
 			field := (*columns)[j]
-			//字段的值
-			//The value of the primary key
+			// 字段的值
+			// The value of the primary key
 			fieldValue := valueOf.FieldByName(field.Name)
-			if field.Name == pkFieldName { //如果是主键 ｜ If it is the primary key
+			if field.Name == pkFieldName { // 如果是主键 ｜ If it is the primary key
 				pkKind := field.Type.Kind()
-				//pkValue := valueOf.FieldByName(field.Name).Interface()
-				//只处理字符串类型的主键,其他类型,columns中并不包含
-				//Only handle primary keys of string type, other types, not included in columns
+				// pkValue := valueOf.FieldByName(field.Name).Interface()
+				// 只处理字符串类型的主键,其他类型,columns中并不包含
+				// Only handle primary keys of string type, other types, not included in columns
 				if (pkKind == reflect.String) && fieldValue.IsZero() {
-					//主键是字符串类型,并且值为"",赋值'id'
-					//生成主键字符串
-					//The primary key is a string type, and the value is "", assigned the value'id'
-					//Generate primary key string
+					// 主键是字符串类型,并且值为"",赋值'id'
+					// 生成主键字符串
+					// The primary key is a string type, and the value is "", assigned the value'id'
+					// Generate primary key string
 					id := FuncGenerateStringID(ctx)
 					*values = append(*values, id)
-					//给对象主键赋值
-					//Assign a value to the primary key of the object
+					// 给对象主键赋值
+					// Assign a value to the primary key of the object
 					fieldValue.Set(reflect.ValueOf(id))
 					continue
 				}
 			}
 
-			//给字段赋值
-			//Assign a value to the field.
+			// 给字段赋值
+			// Assign a value to the field.
 			*values = append(*values, fieldValue.Interface())
 
 		}
@@ -316,25 +316,24 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 
 	sqlstr = sqlBuilder.String()
 	return sqlstr, autoIncrement, nil
-
 }
 
-//wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
+// wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
 func wrapInsertEntityMapSliceSQL(ctx context.Context, dialect string, entityMapSlice []IEntityMap) (string, []interface{}, error) {
 	sliceLen := len(entityMapSlice)
 	sqlstr := ""
 	if entityMapSlice == nil || sliceLen < 1 {
 		return sqlstr, nil, errors.New("->wrapInsertSliceSQL对象数组不能为空")
 	}
-	//第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
+	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityMapSlice[0]
-	//检查是否是指针对象
+	// 检查是否是指针对象
 	_, err := checkEntityKind(entity)
 	if err != nil {
 		return sqlstr, nil, err
 	}
 	dbFieldMapKey := entity.GetDBFieldMapKey()
-	//SQL语句
+	// SQL语句
 	insertsql, valuesql, values, _, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
 		return sqlstr, values, err
@@ -344,13 +343,13 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, dialect string, entityMapS
 	sqlBuilder.Grow(len(insertsql) + len(valuesql) + 19)
 	sqlBuilder.WriteString("INSERT INTO ")
 
-	//sqlstr = sqlstr + insertsql + " VALUES" + valuesql
+	// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
 	sqlBuilder.WriteString(insertsql)
 	sqlBuilder.WriteString(" VALUES")
 	sqlBuilder.WriteString(valuesql)
 	for i := 1; i < sliceLen; i++ {
-		//拼接字符串
-		//Splicing string
+		// 拼接字符串
+		// Splicing string
 		if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 			sqlBuilder.WriteString(" ")
 			sqlBuilder.WriteString(entityMapSlice[i].GetTableName())
@@ -373,25 +372,25 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, dialect string, entityMapS
 	return sqlstr, values, err
 }
 
-//wrapUpdateSQL 包装更新Struct语句
-//数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
-//wrapUpdateSQL Package update Struct statement
-//Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
+// wrapUpdateSQL 包装更新Struct语句
+// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// wrapUpdateSQL Package update Struct statement
+// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
 	sqlstr := ""
-	//SQL语句的构造器
-	//SQL statement constructor
+	// SQL语句的构造器
+	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
 
-	//主键的值
-	//The value of the primary key
+	// 主键的值
+	// The value of the primary key
 	var pkValue interface{}
-	//主键的名称
-	//The name of the primary key
+	// 主键的名称
+	// The name of the primary key
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
 		return sqlstr, e
@@ -400,22 +399,22 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	for i := 0; i < len(*columns); i++ {
 		field := (*columns)[i]
 		if field.Name == pkFieldName {
-			//如果是主键
-			//If it is the primary key.
+			// 如果是主键
+			// If it is the primary key.
 			pkValue = (*values)[i]
-			//去掉这一列,最后处理主键
-			//Remove this column, and finally process the primary key
+			// 去掉这一列,最后处理主键
+			// Remove this column, and finally process the primary key
 			*columns = append((*columns)[:i], (*columns)[i+1:]...)
 			*values = append((*values)[:i], (*values)[i+1:]...)
 			i = i - 1
 			continue
 		}
 
-		//如果是默认值字段,删除掉,不更新
-		//If it is the default value field, delete it and do not update
+		// 如果是默认值字段,删除掉,不更新
+		// If it is the default value field, delete it and do not update
 		if onlyUpdateNotZero && (reflect.ValueOf((*values)[i]).IsZero()) {
-			//去掉这一列,不再处理
-			//Remove this column and no longer process
+			// 去掉这一列,不再处理
+			// Remove this column and no longer process
 			*columns = append((*columns)[:i], (*columns)[i+1:]...)
 			*values = append((*values)[:i], (*values)[i+1:]...)
 			i = i - 1
@@ -430,11 +429,11 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 		sqlBuilder.WriteString("=?")
 
 	}
-	//主键的值是最后一个
-	//The value of the primary key is the last
+	// 主键的值是最后一个
+	// The value of the primary key is the last
 	*values = append(*values, pkValue)
 
-	//sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
+	// sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
 	sqlBuilder.WriteString(" WHERE ")
 	sqlBuilder.WriteString(entity.GetPKColumnName())
 	sqlBuilder.WriteString("=?")
@@ -443,12 +442,11 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	return sqlstr, nil
 }
 
-//wrapDeleteSQL 包装删除Struct语句
-//wrapDeleteSQL Package delete Struct statement
+// wrapDeleteSQL 包装删除Struct语句
+// wrapDeleteSQL Package delete Struct statement
 func wrapDeleteSQL(entity IEntityStruct) (string, error) {
-
-	//SQL语句的构造器
-	//SQL statement constructor
+	// SQL语句的构造器
+	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("DELETE FROM ")
@@ -461,17 +459,17 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 	return sqlstr, nil
 }
 
-//wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
-//wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
-//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
+// wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+// wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
+// it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, error) {
 	sqlstr := ""
 	insertsql, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
 		return sqlstr, nil, autoIncrement, err
 	}
-	//拼接SQL语句,带上列名,因为Map取值是无序的
-	//sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
+	// 拼接SQL语句,带上列名,因为Map取值是无序的
+	// sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
 
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(insertsql) + len(valuesql) + 19)
@@ -484,43 +482,43 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 	return sqlstr, values, autoIncrement, nil
 }
 
-//wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
-//wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
-//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
+// wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+// wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
+// it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface{}, bool, error) {
 	var insertsql, valuesql string
-	//是否自增,默认false
+	// 是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
 		return insertsql, insertsql, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
-	//SQL对应的参数
-	//SQL corresponding parameters
+	// SQL对应的参数
+	// SQL corresponding parameters
 	values := []interface{}{}
 
-	//SQL语句的构造器
-	//SQL statement constructor
+	// SQL语句的构造器
+	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(100)
-	//sqlBuilder.WriteString("INSERT INTO ")
+	// sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
-	//SQL语句中,VALUES(?,?,...)语句的构造器
-	//In the SQL statement, the constructor of the VALUES(?,?,...) statement.
+	// SQL语句中,VALUES(?,?,...)语句的构造器
+	// In the SQL statement, the constructor of the VALUES(?,?,...) statement.
 	var valueSQLBuilder strings.Builder
 	valueSQLBuilder.Grow(30)
 	valueSQLBuilder.WriteString(" (")
-	//是否Set了主键
-	//Whether the primary key is set.
+	// 是否Set了主键
+	// Whether the primary key is set.
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
-	if entity.GetPKColumnName() != "" && !hasPK { //如果有主键字段,却没值,认为是自增或者序列 | If the primary key is not set, it is considered to be auto-increment or sequence
+	if entity.GetPKColumnName() != "" && !hasPK { // 如果有主键字段,却没值,认为是自增或者序列 | If the primary key is not set, it is considered to be auto-increment or sequence
 		autoIncrement = true
-		if len(entity.GetEntityMapPkSequence()) > 0 { //如果是序列 | If it is a sequence.
+		if len(entity.GetEntityMapPkSequence()) > 0 { // 如果是序列 | If it is a sequence.
 			sqlBuilder.WriteString(entity.GetPKColumnName())
 			valueSQLBuilder.WriteString(entity.GetEntityMapPkSequence())
-			if len(dbFieldMap) > 1 { //如果不只有序列
+			if len(dbFieldMap) > 1 { // 如果不只有序列
 				sqlBuilder.WriteString(",")
 				valueSQLBuilder.WriteString(",")
 			}
@@ -536,8 +534,8 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 		}
 		k := dbFieldMapKey[dbFieldMapIndex]
 		v := dbFieldMap[k]
-		//拼接字符串
-		//Concatenated string
+		// 拼接字符串
+		// Concatenated string
 		sqlBuilder.WriteString(k)
 		valueSQLBuilder.WriteString("?")
 		values = append(values, v)
@@ -551,33 +549,33 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	return insertsql, valuesql, values, autoIncrement, nil
 }
 
-//wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
-//wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
-//it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
+// wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
+// wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
+// it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
 func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
 	if len(dbFieldMap) < 1 {
 		return sqlstr, nil, errors.New("->wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
-	//SQL语句的构造器
-	//SQL statement constructor
+	// SQL语句的构造器
+	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
 
-	//SQL对应的参数
-	//SQL corresponding parameters
+	// SQL对应的参数
+	// SQL corresponding parameters
 	values := []interface{}{}
-	//主键名称
-	//Primary key name
+	// 主键名称
+	// Primary key name
 	var pkValue interface{}
 	dbFieldMapIndex := 0
 	for k, v := range dbFieldMap {
 
-		if k == entity.GetPKColumnName() { //如果是主键  | If it is the primary key
+		if k == entity.GetPKColumnName() { // 如果是主键  | If it is the primary key
 			pkValue = v
 			continue
 		}
@@ -585,14 +583,14 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 			sqlBuilder.WriteString(",")
 		}
 
-		//拼接字符串 | Splicing string.
+		// 拼接字符串 | Splicing string.
 		sqlBuilder.WriteString(k)
 		sqlBuilder.WriteString("=?")
 		values = append(values, v)
 		dbFieldMapIndex++
 	}
-	//主键的值是最后一个
-	//The value of the primary key is the last
+	// 主键的值是最后一个
+	// The value of the primary key is the last
 	values = append(values, pkValue)
 
 	sqlBuilder.WriteString(" WHERE ")
@@ -603,12 +601,11 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	return sqlstr, values, nil
 }
 
-//wrapQuerySQL 封装查询语句
-//wrapQuerySQL Encapsulated query statement
+// wrapQuerySQL 封装查询语句
+// wrapQuerySQL Encapsulated query statement
 func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
-
-	//获取到没有page的sql的语句
-	//Get the SQL statement without page.
+	// 获取到没有page的sql的语句
+	// Get the SQL statement without page.
 	sqlstr, err := finder.GetSQL()
 	if err != nil {
 		return "", err
@@ -622,47 +619,53 @@ func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
 	return sqlstr, err
 }
 
-//查询'order by'在sql中出现的开始位置和结束位置
-//Query the start position and end position of'order by' in SQL
-var orderByExpr = "(?i)\\s(order)\\s+by\\s"
-var orderByRegexp, _ = regexp.Compile(orderByExpr)
+// 查询'order by'在sql中出现的开始位置和结束位置
+// Query the start position and end position of'order by' in SQL
+var (
+	orderByExpr      = "(?i)\\s(order)\\s+by\\s"
+	orderByRegexp, _ = regexp.Compile(orderByExpr)
+)
 
-//findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
+// findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
 // findOrderByIndex Query the start position and end position of'order by' in SQL
 func findOrderByIndex(strsql *string) []int {
 	loc := orderByRegexp.FindStringIndex(*strsql)
 	return loc
 }
 
-//查询'group by'在sql中出现的开始位置和结束位置
-//Query the start position and end position of'group by' in sql。
-var groupByExpr = "(?i)\\s(group)\\s+by\\s"
-var groupByRegexp, _ = regexp.Compile(groupByExpr)
+// 查询'group by'在sql中出现的开始位置和结束位置
+// Query the start position and end position of'group by' in sql。
+var (
+	groupByExpr      = "(?i)\\s(group)\\s+by\\s"
+	groupByRegexp, _ = regexp.Compile(groupByExpr)
+)
 
-//findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
-//findGroupByIndex Query the start position and end position of'group by' in sql
+// findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
+// findGroupByIndex Query the start position and end position of'group by' in sql
 func findGroupByIndex(strsql *string) []int {
 	loc := groupByRegexp.FindStringIndex(*strsql)
 	return loc
 }
 
-//查询 from 在sql中出现的开始位置和结束位置
-//Query the start position and end position of 'from' in sql
-//var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
-//感谢奔跑(@zeqjone)提供的正则,排除不在括号内的from,已经满足绝大部分场景,
-//select id1,(select (id2) from t1 where id=2) _s FROM table select的子查询 _s中的 id2还有括号,才会出现问题,建议使用CountFinder处理分页语句
-var fromExpr = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?(from)"
-var fromRegexp, _ = regexp.Compile(fromExpr)
+// 查询 from 在sql中出现的开始位置和结束位置
+// Query the start position and end position of 'from' in sql
+// var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
+// 感谢奔跑(@zeqjone)提供的正则,排除不在括号内的from,已经满足绝大部分场景,
+// select id1,(select (id2) from t1 where id=2) _s FROM table select的子查询 _s中的 id2还有括号,才会出现问题,建议使用CountFinder处理分页语句
+var (
+	fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?(from)"
+	fromRegexp, _ = regexp.Compile(fromExpr)
+)
 
-//findFromIndexa 查询from在sql中出现的开始位置和结束位置
-//findSelectFromIndex Query the start position and end position of 'from' in sql
+// findFromIndexa 查询from在sql中出现的开始位置和结束位置
+// findSelectFromIndex Query the start position and end position of 'from' in sql
 func findSelectFromIndex(strsql *string) []int {
-	//匹配出来的是完整的字符串,用最后的FROM即可
+	// 匹配出来的是完整的字符串,用最后的FROM即可
 	loc := fromRegexp.FindStringIndex(*strsql)
 	if len(loc) < 2 {
 		return loc
 	}
-	//最后的FROM前推4位字符串
+	// 最后的FROM前推4位字符串
 	loc[0] = loc[1] - 4
 	return loc
 }
@@ -692,8 +695,10 @@ func findSelectFromIndex(strsql string) int {
 */
 // 从更新语句中获取表名
 //update\\s(.+)set\\s.*
-var updateExper = "(?i)^\\s*update\\s+(\\w+)\\s+set\\s"
-var updateRegexp, _ = regexp.Compile(updateExper)
+var (
+	updateExper     = "(?i)^\\s*update\\s+(\\w+)\\s+set\\s"
+	updateRegexp, _ = regexp.Compile(updateExper)
+)
 
 // findUpdateTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名
@@ -703,34 +708,35 @@ func findUpdateTableName(strsql *string) []string {
 }
 
 // 从删除语句中获取表名
-//delete\\sfrom\\s(.+)where\\s(.*)
-var deleteExper = "(?i)^\\s*delete\\s+from\\s+(\\w+)\\s+where\\s"
-var deleteRegexp, _ = regexp.Compile(deleteExper)
+// delete\\sfrom\\s(.+)where\\s(.*)
+var (
+	deleteExper     = "(?i)^\\s*delete\\s+from\\s+(\\w+)\\s+where\\s"
+	deleteRegexp, _ = regexp.Compile(deleteExper)
+)
 
 // findDeleteTableName 获取语句中表名
 // 第一个是符合的整体数据,第二个是表名
 func findDeleteTableName(strsql *string) []string {
 	matchs := deleteRegexp.FindStringSubmatch(*strsql)
 	return matchs
-
 }
 
-//FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
-//FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
+// FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
+// FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID = func(ctx context.Context) string {
 	// 使用 crypto/rand 真随机9位数
 	randNum, randErr := rand.Int(rand.Reader, big.NewInt(1000000000))
 	if randErr != nil {
 		return ""
 	}
-	//获取9位数,前置补0,确保9位数
+	// 获取9位数,前置补0,确保9位数
 	rand9 := fmt.Sprintf("%09d", randNum)
 
-	//获取纳秒 按照 年月日时分秒毫秒微秒纳秒 拼接为长度23位的字符串
+	// 获取纳秒 按照 年月日时分秒毫秒微秒纳秒 拼接为长度23位的字符串
 	pk := time.Now().Format("2006.01.02.15.04.05.000000000")
 	pk = strings.ReplaceAll(pk, ".", "")
 
-	//23位字符串+9位随机数=32位字符串,这样的好处就是可以使用ID进行排序
+	// 23位字符串+9位随机数=32位字符串,这样的好处就是可以使用ID进行排序
 	pk = pk + rand9
 	return pk
 }
@@ -750,9 +756,9 @@ func getFieldTagName(field *reflect.StructField) string {
 
 // wrapSQLHint 在sql语句中增加hint
 func wrapSQLHint(ctx context.Context, sqlstr *string) error {
-	//获取hint
+	// 获取hint
 	contextValue := ctx.Value(contextSQLHintValueKey)
-	if contextValue == nil { //如果没有设置hint
+	if contextValue == nil { // 如果没有设置hint
 		return nil
 	}
 	hint, ok := contextValue.(string)
@@ -762,13 +768,13 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	if len(hint) < 1 {
 		return nil
 	}
-	//sql去空格
+	// sql去空格
 	sqlTrim := strings.TrimSpace(*sqlstr)
 	sqlIndex := strings.Index(sqlTrim, " ")
 	if sqlIndex < 0 {
 		return nil
 	}
-	//sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
+	// sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
 	sqlBuilder.WriteString(sqlTrim[:sqlIndex])
@@ -779,8 +785,8 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	return nil
 }
 
-//reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-//reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
+// reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
+// reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
@@ -796,27 +802,27 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 	sqlBuilder.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
 		switch dialect {
-		case "postgresql", "kingbase": //postgresql,kingbase
+		case "postgresql", "kingbase": // postgresql,kingbase
 			sqlBuilder.WriteString("$")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		case "mssql": //mssql
+		case "mssql": // mssql
 			sqlBuilder.WriteString("@p")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		case "oracle", "shentong": //oracle,神通
+		case "oracle", "shentong": // oracle,神通
 			sqlBuilder.WriteString(":")
 			sqlBuilder.WriteString(strconv.Itoa(i))
-		case "tdengine": //tdengine,重新处理 字符类型的参数 '?'
+		case "tdengine": // tdengine,重新处理 字符类型的参数 '?'
 			typeOf := reflect.TypeOf((*args)[i-1])
 			if typeOf.Kind() == reflect.Ptr {
-				//获取指针下的类型
+				// 获取指针下的类型
 				typeOf = typeOf.Elem()
 			}
-			if typeOf.Kind() == reflect.String { //如果值是字符串
+			if typeOf.Kind() == reflect.String { // 如果值是字符串
 				sqlBuilder.WriteString("'?'")
-			} else { //其他情况,还是使用 ?
+			} else { // 其他情况,还是使用 ?
 				sqlBuilder.WriteString("?")
 			}
-		default: //其他情况,还是使用 ? | In other cases, or use  ?
+		default: // 其他情况,还是使用 ? | In other cases, or use  ?
 			sqlBuilder.WriteString("?")
 		}
 		sqlBuilder.WriteString(strs[i])
@@ -825,39 +831,38 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 	return nil
 }
 
-//reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
+// reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
 func reUpdateSQL(dialect string, sqlstr *string) error {
-	//处理clickhouse的特殊更新语法
+	// 处理clickhouse的特殊更新语法
 	if dialect == "clickhouse" {
-		//SQL语句的构造器
-		//SQL statement constructor
+		// SQL语句的构造器
+		// SQL statement constructor
 		var sqlBuilder strings.Builder
 		sqlBuilder.Grow(50)
 		sqlBuilder.WriteString("ALTER TABLE ")
 		sqls := findUpdateTableName(sqlstr)
-		if len(sqls) >= 2 { //如果是更新语句
+		if len(sqls) >= 2 { // 如果是更新语句
 			sqlBuilder.WriteString(sqls[1])
 			sqlBuilder.WriteString(" UPDATE ")
-		} else { //如果不是更新语句
+		} else { // 如果不是更新语句
 			sqls = findDeleteTableName(sqlstr)
-			if len(sqls) < 2 { //如果也不是删除语句
+			if len(sqls) < 2 { // 如果也不是删除语句
 				return nil
 			}
 			sqlBuilder.WriteString(sqls[1])
 			sqlBuilder.WriteString(" DELETE WHERE ")
 		}
 
-		//截取字符串
+		// 截取字符串
 		content := (*sqlstr)[len(sqls[0]):]
 		sqlBuilder.WriteString(content)
 		*sqlstr = sqlBuilder.String()
 		return nil
 	}
 	return nil
-
 }
 
-//wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
+// wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
 func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, lastInsertID, zormSQLOutReturningID *int64, values *[]interface{}) {
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
@@ -866,13 +871,13 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 	case "postgresql", "kingbase":
 		var p int64 = 0
 		lastInsertID = &p
-		//sqlstr = sqlstr + " RETURNING " + pkColumnName
+		// sqlstr = sqlstr + " RETURNING " + pkColumnName
 		sqlBuilder.WriteString(" RETURNING ")
 		sqlBuilder.WriteString(pkColumnName)
 	case "oracle", "shentong":
 		var p int64 = 0
 		zormSQLOutReturningID = &p
-		//sqlstr = sqlstr + " RETURNING " + pkColumnName + " INTO :zormSQLOutReturningID "
+		// sqlstr = sqlstr + " RETURNING " + pkColumnName + " INTO :zormSQLOutReturningID "
 		sqlBuilder.WriteString(" RETURNING ")
 		sqlBuilder.WriteString(pkColumnName)
 		sqlBuilder.WriteString(" INTO :zormSQLOutReturningID ")
@@ -883,11 +888,11 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 	*sqlstr = sqlBuilder.String()
 }
 
-//getDialectFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect
+// getDialectFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect
 func getDialectFromConnection(ctx context.Context, dbConnection *dataBaseConnection, rwType int) (string, error) {
 	var dialect string
-	//dbConnection为nil,使用defaultDao
-	//dbConnection is nil, use default Dao
+	// dbConnection为nil,使用defaultDao
+	// dbConnection is nil, use default Dao
 	if dbConnection == nil {
 		dbdao, err := FuncReadWriteStrategy(ctx, rwType)
 		if err != nil {

@@ -127,8 +127,8 @@ type IGlobalTransaction interface {
 	// GetGTXID 获取全局分布式事务的XID
 	GetGTXID(ctx context.Context, globalRootContext context.Context) (string, error)
 
-	//重新包装为 seata/hptx 的context.RootContext
-	//context.RootContext 如果后续使用了 context.WithValue,类型就是context.valueCtx 就会造成无法再类型断言为 context.RootContext
-	//所以DBDao里使用了 globalRootContext变量,区分业务的ctx和分布式事务的RootContext
-	//NewRootContext(ctx context.Context) context.Context
+	// 重新包装为 seata/hptx 的context.RootContext
+	// context.RootContext 如果后续使用了 context.WithValue,类型就是context.valueCtx 就会造成无法再类型断言为 context.RootContext
+	// 所以DBDao里使用了 globalRootContext变量,区分业务的ctx和分布式事务的RootContext
+	// NewRootContext(ctx context.Context) context.Context
 }
