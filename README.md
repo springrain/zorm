@@ -854,7 +854,7 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 // It is recommended that the following code be placed in a separate file
 //... //
 
-// ZormGlobalTransaction packaging seata/HPTX * tm DefaultGlobalTransaction, zorm.IGlobalTransaction interface
+// ZormGlobalTransaction packaging seata/hptx *tm.DefaultGlobalTransaction, zorm.IGlobalTransaction interface
 type ZormGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
