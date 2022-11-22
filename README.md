@@ -872,21 +872,22 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	return globalTransaction. rootContext, nil
 }
 
-IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
+//IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
+
 // BeginGTX Starts global distributed transactions
-func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context,Context) error {
+func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.BeginWithTimeout(int32(6000), rootContext)
 }
 
 // CommitGTX Commit global distributed transactions
-func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context,Context) error {
+func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context.Context) error {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return gtx.Commit(rootContext)
 }
 
 // RollbackGTX rolls back globally distributed transactions
-func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context,Context) error {
+func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context.Context) error {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
 	// If it is the Participant role, change it to the Launcher role to allow branch transactions to submit global transactions.
 	if gtx.Role != tm.Launcher {
@@ -895,7 +896,7 @@ func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootCon
 	return gtx.Rollback(rootContext)
 }
 // GetGTXID Gets the XID of the globally distributed transaction
-func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context,Context) (string.error) {
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) (string.error) {
 	rootContext := globalRootContext.(*gtxContext.RootContext)
 	return rootContext.GetXID(), nil
 }
@@ -912,7 +913,7 @@ hint := fmt.Sprintf("/*+ XID('%s') */", xid)
 // ctx is obtained
 ctx := c.Request.Context()
 // Bind the hint to ctx
-ctx,_ = zorm.BindContextSQLHint(ctx,hint)
+ctx,_ = zorm.BindContextSQLHint(ctx, hint)
 
 // After ctx binds the sql hint, the business transaction is invoked and ctx is transmitted to realize the propagation of the distributed transaction
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
