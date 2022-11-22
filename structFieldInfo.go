@@ -153,24 +153,18 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		if fieldNum < 1 {
 			return
 		}
-
-		// 匿名struct里自身又有匿名struct
-		// anonymousField := make([]reflect.StructField, 0)
 		// 遍历所有字段
 		for i := 0; i < fieldNum; i++ {
-			field := anonymousTypeOf.Field(i)
-
-			if field.Anonymous { // 匿名struct里自身又有匿名struct
-				funcRecursiveAnonymous(allFieldMap, &field)
-			} else { //普通命名字段
-				allFieldMap.Store(field.Name, field)
+			anonymousField := anonymousTypeOf.Field(i)
+			if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct
+				funcRecursiveAnonymous(allFieldMap, &anonymousField)
+			} else if _, ok := allFieldMap.Load(anonymousField.Name); !ok { //普通命名字段
+				allFieldMap.Store(anonymousField.Name, anonymousField)
 				lock.Lock()
-				funcMapKV(field.Name, field)
+				funcMapKV(anonymousField.Name, anonymousField)
 				lock.Unlock()
 			}
 		}
-
-		//}
 	}
 
 	// 遍历所有字段,记录匿名属性
@@ -178,12 +172,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		field := (*typeOf).Field(i)
 		if field.Anonymous { // 如果是匿名的
 			funcRecursiveAnonymous(allFieldMap, &field)
-		} else if _, ok := allFieldMap.Load(field.Name); !ok {
+		} else if _, ok := allFieldMap.Load(field.Name); !ok { //普通命名字段
 			allFieldMap.Store(field.Name, field)
 			lock.Lock()
 			funcMapKV(field.Name, field)
 			lock.Unlock()
-
 		}
 	}
 
