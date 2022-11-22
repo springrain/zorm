@@ -67,7 +67,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	//}
 
 	// Type conversion
-	dmClob. isok := tempDriverValue.(*dm.DmClob)
+	dmClob, isok := tempDriverValue.(*dm.DmClob)
 	if !isok {
 		return tempDriverValue, errors.New("->ConverDriverValue--> Failed to convert to *dm.DmClob")
 	}
