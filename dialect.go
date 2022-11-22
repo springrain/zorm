@@ -652,6 +652,10 @@ func findGroupByIndex(strsql *string) []int {
 // var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
 // 感谢奔跑(@zeqjone)提供的正则,排除不在括号内的from,已经满足绝大部分场景,
 // select id1,(select (id2) from t1 where id=2) _s FROM table select的子查询 _s中的 id2还有括号,才会出现问题,建议使用CountFinder处理分页语句
+// countFinder := zorm.NewFinder().Append("select count(*) from (")
+// countFinder.AppendFinder(finder)
+// countFinder.Append(") tempcountfinder")
+// finder.CountFinder = countFinder
 var (
 	fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?(from)"
 	fromRegexp, _ = regexp.Compile(fromExpr)

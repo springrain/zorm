@@ -480,10 +480,10 @@ func TestQuery(t *testing.T) {
 	page.PageSize = 20 //每页20条,默认是20
 
     // 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
-	//countFinder := zorm.NewFinder().Append("select count(*) from (")
-	//countFinder.AppendFinder(finder)
-	//countFinder.Append(") tempcountfinder")
-	//finder.CountFinder = countFinder
+	// countFinder := zorm.NewFinder().Append("select count(*) from (")
+	// countFinder.AppendFinder(finder)
+	// countFinder.Append(") tempcountfinder")
+	// finder.CountFinder = countFinder
 
 	//执行查询
 	err := zorm.Query(ctx, finder, &list, page)
@@ -505,10 +505,10 @@ func TestQueryMap(t *testing.T) {
 	page.PageSize = 20 //每页20条,默认是20
 
     // 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
-	//countFinder := zorm.NewFinder().Append("select count(*) from (")
-	//countFinder.AppendFinder(finder)
-	//countFinder.Append(") tempcountfinder")
-	//finder.CountFinder = countFinder
+	// countFinder := zorm.NewFinder().Append("select count(*) from (")
+	// countFinder.AppendFinder(finder)
+	// countFinder.Append(") tempcountfinder")
+	// finder.CountFinder = countFinder
 
 	//执行查询
 	listMap, err := zorm.QueryMap(ctx, finder, page)
@@ -814,9 +814,6 @@ func main() {
 	//ctx =context.WithValue(ctx,mysql.XID,xid)
 }
 ```
-
-
-
 
 #### seata/hptx 事务托管模式
 
