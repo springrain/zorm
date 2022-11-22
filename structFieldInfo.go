@@ -158,7 +158,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 			anonymousField := anonymousTypeOf.Field(i)
 			if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct
 				funcRecursiveAnonymous(allFieldMap, &anonymousField)
-			} else if _, ok := allFieldMap.Load(anonymousField.Name); !ok { // 普通命名字段
+			} else if _, ok := allFieldMap.Load(anonymousField.Name); !ok { // 普通命名字段,而且没有记录过
 				allFieldMap.Store(anonymousField.Name, anonymousField)
 				lock.Lock()
 				funcMapKV(anonymousField.Name, anonymousField)
@@ -172,7 +172,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		field := (*typeOf).Field(i)
 		if field.Anonymous { // 如果是匿名的
 			funcRecursiveAnonymous(allFieldMap, &field)
-		} else if _, ok := allFieldMap.Load(field.Name); !ok { // 普通命名字段
+		} else if _, ok := allFieldMap.Load(field.Name); !ok { // 普通命名字段,而且没有记录过
 			allFieldMap.Store(field.Name, field)
 			lock.Lock()
 			funcMapKV(field.Name, field)
