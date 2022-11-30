@@ -476,6 +476,9 @@ func TestQuery(t *testing.T) {
 	page.PageNo = 1   // Query page 1. The default value is 1
 	page.PageSize = 20 // 20 per page. The default is 20
 
+	//The total number of entries is not queried
+	//finder.SelectTotalCount = false
+
     // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
@@ -501,6 +504,9 @@ func TestQueryMap(t *testing.T) {
 	page.PageNo = 1   // Query page 1. The default value is 1
 	page.PageSize = 20 // 20 per page. The default is 20
 
+	//The total number of entries is not queried
+	//finder.SelectTotalCount = false
+	
     // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
