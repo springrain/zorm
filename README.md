@@ -89,6 +89,12 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 
 	// Read the string
 	str, errReadString := dmClob.ReadString(1, dmlenInt)
+
+	// Handle EOF errors caused by empty strings or NULL value
+	if errReadString == io.EOF {
+		return new(string), nil
+	}
+
 	return &str, errReadString
 }
 // RegisterCustomDriverValueConver registered custom field processing logic, used to drive not directly convert scenarios, such as the TEXT of the dream cannot directly into a string

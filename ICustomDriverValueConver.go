@@ -111,6 +111,12 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 
 	//读取字符串
 	str, errReadString := dmClob.ReadString(1, dmlenInt)
+
+	// 处理空字符串或NULL造成的EOF错误
+	if errReadString == io.EOF {
+		return new(string), nil
+	}
+
 	return &str, errReadString
 }
 //RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
