@@ -213,7 +213,9 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 			FuncPrintSQL(ctx, *execsql, args, slow)
 		}
 	}
-
+	if err != nil {
+		err = fmt.Errorf("->execContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *execsql, args)
+	}
 	return &res, err
 }
 
@@ -288,6 +290,9 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 		if slow-int64(slowSQLMillis) >= 0 {
 			FuncPrintSQL(ctx, *query, args, slow)
 		}
+	}
+	if err != nil {
+		err = fmt.Errorf("->queryContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *query, args)
 	}
 	return rows, err
 }
