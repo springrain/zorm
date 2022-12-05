@@ -70,6 +70,7 @@ type driverValueInfo struct {
 import (
 	// 00.引入数据库驱动
 	"gitee.com/chunanyong/dm"
+	"io"
 )
 
 // CustomDMText实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库TEXT类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收

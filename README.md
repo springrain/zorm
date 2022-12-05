@@ -43,6 +43,7 @@ ZORM spares no effort in adapting to domestic databases, and if you encounter do
 import (
 	// 00. Introduce the database driver
 	"gitee.com/chunanyong/dm"
+	"io"
 )
 
 // CustomDMText implements ICustomDriverValueConver interface to extend custom types. For example, the TEXT type is mapped to dm.DmClob and cannot be directly received using string
