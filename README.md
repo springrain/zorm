@@ -41,30 +41,30 @@ ZORM spares no effort in adapting to domestic databases, and if you encounter do
 - The TEXT type of Damon will be mapped to ```dm.DmClob```, string cannot be received, and zorm needs to be implemented ```ICustomDriverValueConver``` interface, custom extension processing
 ```go
 import (
-	//00. Introduce the database driver
+	// 00. Introduce the database driver
 	"gitee.com/chunanyong/dm"
 )
 
-//CustomDMText implements ICustomDriverValueConver interface to extend custom types. For example, the TEXT type is mapped to dm.DmClob and cannot be directly received using string
+// CustomDMText implements ICustomDriverValueConver interface to extend custom types. For example, the TEXT type is mapped to dm.DmClob and cannot be directly received using string
 type CustomDMText struct{}
 
-//GetDriverValue Returns an instance of driver.Value, the struct attribute type, based on the database column type
+// GetDriverValue Returns an instance of driver.Value, the struct attribute type, based on the database column type
 // The structFieldType is passed nil because the map received or field does not exist
 func (dmtext CustomDMText) GetDriverValue(ctx context.Context, columnType *sql.ColumnType, structFieldType *reflect.Type) (driver.Value, error) {
 	// If you want to use the structFieldType, you need to determine if it is nil
-	//if structFieldType != nil {
-	//}
+	// if structFieldType != nil {
+	// }
 
 	return &dm.DmClob{}, nil
 }
 
-//ConverDriverValue database column type, temporary received Value of driver. value returned by GetDriverValue,struct attribute type
+// ConverDriverValue database column type, temporary received Value of driver. value returned by GetDriverValue,struct attribute type
 // The structFieldType is passed nil because the map received or field does not exist
 // Returns a pointer, pointer, pointer that matches the received type value!!!!
 func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value, structFieldType *reflect.Type) (interface{}, error) {
 	// If you want to use the structFieldType, you need to determine if it is nil
-	//if structFieldType != nil {
-	//}
+	// if structFieldType != nil {
+	// }
 
 	// Type conversion
 	dmClob, isok := tempDriverValue.(*dm.DmClob)
@@ -80,7 +80,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 		return dmClob, errLength
 	}
 
-	//int64 is converted to an int
+	// int64 is converted to an int
 	strInt64 := strconv.FormatInt(dmlen, 10)
 	dmlenInt, errAtoi := strconv.Atoi(strInt64)
 	if errAtoi != nil {
@@ -151,7 +151,7 @@ ENGINE = InnoDB CHARACTER SET = utf8mb4 COMMENT = 'example';
 
 */
 
-//demoStructTableName Table name constant for direct call
+// demoStructTableName Table name constant for direct call
 const demoStructTableName = "t_demo"
 
 // demoStruct example
@@ -159,45 +159,45 @@ type demoStruct struct {
 	// Introduce the default struct to isolate method changes to the IEntityStruct
 	zorm.EntityStruct
 
-	//Id Primary key
+	// Id Primary key
 	Id string `column:"id"`
 
-	//UserName Specifies the name
+	// UserName Specifies the name
 	UserName string `column:"userName"`
 
-	//Password Password
+	// Password Password
 	Password string `column:"password"`
 
-	//CreateTime <no value>
+	// CreateTime <no value>
 	CreateTime time.Time `column:"createTime"`
 
-	//Active Whether it is valid (0 No,1 yes)
-	//Active int `column:"active"`
+	// Active Whether it is valid (0 No,1 yes)
+	// Active int `column:"active"`
 
-	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - end of the database field, custom fields to write in the following -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
+	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - end of the database field, custom fields to write in the following -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- // 
 	// If the queried field is not found in the column tag, it is mapped to the struct property by name (case insensitive, support _ _ to _ hump)
 
 	// Simulates the custom field Active
 	Active int
 }
 
-//GetTableName Gets the table name
-//IEntityStruct interface method, entity class needs to implement!!
+// GetTableName Gets the table name
+// IEntityStruct interface method, entity class needs to implement!!
 func (entity *demoStruct) GetTableName() string {
 	return demoStructTableName
 }
 
-//GetPKColumnName Gets the name of the primary key field of the database table. Because to be compatible with Map, can only be the database field name
+// GetPKColumnName Gets the name of the primary key field of the database table. Because to be compatible with Map, can only be the database field name
 // Joint primary key is not supported. It can be considered that there is no primary key and service control can be realized (hard choice).
 // If you do not have a primary key, you need to implement this method as well
-//IEntityStruct interface method, entity class needs to implement!!
+// IEntityStruct interface method, entity class needs to implement!!
 func (entity *demoStruct) GetPKColumnName() string {
 	// If there is no primary key
-	//return ""
+	// return ""
 	return "id"
 }
 
-//newDemoStruct creates a default object
+// newDemoStruct creates a default object
 func newDemoStruct() demoStruct {
 	demo := demoStruct{
 		// if Id == ", "save zorm will call zorm.FuncGenerateStringID(ctx), the default time stamp + random number, also can define your own implementations, such as zorm.FuncGenerateStringID = funcmyId
@@ -229,7 +229,7 @@ import (
 
 	"gitee.com/chunanyong/zorm"
 
-	//00. Introduce the database driver
+	// 00. Introduce the database driver
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -239,63 +239,63 @@ var dbDao *zorm.DBDao
 // ctx should have a web layer pass by default, such as gin's c.riest.Context(). This is just a simulation
 var ctx = context.Background()
 
-//01. Initialize the DBDao
+// 01. Initialize the DBDao
 func init() {
 
 	// Customize zorm log output
-	//zorm.LogCallDepth = 4 // Level of log calls
-	//zorm.FuncLogError = myFuncLogError // Function to log exceptions
-	//zorm.FuncLogPanic = myFuncLogPanic // To log panic, the default is defaultLogError
-	//zorm.FuncPrintSQL = myFuncPrintSQL // A function that prints sql
+	// zorm.LogCallDepth = 4 // Level of log calls
+	// zorm.FuncLogError = myFuncLogError // Function to log exceptions
+	// zorm.FuncLogPanic = myFuncLogPanic // To log panic, the default is defaultLogError
+	// zorm.FuncPrintSQL = myFuncPrintSQL // A function that prints sql
 
 	// Reassign the FuncPrintSQL function to a custom log output format
-	//log.SetFlags(log.LstdFlags)
-	//zorm.FuncPrintSQL = zorm.FuncPrintSQL
+	// log.SetFlags(log.LstdFlags)
+	// zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
     // Custom primary key generation
-	//zorm.FuncGenerateStringID=funcmyId
+	// zorm.FuncGenerateStringID=funcmyId
 
     // the Go database driver list: https://github.com/golang/go/wiki/SQLDrivers
 
-	//dbDaoConfig Configure the database. This is just a simulation, the production should be reading the configuration configuration file and constructing the DataSourceConfig
+	// dbDaoConfig Configure the database. This is just a simulation, the production should be reading the configuration configuration file and constructing the DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
-		//DSN database connection string. parseTime=true is automatically converted to time format. The default query is the []byte array
+		// DSN database connection string. parseTime=true is automatically converted to time format. The default query is the []byte array
 		DSN: "root:root@tcp(127.0.0.1:3306)/zorm?charset=utf8&parseTime=true",
 		// DriverName database driver name: mysql, postgres, oci8, essentially, sqlite3, go_ibm_db, clickhouse, dm, kingbase, aci, taosSql | taosRestful Correspond to Dialect
-		//sql.Open(DriverName,DSN) DriverName is the first string parameter of the sql.Open of the driver. The value can be obtained according to the actual conditions of the driver
+		// sql.Open(DriverName,DSN) DriverName is the first string parameter of the sql.Open of the driver. The value can be obtained according to the actual conditions of the driver
 		DriverName: "mysql",
 		// the Dialect database Dialect: mysql, postgresql, oracle, MSSQL, sqlite, db2, clickhouse, dm, kingbase, shentong, tdengine and DriverName corresponding
 		Dialect: "mysql",
-		//MaxOpenConns The default maximum number of database connections is 50
+		// MaxOpenConns The default maximum number of database connections is 50
 		MaxOpenConns: 50,
-		//MaxIdleConns The default maximum number of idle connections is 50
+		// MaxIdleConns The default maximum number of idle connections is 50
 		MaxIdleConns: 50,
-		//ConnMaxLifetimeSecond Connection survival seconds. Default 600(10 minutes) after the connection is destroyed and rebuilt. Prevent the database from voluntarily disconnecting, resulting in dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
+		// ConnMaxLifetimeSecond Connection survival seconds. Default 600(10 minutes) after the connection is destroyed and rebuilt. Prevent the database from voluntarily disconnecting, resulting in dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
-		//SlowSQLMillis slow sql time threshold, in milliseconds. A value less than 0 disables SQL statement output. If the value is equal to 0, only SQL statements are output and the execution time is not calculated. A value greater than 0 is used to calculate the SQL execution time and >=SlowSQLMillis value
+		// SlowSQLMillis slow sql time threshold, in milliseconds. A value less than 0 disables SQL statement output. If the value is equal to 0, only SQL statements are output and the execution time is not calculated. A value greater than 0 is used to calculate the SQL execution time and >=SlowSQLMillis value
 		SlowSQLMillis: 0,
-		//DefaultTxOptions Default configuration of transaction isolation level, which defaults to nil
-		//DefaultTxOptions: nil,
+		// DefaultTxOptions Default configuration of transaction isolation level, which defaults to nil
+		// DefaultTxOptions: nil,
 		// If distributed transactions are used, the default configuration is recommended
-		//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+		// DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-		//FuncGlobalTransaction seata/hptx An adaptation function of a globally distributed transaction that returns the implementation of the IGlobalTransaction interface
+		// FuncGlobalTransaction seata/hptx An adaptation function of a globally distributed transaction that returns the implementation of the IGlobalTransaction interface
 		// business must call ctx, _ = zorm.BindContextEnableGlobalTransaction (ctx) on the global distribution of transactions
-	    //FuncGlobalTransaction : MyFuncGlobalTransaction,
+	    // FuncGlobalTransaction : MyFuncGlobalTransaction,
 
-	    //SQLDB uses an existing database connection and has a higher priority than DSN
-	    //SQLDB : nil,
+	    // SQLDB uses an existing database connection and has a higher priority than DSN
+	    // SQLDB : nil,
 
-	    //DisableTransaction disables transactions. The default value is false. If DisableTransaction=true is set, the Transaction method becomes invalid and no transaction is required. Some databases, such as TDengine, do not support transactions
+	    // DisableTransaction disables transactions. The default value is false. If DisableTransaction=true is set, the Transaction method becomes invalid and no transaction is required. Some databases, such as TDengine, do not support transactions
 	    // Disable transactions should have the driver forgery transaction API, there should be no orm implementation,clickhouse's driver does just that
-	    //DisableTransaction :false,
+	    // DisableTransaction :false,
 	}
 
 	// Create dbDao based on dbDaoConfig. Perform this operation once for each database. The first database is defaultDao and the subsequent zorm.xxx method uses defaultDao by default
 	dbDao, _ = zorm.NewDBDao(&dbDaoConfig)
 }
 
-//TestInsert 02. Test save the Struct object
+// TestInsert 02. Test save the Struct object
 func TestInsert(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
@@ -317,7 +317,7 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-//TestInsertSlice 03. Tests batch save Struct object Slice
+// TestInsertSlice 03. Tests batch save Struct object Slice
 // The primary key property in the Struct object cannot be assigned if the primary key is autoincrement
 func TestInsertSlice(t *testing.T) {
 
@@ -326,7 +326,7 @@ func TestInsertSlice(t *testing.T) {
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-		//slice stores the type zorm.IEntityStruct!!! Use the IEntityStruct interface, compatible with Struct entity classes
+		// slice stores the type zorm.IEntityStruct!!! Use the IEntityStruct interface, compatible with Struct entity classes
 		demoSlice := make([]zorm.IEntityStruct,0)
 
 		// Create object 1
@@ -350,7 +350,7 @@ func TestInsertSlice(t *testing.T) {
 	}
 }
 
-//TestInsertEntityMap 04. Test to save an EntityMap object for scenarios where it is not convenient to use struct. Use Map as the carrier
+// TestInsertEntityMap 04. Test to save an EntityMap object for scenarios where it is not convenient to use struct. Use Map as the carrier
 func TestInsertEntityMap(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
@@ -362,9 +362,9 @@ func TestInsertEntityMap(t *testing.T) {
 		// Set the primary key name
 		entityMap.PkColumnName = "id"
 		// If it is an increment sequence, set the value of the sequence
-		//entityMap.PkSequence = "mySequence"
+		// entityMap.PkSequence = "mySequence"
 
-		//Set Sets the field values of the database
+		// Set Sets the field values of the database
 		// If the primary key is an increment or sequence, do not set the value of the entityMap.Set primary key
 		entityMap.Set("id", zorm.FuncGenerateStringID(ctx))
 		entityMap.Set("userName", "entityMap-userName")
@@ -385,7 +385,7 @@ func TestInsertEntityMap(t *testing.T) {
 }
 
 
-//TestInsertEntityMapSlice 05. Test batch save []IEntityMap for scenarios where it is not convenient to use struct, using Map as carrier
+// TestInsertEntityMapSlice 05. Test batch save []IEntityMap for scenarios where it is not convenient to use struct, using Map as carrier
 func TestInsertEntityMapSlice(t *testing.T) {
 	_, err := Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		entityMapSlice := make([]IEntityMap, 0)
@@ -420,26 +420,26 @@ func TestInsertEntityMapSlice(t *testing.T) {
 	}
 }
 
-//TestQueryRow 06. Test query a struct object
+// TestQueryRow 06. Test query a struct object
 func TestQueryRow(t *testing.T) {
 
 	// Declares a pointer to an object that holds the returned data
 	demo := demoStruct{}
 
 	// finder used to construct the query
-	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	//finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	// finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
 	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
-	//finder by default, sql injection checking is enabled to disallow concatenation of 'single quotes in statements. You can set finder.injectioncheck = false to undo the restriction
+	// finder by default, sql injection checking is enabled to disallow concatenation of 'single quotes in statements. You can set finder.injectioncheck = false to undo the restriction
 
-	//finder.Append The first argument is the statement and the following arguments are the corresponding values in the correct order. Uniform use of statements? zorm handles database differences
-	//in (?) Arguments must have () parentheses, not in?
+	// finder.Append The first argument is the statement and the following arguments are the corresponding values in the correct order. Uniform use of statements? zorm handles database differences
+	// in (?) Arguments must have () parentheses, not in?
 	finder.Append("WHERE id=? and active in(?) ", "20210630163227149563000042432429", []int{0, 1})
 
 	// How do I use like
-	//finder.Append("WHERE id like ? ", "20210630163227149563000042432429%")
+	// finder.Append("WHERE id like ? ", "20210630163227149563000042432429%")
 
-	//If the value of "has" is true, the database has data
+	// If the value of "has" is true, the database has data
 	has, err := zorm.QueryRow(ctx, finder, &demo)
 
 	if err != nil { // Mark the test failed
@@ -449,14 +449,14 @@ func TestQueryRow(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestQueryRowMap 07. Test query map receives results. It is flexible for scenarios that are not suitable for structs
+// TestQueryRowMap 07. Test query map receives results. It is flexible for scenarios that are not suitable for structs
 func TestQueryRowMap(t *testing.T) {
 
 	// finder used to construct the query
-	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
-	//finder.Append The first argument is the statement and the following arguments are the corresponding values in the correct order. Uniform use of statements? zorm handles database differences
-	//in (?) Arguments must have () parentheses, not in?
+	// finder.Append The first argument is the statement and the following arguments are the corresponding values in the correct order. Uniform use of statements? zorm handles database differences
+	// in (?) Arguments must have () parentheses, not in?
 	finder.Append("WHERE id=? and active in(?) ", "20210630163227149563000042432429", []int{0, 1})
 	// Run the query
 	resultMap, err := zorm.QueryRowMap(ctx, finder)
@@ -468,22 +468,22 @@ func TestQueryRowMap(t *testing.T) {
 	fmt.Println(resultMap)
 }
 
-//TestQuery 08. Test the list of query objects
+// TestQuery 08. Test the list of query objects
 func TestQuery(t *testing.T) {
 
 	// Create a slice for receiving results
 	list := make([]demoStruct, 0)
 
 	// finder used to construct the query
-	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
 	finder := zorm.NewFinder().Append("SELECT id FROM " + demoStructTableName) // select * from t_demo
 	// Create a paging object. After the query is complete, the page object can be directly used by the front-end paging component
 	page := zorm.NewPage()
 	page.PageNo = 1   // Query page 1. The default value is 1
 	page.PageSize = 20 // 20 per page. The default is 20
 
-	//The total number of entries is not queried
-	//finder.SelectTotalCount = false
+	// The total number of entries is not queried
+	// finder.SelectTotalCount = false
 
     // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
@@ -500,18 +500,18 @@ func TestQuery(t *testing.T) {
 	fmt.Println("Total number of items :", page.TotalCount, "List :", list)
 }
 
-//TestQueryMap 09. Test query map list. Used in the scenario where struct is not convenient
+// TestQueryMap 09. Test query map list. Used in the scenario where struct is not convenient
 func TestQueryMap(t *testing.T) {
 	// finder used to construct the query
-	//finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
     finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	// Create a paging object. After the query is complete, the page object can be directly used by the front-end paging component
 	page := zorm.NewPage()
 	page.PageNo = 1   // Query page 1. The default value is 1
 	page.PageSize = 20 // 20 per page. The default is 20
 
-	//The total number of entries is not queried
-	//finder.SelectTotalCount = false
+	// The total number of entries is not queried
+	// finder.SelectTotalCount = false
 	
     // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
@@ -528,7 +528,7 @@ func TestQueryMap(t *testing.T) {
 	fmt.Println("Total number of items :", page.TotalCount, "List :", listMap)
 }
 
-//TestUpdateNotZeroValue 10. Update the struct object with only the non-zero fields. The primary key must have a value
+// TestUpdateNotZeroValue 10. Update the struct object with only the non-zero fields. The primary key must have a value
 func TestUpdateNotZeroValue(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
@@ -552,7 +552,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 }
 
-//TestUpdate 11. Update the struct object, updating all fields. The primary key must have a value
+// TestUpdate 11. Update the struct object, updating all fields. The primary key must have a value
 func TestUpdate(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
@@ -575,14 +575,14 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-//TestUpdateFinder 12. With finder update,zorm's most flexible way of writing any update statement, even manually writing insert statements
+// TestUpdateFinder 12. With finder update,zorm's most flexible way of writing any update statement, even manually writing insert statements
 func TestUpdateFinder(t *testing.T) {
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
-		//finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
-		//finder = zorm.NewDeleteFinder(demoStructTableName) // DELETE FROM t_demo
+		// finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
+		// finder = zorm.NewDeleteFinder(demoStructTableName) // DELETE FROM t_demo
 		finder := zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=? ,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
@@ -598,7 +598,7 @@ func TestUpdateFinder(t *testing.T) {
 
 }
 
-//TestUpdateEntityMap 13. Update an EntityMap. The primary key must have a value
+// TestUpdateEntityMap 13. Update an EntityMap. The primary key must have a value
 func TestUpdateEntityMap(t *testing.T) {
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -608,7 +608,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		entityMap := zorm.NewEntityMap(demoStructTableName)
 		// Set the primary key name
 		entityMap.PkColumnName = "id"
-		//Set Sets the field value of the database. The primary key must have a value
+		// Set Sets the field value of the database. The primary key must have a value
 		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("userName", "TestUpdateEntityMap")
 		// UPDATE "sql":"UPDATE t_demo SET userName=? WHERE id=?" ,"args":["TestUpdateEntityMap","20210630163227149563000042432429"]
@@ -623,7 +623,7 @@ func TestUpdateEntityMap(t *testing.T) {
 
 }
 
-//TestDelete 14. Delete a struct object. The primary key must have a value
+// TestDelete 14. Delete a struct object. The primary key must have a value
 func TestDelete(t *testing.T) {
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -644,7 +644,7 @@ func TestDelete(t *testing.T) {
 
 }
 
-//TestProc 15. Test calls the stored procedure
+// TestProc 15. Test calls the stored procedure
 func TestProc(t *testing.T) {
 	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?)", "u_10001")
@@ -652,7 +652,7 @@ func TestProc(t *testing.T) {
 	fmt.Println(demo)
 }
 
-//TestFunc 16. Test calls custom functions
+// TestFunc 16. Test calls custom functions
 func TestFunc(t *testing.T) {
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?)", "u_10001")
@@ -660,7 +660,7 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
-//TestOther 17. Some other instructions. Thank you very much for seeing this line
+// TestOther 17. Some other instructions. Thank you very much for seeing this line
 func TestOther(t *testing.T) {
 
 	// Scenario 1. Multiple databases. The dbDao of the corresponding database calls BindContextDBConnection, binds the database connection to the returned ctx, and passes ctx to zorm's function
@@ -683,7 +683,7 @@ func TestOther(t *testing.T) {
 
 }
 
-//myReadWriteStrategy Database read-write strategy rwType=0 read,rwType=1 write
+// myReadWriteStrategy Database read-write strategy rwType=0 read,rwType=1 write
 // You can also set different keys through ctx to return the DBDao of the specified database
 func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 	// Return the required read/write dao based on your business scenario. This function is called every time a database connection is needed
@@ -695,7 +695,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 	return dbDao, nil
 }
 
-//--------------------------------------------
+// --------------------------------------------
 // ICustomDriverValueConver interface, see examples of DaMeng
 
 ```  
@@ -703,8 +703,8 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 ### Implementation of distributed transaction based on seata/hptx
 #### seata proxy mode
 ```go
-//DataSourceConfig configures DefaultTxOptions
-//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+// DataSourceConfig configures DefaultTxOptions
+// DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 // Import the Seta-Golang V1 dependency package
 import (
@@ -728,43 +728,43 @@ func main() {
 	// Register the mysql driver
 	mysql.InitDataResourceManager()
 	mysql.RegisterResource(config.GetATConfig().DSN)
-	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+	// sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
 
 
 	// Initialize zorm normally later, be sure to put it after seata mysql initialization!!
 
-	//... //
-	//tm register transaction service, refer to the official example (transaction hosting is mainly to remove proxy, zero intrusion on the business)
+	// ... // 
+	// tm register transaction service, refer to the official example (transaction hosting is mainly to remove proxy, zero intrusion on the business)
 	tm.Implement(svc.ProxySvc)
-	//... //
+	// ... // 
 
 
 	// Obtain the seata rootContext
-	//rootContext := gtxContext.NewRootContext(ctx)
-	//rootContext := ctx.(*gtxContext.RootContext)
+	// rootContext := gtxContext.NewRootContext(ctx)
+	// rootContext := ctx.(*gtxContext.RootContext)
 
 	// Create a seata transaction
-	//globalTx := tm.GetCurrentOrCreate(rootContext)
+	// globalTx := tm.GetCurrentOrCreate(rootContext)
 
 	// Start the transaction
 	// globalTx. BeginWithTimeoutAndName (int32 (6000), "name of the transaction," rootContext)
 
 	// Get the XID after the transaction is started. This can be passed through the gin header, or otherwise
-	//xid:=rootContext.GetXID()
+	// xid:=rootContext.GetXID()
 
 	// If using gin frame, get ctx
 	// ctx := c.Request.Context()
 
 	// Accept the XID passed and bind it to the local ctx
-	//ctx =context.WithValue(ctx,mysql.XID,xid)
+	// ctx =context.WithValue(ctx,mysql.XID,xid)
 }
 
 ```
 #### hptx proxy mode
 [in hptx proxy mode for zorm use example](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)   
 ```go
-//DataSourceConfig configures DefaultTxOptions
-//DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
+// DataSourceConfig configures DefaultTxOptions
+// DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
 // Introduce the hptx dependency package
 import (
@@ -788,35 +788,35 @@ func main() {
 	// Register the mysql driver
     mysql.RegisterResource(config.GetATConfig().DSN)
 	resource.InitATBranchResource(mysql.GetDataSourceManager())
-	//sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+	// sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
 
 
 	// After the normal initialization of zorm, be sure to put it after the hptx mysql initialization!!
 
-	//... //
-	//tm register transaction service, refer to the official example (transaction hosting is mainly to remove proxy, zero intrusion on the business)
+	// ... // 
+	// tm register transaction service, refer to the official example (transaction hosting is mainly to remove proxy, zero intrusion on the business)
 	tm.Implement(svc.ProxySvc)
-	//... //
+	// ... // 
 
 
 	// Get the hptx rootContext
-	//rootContext := gtxContext.NewRootContext(ctx)
-	//rootContext := ctx.(*gtxContext.RootContext)
+	// rootContext := gtxContext.NewRootContext(ctx)
+	// rootContext := ctx.(*gtxContext.RootContext)
 
 	// Create an hptx transaction
-	//globalTx := tm.GetCurrentOrCreate(rootContext)
+	// globalTx := tm.GetCurrentOrCreate(rootContext)
 
 	// Start the transaction
 	// globalTx. BeginWithTimeoutAndName (int32 (6000), "name of the transaction," rootContext)
 
 	// Get the XID after the transaction is started. This can be passed through the gin header, or otherwise
-	//xid:=rootContext.GetXID()
+	// xid:=rootContext.GetXID()
 
 	// If using gin frame, get ctx
 	// ctx := c.Request.Context()
 
 	// Accept the XID passed and bind it to the local ctx
-	//ctx =context.WithValue(ctx,mysql.XID,xid)
+	// ctx =context.WithValue(ctx,mysql.XID,xid)
 }
 ```
 
@@ -825,7 +825,7 @@ func main() {
 [zorm transaction hosting hptx example](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)
 ```go
 // Do not use proxy proxy mode,zorm to achieve transaction management, no modification of business code, zero intrusion to achieve distributed transactions
-//tm.Implement(svc.ProxySvc)
+// tm.Implement(svc.ProxySvc)
 
 // The distributed transaction must be started manually and must be invoked before the local transaction is started
 ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
@@ -842,7 +842,7 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 	return nil, err
 })
 
-///---------- Third-party application -------///
+// /---------- Third-party application -------// /
 
 // Before third-party applications can start transactions,ctx needs to bind Xids, such as gin framework
 
@@ -864,7 +864,7 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 
 // It is recommended that the following code be placed in a separate file
-//... //
+// ... // 
 
 // ZormGlobalTransaction packaging seata/hptx *tm.DefaultGlobalTransaction, zorm.IGlobalTransaction interface
 type ZormGlobalTransaction struct {
@@ -884,7 +884,7 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	return globalTransaction. rootContext, nil
 }
 
-//IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
+// IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
 
 // BeginGTX Starts global distributed transactions
 func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
@@ -913,7 +913,7 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContex
 	return rootContext.GetXID(), nil
 }
 
-//... //
+// ... // 
 ```
 ### Implement distributed transactions based on dbpack
 ```dbpack``` document: https://cectc.github.io/dbpack-doc/#/README deployment with a Mesh, the application integration is simple, just need to get xid, in a hint of SQL statements
