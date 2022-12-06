@@ -46,7 +46,7 @@ import (
 	"io"
 )
 
-// CustomDMText实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库TEXT类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
+// CustomDMText 实现ICustomDriverValueConver接口,扩展自定义类型,例如 达梦数据库TEXT类型,映射出来的是dm.DmClob类型,无法使用string类型直接接收
 type CustomDMText struct{}
 
 // GetDriverValue 根据数据库列类型,返回driver.Value的实例,struct属性类型
