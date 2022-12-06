@@ -432,7 +432,7 @@ func TestQueryRow(t *testing.T) {
 
 	// 构造查询用的finder
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	// finder = zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
 	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	// finder默认启用了sql注入检查,禁止语句中拼接 ' 单引号,可以设置 finder.InjectionCheck = false 解开限制
 
@@ -586,7 +586,7 @@ func TestUpdateFinder(t *testing.T) {
 	// 例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
-		// finder = zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
+		// finder := zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		finder := zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
 		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 

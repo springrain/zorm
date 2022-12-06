@@ -59,16 +59,14 @@ func NewFinder() *Finder {
 	return &finder
 }
 
-// NewSelectFinder 根据表名初始化查询的Finder | Finder that initializes the query based on the table name
+// NewSelectFinder 根据表名初始化查询的Finder,strs 只取第一个字符串,用数组类型是为了可以不传入,默认为 * | Finder that initializes the query based on the table name
 // NewSelectFinder("tableName") SELECT * FROM tableName
 // NewSelectFinder("tableName", "id,name") SELECT id,name FROM tableName
 func NewSelectFinder(tableName string, strs ...string) *Finder {
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("SELECT ")
-	if len(strs) > 0 {
-		for _, str := range strs {
-			finder.sqlBuilder.WriteString(str)
-		}
+	if len(strs) > 0 { //只取值第一个字符串
+		finder.sqlBuilder.WriteString(strs[0])
 	} else {
 		finder.sqlBuilder.WriteString("*")
 	}
