@@ -925,9 +925,6 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			// 判断是否有自定义扩展,避免无意义的反射
 			if iscdvm {
-				if len(databaseTypeName) < 1 {
-					return nil, errors.New("->QueryMap-->驱动不支持的字段类型")
-				}
 				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 			}
 			var errGetDriverValue error
