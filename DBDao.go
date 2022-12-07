@@ -966,7 +966,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 				values[i] = new(time.Time)
 
 			case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
-				values[i] = FuncDecimalValue(ctx)
+				values[i] = FuncDecimalValue(ctx, dialect)
 			case "BOOLEAN", "BOOL", "BIT":
 				values[i] = new(bool)
 			default:

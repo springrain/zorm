@@ -27,7 +27,7 @@ import (
 )
 
 // FuncDecimalValue 设置decimal类型接收值,复写函数自定义decimal实现,返回的是指针
-var FuncDecimalValue = func(ctx context.Context) interface{} {
+var FuncDecimalValue = func(ctx context.Context, dialect string) interface{} {
 	return &decimal.Decimal{}
 }
 
