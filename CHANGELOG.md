@@ -1,4 +1,5 @@
 v1.6.4
+ - 感谢@haifengat 的场景反馈,完善NUMBER类型的数据接收
  - ICustomDriverValueConver接口优先匹配指定的数据库类型
  - 增加FuncDecimalValue函数,设置decimal类型接收值,复写函数自定义decimal实现
  - NewSelectFinder方法参数strs取值第一个字符串

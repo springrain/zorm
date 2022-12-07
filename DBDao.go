@@ -967,8 +967,19 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 				values[i] = new(float64)
 			case "DATE", "TIME", "DATETIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL", "DATETIME2", "SMALLDATETIME", "DATETIMEOFFSET":
 				values[i] = new(time.Time)
+			case "NUMBER":
+				precision, scale, isDecimal := columnType.DecimalSize()
+				if isDecimal || precision > 18 || precision-scale > 18 { // 如果是Decimal类型
+					values[i] = FuncDecimalValue(ctx, dialect)
+				} else if scale > 0 { // 有小数位,默认使用float64接收
+					values[i] = new(float64)
+				} else if precision-scale > 9 { // 超过9位,使用int64
+					values[i] = new(int64)
+				} else { // 默认使用int接收
+					values[i] = new(int)
+				}
 
-			case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
+			case "DECIMAL", "NUMERIC", "DEC":
 				values[i] = FuncDecimalValue(ctx, dialect)
 			case "BOOLEAN", "BOOL", "BIT":
 				values[i] = new(bool)
