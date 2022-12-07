@@ -573,7 +573,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		pv := reflect.ValueOf(entity)
-		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		// pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
@@ -726,7 +726,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// Loop through the result set
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
-		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
@@ -919,11 +919,14 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			var converOK bool = false
 			// 类型转换的临时值
 			var tempDriverValue driver.Value
-			// 根据接收的类型,获取到类型转换的接口实现
+			// 根据接收的类型,获取到类型转换的接口实现,优先匹配指定的数据库类型
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			// 判断是否有自定义扩展,避免无意义的反射
 			if iscdvm {
-				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
+				customDriverValueConver, converOK = customDriverValueMap[dialect+"."+databaseTypeName]
+				if !converOK {
+					customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
+				}
 			}
 			var errGetDriverValue error
 			// 如果需要类型转换

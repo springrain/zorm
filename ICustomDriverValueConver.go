@@ -51,7 +51,12 @@ func RegisterCustomDriverValueConver(columnType string, customDriverValueConver 
 	if len(columnType) < 1 {
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
 	}
-	customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
+	dialectColumnType := strings.Split(columnType, ".")
+	if len(dialectColumnType) == 2 {
+		customDriverValueMap[strings.ToLower(dialectColumnType[0])+"."+strings.ToUpper(dialectColumnType[1])] = customDriverValueConver
+	} else {
+		customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
+	}
 	// cdvmLen = len(customDriverValueMap)
 
 	iscdvm = true
@@ -129,6 +134,9 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // 一般是放到init方法里进行注册
 func init() {
     zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
+
+	// 处理多种数据库同一种类型的差异,key是 Dialect.字段类型,例如 dm.TEXT
+	// zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 
 **/
