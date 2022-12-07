@@ -262,6 +262,9 @@ func init() {
     // 自定义主键生成
 	// zorm.FuncGenerateStringID=funcmyId
 
+	// 自定义decimal类型实现
+	// zorm.FuncDecimalValue=funcmyDecimal
+
     // Go数据库驱动列表:https://github.com/golang/go/wiki/SQLDrivers
 
 	// dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig

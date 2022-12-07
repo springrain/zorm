@@ -65,7 +65,7 @@ func NewFinder() *Finder {
 func NewSelectFinder(tableName string, strs ...string) *Finder {
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("SELECT ")
-	if len(strs) > 0 { //只取值第一个字符串
+	if len(strs) > 0 { // 只取值第一个字符串
 		finder.sqlBuilder.WriteString(strs[0])
 	} else {
 		finder.sqlBuilder.WriteString("*")

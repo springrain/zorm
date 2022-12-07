@@ -256,6 +256,9 @@ func init() {
     // Custom primary key generation
 	// zorm.FuncGenerateStringID=funcmyId
 
+	// Custom decimal type implementation
+	// zorm.FuncDecimalValue=funcmyDecimal
+
     // the Go database driver list: https://github.com/golang/go/wiki/SQLDrivers
 
 	// dbDaoConfig Configure the database. This is just a simulation, the production should be reading the configuration configuration file and constructing the DataSourceConfig
