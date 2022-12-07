@@ -1,4 +1,5 @@
 v1.6.4
+ - 增加FuncDecimalValue函数,设置decimal类型接收值,复写函数自定义decimal实现
  - NewSelectFinder方法参数strs取值第一个字符串
  - 感谢@soldier_of_love 的场景反馈,error日志记录执行的sql和参数值
  - 清理无效的代码和注释

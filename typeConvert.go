@@ -22,7 +22,14 @@ import (
 	"context"
 	"errors"
 	"strconv"
+
+	"gitee.com/chunanyong/zorm/decimal"
 )
+
+// FuncDecimalValue 设置decimal类型接收值,复写函数自定义decimal实现,返回的是指针
+var FuncDecimalValue = func(ctx context.Context) interface{} {
+	return &decimal.Decimal{}
+}
 
 // OverrideFunc 重写ZORM的函数,用于风险监控,只要查看这个函数的调用,就知道哪些地方重写了函数,避免项目混乱.当你使用这个函数时,你必须知道自己在做什么
 // funcName 是需要重写的方法命,funcObject是对应的函数. 返回值bool是否重写成功,interface{}是重写前的函数

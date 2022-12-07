@@ -36,8 +36,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"gitee.com/chunanyong/zorm/decimal"
 )
 
 // FuncReadWriteStrategy 数据库的读写分离的策略,用于外部重写实现自定义的逻辑,也可以使用ctx标识,处理多库的场景,rwType=0 read,rwType=1 write
@@ -968,7 +966,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 				values[i] = new(time.Time)
 
 			case "DECIMAL", "NUMBER", "NUMERIC", "DEC":
-				values[i] = new(decimal.Decimal)
+				values[i] = FuncDecimalValue(ctx)
 			case "BOOLEAN", "BOOL", "BIT":
 				values[i] = new(bool)
 			default:
