@@ -63,11 +63,13 @@ func NewFinder() *Finder {
 // NewSelectFinder("tableName") SELECT * FROM tableName
 // NewSelectFinder("tableName", "id,name") SELECT id,name FROM tableName
 func NewSelectFinder(tableName string, strs ...string) *Finder {
+	strsLen := len(strs)
+	if strsLen > 1 { // 不支持多个参数
+		return nil
+	}
 	finder := NewFinder()
 	finder.sqlBuilder.WriteString("SELECT ")
-	if len(strs) > 1 { // 不支持多个参数
-		return nil
-	} else if len(strs) == 1 { // 只取值第一个字符串
+	if strsLen == 1 { // 只取值第一个字符串
 		finder.sqlBuilder.WriteString(strs[0])
 	} else {
 		finder.sqlBuilder.WriteString("*")
