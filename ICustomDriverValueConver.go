@@ -47,21 +47,20 @@ type ICustomDriverValueConver interface {
 
 // RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
 // 一般是放到init方法里进行注册
-func RegisterCustomDriverValueConver(columnType string, customDriverValueConver ICustomDriverValueConver) error {
-	if len(columnType) < 1 {
-		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
+func RegisterCustomDriverValueConver(dialectColumnType string, customDriverValueConver ICustomDriverValueConver) error {
+	if len(dialectColumnType) < 1 {
+		return errors.New("->RegisterCustomDriverValueConver-->dialectColumnType为空")
 	}
-	dialectColumnType := strings.Split(columnType, ".")
-	var err error
-	if len(dialectColumnType) < 2 {
-		customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
-		err = errors.New("->RegisterCustomDriverValueConver-->columnType是 Dialect.字段类型,例如 dm.TEXT ,本次正常运行,请尽快修改")
+	dialectColumnTypes := strings.Split(dialectColumnType, ".")
+	if len(dialectColumnTypes) < 2 {
+		customDriverValueMap[strings.ToUpper(dialectColumnType)] = customDriverValueConver
+		err := errors.New("->RegisterCustomDriverValueConver-->dialectColumnType是 Dialect.字段类型,例如:dm.TEXT ,本次正常运行,请尽快修改")
 		FuncLogError(nil, err)
 	} else {
-		customDriverValueMap[strings.ToLower(dialectColumnType[0])+"."+strings.ToUpper(dialectColumnType[1])] = customDriverValueConver
+		customDriverValueMap[strings.ToLower(dialectColumnTypes[0])+"."+strings.ToUpper(dialectColumnTypes[1])] = customDriverValueConver
 	}
 	iscdvm = true
-	return err
+	return nil
 }
 
 type driverValueInfo struct {
@@ -134,7 +133,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
 // 一般是放到init方法里进行注册
 func init() {
-	// key是 Dialect.字段类型,例如 dm.TEXT
+	// dialectColumnType 值是 Dialect.字段类型 ,例如 dm.TEXT
     zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 

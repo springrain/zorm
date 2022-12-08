@@ -533,17 +533,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 
 	// typeOf := reflect.TypeOf(entity).Elem()
 
-	//数据库返回的列名
-	//Column name returned by the database
-	/*
-		columns, cne := rows.Columns()
-		if cne != nil {
-			cne = fmt.Errorf("->QueryRow-->rows.Columns数据库返回列名错误:%w", cne)
-			FuncLogError(ctx,cne)
-			return cne
-		}
-	*/
-	//数据库字段类型
+	// 数据库字段类型
 	columnTypes, errColumnTypes := rows.ColumnTypes()
 	if errColumnTypes != nil {
 		errColumnTypes = fmt.Errorf("->QueryRow-->rows.ColumnTypes数据库类型错误:%w", errColumnTypes)
@@ -700,7 +690,6 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}()
 
 	//_, ok := reflect.New(sliceElementType).Interface().(sql.Scanner)
-	//fmt.Println(ok)
 
 	// 数据库返回的字段类型
 	columnTypes, errColumnTypes := rows.ColumnTypes()

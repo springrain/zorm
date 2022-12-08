@@ -101,7 +101,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // RegisterCustomDriverValueConver registered custom field processing logic, used to drive not directly convert scenarios, such as the TEXT of the dream cannot directly into a string
 // It's usually registered in the init method
 func init() {
-	// columnType is a Dialect.FieldType, such as dm.TEXT
+	// dialectColumnType is a Dialect.FieldType, such as dm.TEXT
     zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 ```

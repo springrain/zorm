@@ -45,6 +45,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	}
 	// 兼容处理,DBType即将废弃,请使用Dialect属性
 	if len(config.DBType) > 0 && len(config.Dialect) == 0 {
+		FuncLogError(nil, errors.New("->newDataSource-->DataSourceConfig的DBType即将废弃,请使用Dialect属性"))
 		config.Dialect = config.DBType
 	}
 	if config.Dialect == "" {
