@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-// customDriverValueMap 用于配置数据库字段类型的处理关系,key是数据库字段类型的字符串,例如 TEXT
+// customDriverValueMap 用于配置数据库字段类型的处理关系,key是 Dialect.字段类型,例如 dm.TEXT
 var customDriverValueMap = make(map[string]ICustomDriverValueConver)
 
 // iscdvm 是否有自定义的DriverValueMap
@@ -52,15 +52,16 @@ func RegisterCustomDriverValueConver(columnType string, customDriverValueConver 
 		return errors.New("->RegisterCustomDriverValueConver-->columnType为空")
 	}
 	dialectColumnType := strings.Split(columnType, ".")
-	if len(dialectColumnType) == 2 {
-		customDriverValueMap[strings.ToLower(dialectColumnType[0])+"."+strings.ToUpper(dialectColumnType[1])] = customDriverValueConver
-	} else {
+	var err error
+	if len(dialectColumnType) < 2 {
 		customDriverValueMap[strings.ToUpper(columnType)] = customDriverValueConver
+		err = errors.New("->RegisterCustomDriverValueConver-->警告:columnType是 Dialect.字段类型,例如 dm.TEXT ,本次正常运行,请尽快修改")
+		FuncLogError(nil, err)
+	} else {
+		customDriverValueMap[strings.ToLower(dialectColumnType[0])+"."+strings.ToUpper(dialectColumnType[1])] = customDriverValueConver
 	}
-	// cdvmLen = len(customDriverValueMap)
-
 	iscdvm = true
-	return nil
+	return err
 }
 
 type driverValueInfo struct {
@@ -133,10 +134,8 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
 // 一般是放到init方法里进行注册
 func init() {
-    zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
-
-	// 处理多种数据库同一种类型的差异,key是 Dialect.字段类型,例如 dm.TEXT
-	// zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
+	// key是 Dialect.字段类型,例如 dm.TEXT
+    zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 
 **/

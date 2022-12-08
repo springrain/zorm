@@ -101,10 +101,8 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
 // 一般是放到init方法里进行注册
 func init() {
-    zorm.RegisterCustomDriverValueConver("TEXT", CustomDMText{})
-	
-	// 处理多种数据库同一种类型的差异,key是 Dialect.字段类型,例如 dm.TEXT
-	// zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
+	// columnType 是 Dialect.字段类型,例如 dm.TEXT
+    zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 ```
 
