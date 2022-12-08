@@ -1,6 +1,6 @@
 v1.6.4
  - 感谢@haifengat 的场景反馈,完善NUMBER类型的数据接收
- - ICustomDriverValueConver接口优先匹配指定的数据库类型
+ - RegisterCustomDriverValueConver函数的columnType修改为Dialect.字段类型,例如 dm.TEXT ,请尽快修改
  - 增加FuncDecimalValue函数,设置decimal类型接收值,复写函数自定义decimal实现
  - NewSelectFinder方法参数strs取值第一个字符串
  - 感谢@soldier_of_love 的场景反馈,error日志记录执行的sql和参数值
