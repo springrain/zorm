@@ -54,7 +54,7 @@ func RegisterCustomDriverValueConver(dialectColumnType string, customDriverValue
 	dialectColumnTypes := strings.Split(dialectColumnType, ".")
 	if len(dialectColumnTypes) < 2 {
 		customDriverValueMap[strings.ToUpper(dialectColumnType)] = customDriverValueConver
-		err := errors.New("->RegisterCustomDriverValueConver-->dialectColumnType是 Dialect.字段类型,例如:dm.TEXT ,本次正常运行,请尽快修改")
+		err := errors.New("->RegisterCustomDriverValueConver-->dialectColumnType 值是 Dialect.字段类型,例如: dm.TEXT ,本次正常运行,请尽快修改")
 		FuncLogError(nil, err)
 	} else {
 		customDriverValueMap[strings.ToLower(dialectColumnTypes[0])+"."+strings.ToUpper(dialectColumnTypes[1])] = customDriverValueConver
