@@ -706,6 +706,9 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // --------------------------------------------
 // ICustomDriverValueConver接口,参见达梦的例子
 
+// --------------------------------------------
+// OverrideFunc 重写ZORM的函数,当你使用这个函数时,你必须知道自己在做什么
+
 ```  
 ##  分布式事务
 ### 基于seata/hptx实现分布式事务  

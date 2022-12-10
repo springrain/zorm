@@ -703,6 +703,9 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // --------------------------------------------
 // ICustomDriverValueConver interface, see examples of DaMeng
 
+// --------------------------------------------
+// OverrideFunc Rewrite the functions of ZORM, when you use this function, you have to know what you are doing
+
 ```  
 ## Global transaction
 ### Implementation of distributed transaction based on seata/hptx
