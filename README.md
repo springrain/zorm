@@ -410,11 +410,10 @@ func TestInsertEntityMapSlice(t *testing.T) {
 		entityMap2.Set("createTime", time.Now())
 		entityMap2.Set("active", 2)
 
-		entityMapSlice = append(entityMapSlice, entityMap1)
-		entityMapSlice = append(entityMapSlice, entityMap2)
+		entityMapSlice = append(entityMapSlice, entityMap1 ,entityMap2)
 
 		// Execute
-		_, err := InsertEntityMapSlice(ctx, entityMapSlice)
+		_, err := zorm.InsertEntityMapSlice(ctx, entityMapSlice)
 
 		// If err is not returned nil, the transaction is rolled back
 		return nil, err

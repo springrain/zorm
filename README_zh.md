@@ -413,11 +413,10 @@ func TestInsertEntityMapSlice(t *testing.T) {
 		entityMap2.Set("createTime", time.Now())
 		entityMap2.Set("active", 2)
 
-		entityMapSlice = append(entityMapSlice, entityMap1)
-		entityMapSlice = append(entityMapSlice, entityMap2)
+		entityMapSlice = append(entityMapSlice, entityMap1 ,entityMap2)
 
 		// 执行
-		_, err := InsertEntityMapSlice(ctx, entityMapSlice)
+		_, err := zorm.InsertEntityMapSlice(ctx, entityMapSlice)
 
 		// 如果返回的err不是nil,事务就会回滚
 		return nil, err
