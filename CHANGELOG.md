@@ -1,3 +1,6 @@
+v1.6.5
+ - 完善文档,注释
+
 v1.6.4
  - 感谢@haifengat 的场景反馈,完善NUMBER类型的数据接收
  - RegisterCustomDriverValueConver函数的 dialectColumnType 参数修改为 Dialect.字段类型 ,例如:dm.TEXT

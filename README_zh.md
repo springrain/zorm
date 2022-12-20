@@ -260,7 +260,7 @@ func init() {
     // 自定义主键生成
 	// zorm.FuncGenerateStringID=funcmyId
 
-	// 自定义decimal类型实现
+	// 自定义decimal类型实现,例如github.com/shopspring/decimal
 	// zorm.FuncDecimalValue=funcmyDecimal
 
     // Go数据库驱动列表:https://github.com/golang/go/wiki/SQLDrivers
