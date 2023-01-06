@@ -241,9 +241,6 @@ import (
 // dbDao 代表一个数据库,如果有多个数据库,就对应声明多个DBDao
 var dbDao *zorm.DBDao
 
-// ctx默认应该有 web层传入,例如gin的c.Request.Context().这里只是模拟
-var ctx = context.Background()
-
 // 01.初始化DBDao
 func init() {
 
@@ -305,6 +302,8 @@ func init() {
 
 // TestInsert 02.测试保存Struct对象
 func TestInsert(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -328,6 +327,8 @@ func TestInsert(t *testing.T) {
 // TestInsertSlice 03.测试批量保存Struct对象的Slice
 // 如果是自增主键,无法对Struct对象里的主键属性赋值
 func TestInsertSlice(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -360,6 +361,8 @@ func TestInsertSlice(t *testing.T) {
 
 // TestInsertEntityMap 04.测试保存EntityMap对象,用于不方便使用struct的场景,使用Map作为载体
 func TestInsertEntityMap(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -395,6 +398,9 @@ func TestInsertEntityMap(t *testing.T) {
 
 // TestInsertEntityMapSlice 05.测试批量保存[]IEntityMap,用于不方便使用struct的场景,使用Map作为载体
 func TestInsertEntityMapSlice(t *testing.T) {
+	// ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	_, err := Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		entityMapSlice := make([]IEntityMap, 0)
 		entityMap1 := NewEntityMap(demoStructTableName)
@@ -429,6 +435,8 @@ func TestInsertEntityMapSlice(t *testing.T) {
 
 // TestQueryRow 06.测试查询一个struct对象
 func TestQueryRow(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 声明一个对象的指针,用于承载返回的数据
 	demo := demoStruct{}
@@ -458,6 +466,8 @@ func TestQueryRow(t *testing.T) {
 
 // TestQueryRowMap 07.测试查询map接收结果,用于不太适合struct的场景,比较灵活
 func TestQueryRowMap(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 构造查询用的finder
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -477,6 +487,8 @@ func TestQueryRowMap(t *testing.T) {
 
 // TestQuery 08.测试查询对象列表
 func TestQuery(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 创建用于接收结果的slice
 	list := make([]demoStruct, 0)
@@ -509,6 +521,9 @@ func TestQuery(t *testing.T) {
 
 // TestQueryMap 09.测试查询map列表,用于不方便使用struct的场景,一条记录是一个map对象
 func TestQueryMap(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	// 构造查询用的finder
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
     finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
@@ -537,6 +552,8 @@ func TestQueryMap(t *testing.T) {
 
 // TestUpdateNotZeroValue 10.更新struct对象,只更新不为零值的字段.主键必须有值
 func TestUpdateNotZeroValue(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -561,6 +578,8 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 // TestUpdate 11.更新struct对象,更新所有字段.主键必须有值
 func TestUpdate(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
@@ -584,6 +603,9 @@ func TestUpdate(t *testing.T) {
 
 // TestUpdateFinder 12.通过finder更新,zorm最灵活的方式,可以编写任何更新语句,甚至手动编写insert语句
 func TestUpdateFinder(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
 	// 例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
@@ -607,6 +629,9 @@ func TestUpdateFinder(t *testing.T) {
 
 // TestUpdateEntityMap 13.更新一个EntityMap,主键必须有值
 func TestUpdateEntityMap(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
 	// 例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
@@ -632,6 +657,9 @@ func TestUpdateEntityMap(t *testing.T) {
 
 // TestDelete 14.删除一个struct对象,主键必须有值
 func TestDelete(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
     // 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
 	// 例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions
@@ -653,6 +681,9 @@ func TestDelete(t *testing.T) {
 
 // TestProc 15.测试调用存储过程
 func TestProc(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?) ", "u_10001")
 	zorm.QueryRow(ctx, finder, &demo)
@@ -661,6 +692,9 @@ func TestProc(t *testing.T) {
 
 // TestFunc 16.测试调用自定义函数
 func TestFunc(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
+
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?) ", "u_10001")
 	zorm.QueryRow(ctx, finder, &userName)
@@ -669,6 +703,8 @@ func TestFunc(t *testing.T) {
 
 // TestOther 17.其他的一些说明.非常感谢您能看到这一行
 func TestOther(t *testing.T) {
+    // ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
+    var ctx = context.Background()
 
 	// 场景1.多个数据库.通过对应数据库的dbDao,调用BindContextDBConnection函数,把这个数据库的连接绑定到返回的ctx上,然后把ctx传递到zorm的函数即可
 	// 也可以重写FuncReadWriteStrategy函数,通过ctx设置不同的key,返回指定数据库的DBDao

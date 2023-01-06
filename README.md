@@ -238,9 +238,6 @@ import (
 // DBDAOs represent one database. If there are multiple databases, multiple DBDAOs are declared
 var dbDao *zorm.DBDao
 
-// ctx should have a web layer pass by default, such as gin's c.riest.Context(). This is just a simulation
-var ctx = context.Background()
-
 // 01. Initialize the DBDao
 func init() {
 
@@ -302,6 +299,8 @@ func init() {
 
 // TestInsert 02. Test save the Struct object
 func TestInsert(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -325,6 +324,8 @@ func TestInsert(t *testing.T) {
 // TestInsertSlice 03. Tests batch save Struct object Slice
 // The primary key property in the Struct object cannot be assigned if the primary key is autoincrement
 func TestInsertSlice(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -357,6 +358,8 @@ func TestInsertSlice(t *testing.T) {
 
 // TestInsertEntityMap 04. Test to save an EntityMap object for scenarios where it is not convenient to use struct. Use Map as the carrier
 func TestInsertEntityMap(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -392,6 +395,9 @@ func TestInsertEntityMap(t *testing.T) {
 
 // TestInsertEntityMapSlice 05. Test batch save []IEntityMap for scenarios where it is not convenient to use struct, using Map as carrier
 func TestInsertEntityMapSlice(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	_, err := Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		entityMapSlice := make([]IEntityMap, 0)
 		entityMap1 := NewEntityMap(demoStructTableName)
@@ -426,6 +432,8 @@ func TestInsertEntityMapSlice(t *testing.T) {
 
 // TestQueryRow 06. Test query a struct object
 func TestQueryRow(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// Declares a pointer to an object that holds the returned data
 	demo := demoStruct{}
@@ -455,6 +463,8 @@ func TestQueryRow(t *testing.T) {
 
 // TestQueryRowMap 07. Test query map receives results. It is flexible for scenarios that are not suitable for structs
 func TestQueryRowMap(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// finder used to construct the query
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -474,6 +484,8 @@ func TestQueryRowMap(t *testing.T) {
 
 // TestQuery 08. Test the list of query objects
 func TestQuery(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// Create a slice for receiving results
 	list := make([]demoStruct, 0)
@@ -506,6 +518,9 @@ func TestQuery(t *testing.T) {
 
 // TestQueryMap 09. Test query map list. Used in the scenario where struct is not convenient
 func TestQueryMap(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	// finder used to construct the query
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
     finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
@@ -534,6 +549,8 @@ func TestQueryMap(t *testing.T) {
 
 // TestUpdateNotZeroValue 10. Update the struct object with only the non-zero fields. The primary key must have a value
 func TestUpdateNotZeroValue(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -558,6 +575,8 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 // TestUpdate 11. Update the struct object, updating all fields. The primary key must have a value
 func TestUpdate(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
@@ -581,6 +600,9 @@ func TestUpdate(t *testing.T) {
 
 // TestUpdateFinder 12. With finder update,zorm's most flexible way of writing any update statement, even manually writing insert statements
 func TestUpdateFinder(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
@@ -604,6 +626,9 @@ func TestUpdateFinder(t *testing.T) {
 
 // TestUpdateEntityMap 13. Update an EntityMap. The primary key must have a value
 func TestUpdateEntityMap(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
@@ -629,6 +654,9 @@ func TestUpdateEntityMap(t *testing.T) {
 
 // TestDelete 14. Delete a struct object. The primary key must have a value
 func TestDelete(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
     // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
@@ -650,6 +678,9 @@ func TestDelete(t *testing.T) {
 
 // TestProc 15. Test calls the stored procedure
 func TestProc(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?)", "u_10001")
 	zorm.QueryRow(ctx, finder, &demo)
@@ -658,6 +689,9 @@ func TestProc(t *testing.T) {
 
 // TestFunc 16. Test calls custom functions
 func TestFunc(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
+
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?)", "u_10001")
 	zorm.QueryRow(ctx, finder, &userName)
@@ -666,6 +700,8 @@ func TestFunc(t *testing.T) {
 
 // TestOther 17. Some other instructions. Thank you very much for seeing this line
 func TestOther(t *testing.T) {
+    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+    var ctx = context.Background()
 
 	// Scenario 1. Multiple databases. The dbDao of the corresponding database calls BindContextDBConnection, binds the database connection to the returned ctx, and passes ctx to zorm's function
 	// You can also rewrite the FuncReadWriteStrategy function to return the DBDao of the specified database by setting a different key via ctx
