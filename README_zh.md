@@ -296,7 +296,7 @@ func init() {
 	    // DisableTransaction :false,
 
 		// TDengineInsertsHasColumnName TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
-	    // TDengineInsertsHasColumnName bool
+	    // TDengineInsertsHasColumnName :false,
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
