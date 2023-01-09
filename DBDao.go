@@ -110,6 +110,9 @@ type DataSourceConfig struct {
 
 	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
+
+	// TDengine 批量insert时,语句中是否有列名,默认false,减少语句长度
+	TDengineInsertsHasColumnName bool
 }
 
 // DBDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过DBDao进行
@@ -1225,7 +1228,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	}
 
 	// SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values, dbConnection.config.TDengineInsertsHasColumnName)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1428,7 +1431,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 		return affected, err
 	}
 	// SQL语句
-	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice)
+	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice, dbConnection.config.TDengineInsertsHasColumnName)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertEntityMapSliceSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
