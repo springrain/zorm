@@ -1,4 +1,5 @@
 v1.6.5
+ - TDengineInsertsHasColumnName TDengine批量insert时,语句中是否有列名,默认false,减少语句长度
  - 完善文档,注释
 
 v1.6.4

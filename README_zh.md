@@ -294,6 +294,9 @@ func init() {
 	    // DisableTransaction 禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务,为了处理某些数据库不支持事务,比如TDengine
 	    // 禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
 	    // DisableTransaction :false,
+
+		// TDengineInsertsHasColumnName TDengine批量insert时,语句中是否有列名,默认false,减少语句长度
+	    // TDengineInsertsHasColumnName bool
 	}
 
 	// 根据dbDaoConfig创建dbDao, 一个数据库只执行一次,第一个执行的数据库为 defaultDao,后续zorm.xxx方法,默认使用的就是defaultDao
