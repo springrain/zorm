@@ -291,6 +291,9 @@ func init() {
 	    // DisableTransaction disables transactions. The default value is false. If DisableTransaction=true is set, the Transaction method becomes invalid and no transaction is required. Some databases, such as TDengine, do not support transactions
 	    // Disable transactions should have the driver forgery transaction API, there should be no orm implementation,clickhouse's driver does just that
 	    // DisableTransaction :false,
+
+		// TDengineInsertsHasColumnName Whether there are column names in the TDengine batch insert statement. The default false has no column name, and the insertion value and database column order are consistent, reducing the length of the statement
+	    // TDengineInsertsHasColumnName bool
 	}
 
 	// Create dbDao based on dbDaoConfig. Perform this operation once for each database. The first database is defaultDao and the subsequent zorm.xxx method uses defaultDao by default

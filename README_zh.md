@@ -295,7 +295,7 @@ func init() {
 	    // 禁用事务应该有驱动伪造事务API,不应该有orm实现,clickhouse的驱动就是这样做的
 	    // DisableTransaction :false,
 
-		// TDengineInsertsHasColumnName TDengine批量insert时,语句中是否有列名,默认false,减少语句长度
+		// TDengineInsertsHasColumnName TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
 	    // TDengineInsertsHasColumnName bool
 	}
 

@@ -111,7 +111,7 @@ type DataSourceConfig struct {
 	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 
-	// TDengineInsertsHasColumnName TDengine批量insert时,语句中是否有列名,默认false,减少语句长度
+	// TDengineInsertsHasColumnName TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
 	TDengineInsertsHasColumnName bool
 }
 
