@@ -483,11 +483,12 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		return has, errDBConnection
 	}
 
-	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
-	if errDialect != nil {
-		FuncLogError(ctx, errDialect)
-		return has, errDialect
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return has, errConfig
 	}
+	dialect := config.Dialect
 
 	// 获取到sql语句
 	// Get the sql statement
@@ -644,11 +645,12 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, errDBConnection)
 		return errDBConnection
 	}
-	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
-	if errDialect != nil {
-		FuncLogError(ctx, errDialect)
-		return errDialect
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return errConfig
 	}
+	dialect := config.Dialect
 
 	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
 	if errSQL != nil {
@@ -822,12 +824,12 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		return nil, errDBConnection
 	}
 
-	dialect, errDialect := getDialectFromConnection(ctx, dbConnection, 0)
-	if errDialect != nil {
-		FuncLogError(ctx, errDialect)
-		return nil, errDialect
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return nil, errConfig
 	}
-
+	dialect := config.Dialect
 	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", errSQL)
@@ -1124,10 +1126,11 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	// var zormSQLOutReturningID *int64
 	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement > 0 {
-		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
-		if err != nil {
-			return affected, err
+		config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+		if errConfig != nil {
+			return affected, errConfig
 		}
+		dialect := config.Dialect
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
 	}
@@ -1222,13 +1225,13 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
-	dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
-	if err != nil {
-		return affected, err
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		return affected, errConfig
 	}
-
+	dialect := config.Dialect
 	// SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values, dbConnection.config.TDengineInsertsColumnName)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values, config.TDengineInsertsColumnName)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1362,10 +1365,11 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	var lastInsertID, zormSQLOutReturningID *int64
 	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	if autoIncrement && entity.GetPKColumnName() != "" {
-		dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
-		if err != nil {
-			return affected, err
+		config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+		if errConfig != nil {
+			return affected, errConfig
 		}
+		dialect := config.Dialect
 		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 
@@ -1426,12 +1430,13 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
-	dialect, err := getDialectFromConnection(ctx, dbConnection, 1)
-	if err != nil {
-		return affected, err
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		return affected, errConfig
 	}
+	dialect := config.Dialect
 	// SQL语句
-	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice, dbConnection.config.TDengineInsertsColumnName)
+	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice, config.TDengineInsertsColumnName)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertEntityMapSliceSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
