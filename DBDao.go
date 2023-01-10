@@ -1229,9 +1229,8 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if errConfig != nil {
 		return affected, errConfig
 	}
-	dialect := config.Dialect
 	// SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, dialect, &typeOf, entityStructSlice, &columns, &values, config.TDengineInsertsColumnName)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, config, &typeOf, entityStructSlice, &columns, &values)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1434,9 +1433,8 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	if errConfig != nil {
 		return affected, errConfig
 	}
-	dialect := config.Dialect
 	// SQL语句
-	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, dialect, entityMapSlice, config.TDengineInsertsColumnName)
+	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, config, entityMapSlice)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMapSlice-->wrapInsertEntityMapSliceSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)

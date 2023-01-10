@@ -223,7 +223,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, tdInsertsHasColumnName bool) (string, int, error) {
+func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
 	sliceLen := len(entityStructSlice)
 	sqlstr := ""
 	if entityStructSlice == nil || sliceLen < 1 {
@@ -245,7 +245,7 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	// sqlstr := "INSERT INTO "
-	if dialect == "tdengine" && !tdInsertsHasColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+	if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 
 	} else {
 		// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
@@ -268,10 +268,10 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string
-		if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 			sqlBuilder.WriteString(" ")
 			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
-			if tdInsertsHasColumnName {
+			if config.TDengineInsertsColumnName {
 				sqlBuilder.WriteString(inserColumnName)
 			}
 			sqlBuilder.WriteString(" VALUES")
@@ -321,7 +321,7 @@ func wrapInsertSliceSQL(ctx context.Context, dialect string, typeOf *reflect.Typ
 }
 
 // wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
-func wrapInsertEntityMapSliceSQL(ctx context.Context, dialect string, entityMapSlice []IEntityMap, tdInsertsHasColumnName bool) (string, []interface{}, error) {
+func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, entityMapSlice []IEntityMap) (string, []interface{}, error) {
 	sliceLen := len(entityMapSlice)
 	sqlstr := ""
 	if entityMapSlice == nil || sliceLen < 1 {
@@ -352,10 +352,10 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, dialect string, entityMapS
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string
-		if dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 			sqlBuilder.WriteString(" ")
 			sqlBuilder.WriteString(entityMapSlice[i].GetTableName())
-			if tdInsertsHasColumnName {
+			if config.TDengineInsertsColumnName {
 				sqlBuilder.WriteString(inserColumnName)
 			}
 			sqlBuilder.WriteString(" VALUES")
