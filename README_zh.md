@@ -910,9 +910,9 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContex
 // transferTx transfer the gtx into a new ctx from old ctx.
 // use it to implement suspend and resume instead of seata java
 func transferTx(ctx context.Context) context.Context {
-	ctx = tm.InitSeataContext(ctx)
-	tm.SetXID(ctx, tm.GetXID(ctx))
-	return ctx
+	newCtx := tm.InitSeataContext(ctx)
+	tm.SetXID(newCtx, tm.GetXID(ctx))
+	return newCtx
 }
 
 // ................// 
