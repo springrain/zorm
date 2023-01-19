@@ -849,7 +849,6 @@ type ZormGlobalTransaction struct {
 // MyFuncGlobalTransaction zorm适配seata-go全局分布式事务的函数
 // 重要!!!!需要配置zorm.DataSourceConfig.FuncGlobalTransaction=MyFuncGlobalTransaction 重要!!!
 func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, context.Context, error) {
-
 	// 创建seata-go事务
 	globalTx := tm.GetGlobalTransactionManager()
 	// 使用zorm.IGlobalTransaction接口对象包装分布式事务,隔离seata-go依赖
@@ -860,7 +859,7 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	}
 	// open global transaction for the first time
 	ctx = tm.InitSeataContext(ctx)
-
+    // 有请求传入,手动获取的XID  
 	xidObj := ctx.Value("XID")
 	if xidObj != nil {
 		xid := xidObj.(string)

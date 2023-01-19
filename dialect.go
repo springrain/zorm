@@ -121,7 +121,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(50)
-	//sqlBuilder.WriteString(entity.GetTableName())
+	// sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
@@ -246,7 +246,6 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	sqlBuilder.WriteString(entity.GetTableName())
 	// sqlstr := "INSERT INTO "
 	if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-
 	} else {
 		// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
 		sqlBuilder.WriteString(inserColumnName)
@@ -508,7 +507,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(100)
 	// sqlBuilder.WriteString("INSERT INTO ")
-	//sqlBuilder.WriteString(entity.GetTableName())
+	// sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器

@@ -852,7 +852,7 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	}
 	// open global transaction for the first time
 	ctx = tm.InitSeataContext(ctx)
-
+    // There is a request to come in, manually get the XID
 	xidObj := ctx.Value("XID")
 	if xidObj ! = nil {
 		xid := xidObj.(string)
