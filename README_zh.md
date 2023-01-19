@@ -751,8 +751,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 
 ```  
 ##  分布式事务
-### 基于seata/hptx实现分布式事务  
-#### seata proxy模式 
+### seata proxy模式 
 ```golang
 // DataSourceConfig 配置  DefaultTxOptions
 // DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
@@ -798,7 +797,7 @@ func main() {
 }
 ```
 
-#### seata 事务托管模式 
+### seata 事务托管模式 
 
 ```golang
 
@@ -880,7 +879,6 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 // 实现zorm.IGlobalTransaction 托管全局分布式事务接口
 // BeginGTX 开启全局分布式事务
 func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
-
 	//tm.SetTxStatus(globalRootContext, message.GlobalStatusBegin)
 	err := gtx.Begin(globalRootContext, time.Second*30)
 	return err
@@ -918,7 +916,7 @@ func transferTx(ctx context.Context) context.Context {
 // ................// 
 ```
 
-#### hptx proxy模式 
+### hptx proxy模式 
 
 hptx已合并[@小口天](https://gitee.com/wuxiangege)的pr, [在hptx代理模式下的zorm使用示例](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)  
 
@@ -980,7 +978,7 @@ func main() {
 }
 ```
 
-#### hptx 事务托管模式
+### hptx 事务托管模式
 
 hptx已合并[@小口天](https://gitee.com/wuxiangege)的pr, [zorm事务托管hptx示例](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)   
 

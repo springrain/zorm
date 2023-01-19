@@ -109,7 +109,9 @@ func init() {
 - Configure zorm.DataSourceConfig ```DriverName:kingbase ,Dialect:kingbase```
 - Golden warehouse official drive: https://www.kingbase.com.cn/qd/index.htmhttps://bbs.kingbase.com.cn/thread-14457-1-1.html?_dsign=87f12756
 - The Kingbase 8 core is based on PostgreSQL 9.6 and can be tested using https://github.com/lib/pq, and the official driver is recommended for production environments
-- Note that modify data/kingbase.conf  ```ora_input_emptystr_isnull = false``` , because Go does not have a null value, the general database is not null, the default of Go string is '', if this is set to true, the database will set the value to null, and the field property not null conflict, so an error is reported.
+- Note that ora_input_emptystr_isnull = false or ora_input_emptystr_isnull = on in the data/kingbase.conf of the database (according to the version), because golang does not have a null value, the general database is not null, golang's string defaults to '', if this is set to true, The database will set the value to null, which conflicts with the field property not null, so an error is reported.
+  After the configuration file is modified, restart the database.
+- Thanks to [@Jin] (https://gitee.com/GOODJIN) for testing and suggestions.
 
 ### Shentong (shentong)
 It is recommended to use official driver, configure zorm.DataSourceConfig ```DriverName:aci ,Dialect:shentong```  
@@ -746,20 +748,20 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 
 ```  
 ## Global transaction
-### Implementation of distributed transaction based on seata/hptx
-#### seata proxy mode
+### seata proxy mode
 ```go
 // DataSourceConfig configures DefaultTxOptions
 // DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
 
-// Import the Seta-Golang V1 dependency package
+// Import the seata-go dependency package
 import (
-	"github.com/opentrx/mysql"
-	"github.com/transaction-wg/seata-golang/pkg/client"
-	"github.com/transaction-wg/seata-golang/pkg/client/config"
-	"github.com/transaction-wg/seata-golang/pkg/client/rm"
-	"github.com/transaction-wg/seata-golang/pkg/client/tm"
-	gtxContext "github.com/transaction-wg/seata-golang/pkg/client/context"
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/seata/seata-go/pkg/client"
+	"github.com/seata/seata-go/pkg/tm"
+	seataSQL "github.com/seata/seata-go/pkg/datasource/sql" //Note: zorm's DriverName: seataSQL.SeataATMySQLDriver, !!!!
 )
 
 // Path of the configuration file
@@ -769,44 +771,145 @@ func main() {
 
 	// Initialize the configuration
 	conf := config.InitConf(configPath)
-	// Initialize the RPC client
-	client.NewRpcClient()
-	// Register the mysql driver
-	mysql.InitDataResourceManager()
-	mysql.RegisterResource(config.GetATConfig().DSN)
-	// sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
+	// Initialize the zorm database
+    // note: zorm DriverName: seataSQL SeataATMySQLDriver,!!!!!!!!!!
+    initZorm()
+
+	// Start distributed transactions
+	tm.WithGlobalTx(context.Background(), &tm.GtxConfig{
+		Name:    "ATSampleLocalGlobalTx",
+		Timeout: time.Second * 30,
+	}, CallbackWithCtx)
+	// CallbackWithCtx business callback definition
+	// type CallbackWithCtx func(ctx context.Context) error
 
 
-	// Initialize zorm normally later, be sure to put it after seata mysql initialization!!
+	// Get the XID after the transaction is started. This can be passed through gin's header, or otherwise
+	// xid:=tm.GetXID(ctx)
+	// tm.SetXID(ctx, xid)
 
-	// ... // 
-	// tm register transaction service, refer to the official example (transaction hosting is mainly to remove proxy, zero intrusion on the business)
-	tm.Implement(svc.ProxySvc)
-	// ... // 
-
-
-	// Obtain the seata rootContext
-	// rootContext := gtxContext.NewRootContext(ctx)
-	// rootContext := ctx.(*gtxContext.RootContext)
-
-	// Create a seata transaction
-	// globalTx := tm.GetCurrentOrCreate(rootContext)
-
-	// Start the transaction
-	// globalTx. BeginWithTimeoutAndName (int32 (6000), "name of the transaction," rootContext)
-
-	// Get the XID after the transaction is started. This can be passed through the gin header, or otherwise
-	// xid:=rootContext.GetXID()
-
-	// If using gin frame, get ctx
-	// ctx := c.Request.Context()
-
-	// Accept the XID passed and bind it to the local ctx
-	// ctx =context.WithValue(ctx,mysql.XID,xid)
+	// If the gin framework is used, middleware binding parameters can be used
+	// r.Use(ginmiddleware.TransactionMiddleware())
 }
 
 ```
-#### hptx proxy mode
+
+### seata transaction hosting mode
+
+```go
+// Do not use proxy proxy mode,zorm to achieve transaction management, no modification of business code, zero intrusion to achieve distributed transactions
+
+
+// The distributed transaction must be started manually and must be invoked before the local transaction is started
+ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
+// Distributed transaction sample code
+_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+    // Get the XID of the current distributed transaction. Don't worry about how, if it is a distributed transaction environment, the value will be set automatically
+    // xid := ctx.Value("XID").(string)
+
+	// Pass the xid to the third party application
+	// req.Header.Set("XID", xid)
+
+	// If err is not returned nil, local and distributed transactions are rolled back
+	return nil, err
+})
+
+// /---------- Third-party application -------/ //
+
+ // Before third-party applications start transactions,ctx needs to bind XID, such as gin framework, which can use middleware
+ // r.Use(ginmiddleware.TransactionMiddleware())
+
+// The distributed transaction must be started manually and must be invoked before the local transaction is started
+ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
+// ctx invokes the business transaction after binding the XID
+_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+
+    // Business code......
+
+	// If err is not returned nil, local and distributed transactions are rolled back
+	return nil, err
+})
+
+// It is recommended that the following code be placed in a separate file
+// ... // 
+
+// ZormGlobalTransaction packaging seata *tm.GlobalTransactionManager, zorm.IGlobalTransaction interface
+type ZormGlobalTransaction struct {
+	*tm.GlobalTransactionManager
+}
+
+// MyFuncGlobalTransaction zorm A function that ADAPTS a seata globally distributed transaction
+// important!!!! Need to configure the zorm.DataSourceConfig.FuncGlobalTransaction = MyFuncGlobalTransaction important!!!!!!
+func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, context.Context, error) {
+	// Create a seata-go transaction
+	globalTx := tm.GetGlobalTransactionManager()
+	// Use the zorm.IGlobalTransaction interface object to wrap distributed transactions and isolate the seata-go dependencies
+	globalTransaction := &ZormGlobalTransaction{globalTx}
+
+	if tm.IsSeataContext(ctx) {
+	    return globalTransaction, ctx, ctx, nil
+	}
+	// open global transaction for the first time
+	ctx = tm.InitSeataContext(ctx)
+
+	xidObj := ctx.Value("XID")
+	if xidObj ! = nil {
+		xid := xidObj.(string)
+		tm.SetXID(ctx, xid)
+	}
+	tm.SetTxName(ctx, "ATSampleLocalGlobalTx")
+
+	// use new context to process current global transaction.
+	if tm.IsGlobalTx(ctx) {
+		ctx = transferTx(ctx)
+	}
+
+	return globalTransaction, ctx, ctx, nil
+}
+
+// IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
+
+// BeginGTX Starts global distributed transactions
+func (gtx *ZormGlobalTransaction) BeginGTX(ctx context.Context, globalRootContext context.Context) error {
+	//tm.SetTxStatus(globalRootContext, message.GlobalStatusBegin)
+	err := gtx.Begin(globalRootContext, time.Second*30)
+	return err
+}
+
+// CommitGTX Commit global distributed transactions
+func (gtx *ZormGlobalTransaction) CommitGTX(ctx context.Context, globalRootContext context.Context) error {
+	gtr := tm.GetTx(globalRootContext)
+	return gtx.Commit(globalRootContext, gtr)
+}
+
+// RollbackGTX rolls back globally distributed transactions
+func (gtx *ZormGlobalTransaction) RollbackGTX(ctx context.Context, globalRootContext context.Context) error {
+	gtr := tm.GetTx(globalRootContext)
+	// If it is the Participant role, change it to the Launcher role to allow branch transactions to submit global transactions.
+	if gtr.TxRole != tm.Launcher {
+		gtr.TxRole = tm.Launcher
+	}
+	return gtx.Rollback(globalRootContext, gtr)
+}
+// GetGTXID Gets the XID of the globally distributed transaction
+func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContext context.Context) (string.error) {
+	return tm.GetXID(globalRootContext), nil
+}
+
+// transferTx transfer the gtx into a new ctx from old ctx.
+// use it to implement suspend and resume instead of seata java
+func transferTx(ctx context.Context) context.Context {
+	newCtx := tm.InitSeataContext(ctx)
+	tm.SetXID(newCtx, tm.GetXID(ctx))
+	return newCtx
+}
+
+// ... // 
+```
+
+
+### hptx proxy mode
 [in hptx proxy mode for zorm use example](https://github.com/CECTC/hptx-samples/tree/main/http_proxy_zorm)   
 ```go
 // DataSourceConfig configures DefaultTxOptions
@@ -866,8 +969,7 @@ func main() {
 }
 ```
 
-#### seata/hptx transaction hosting mode
-```seata-golang``` and ```hptx``` are implemented in the same way, but the implementation package is different
+### hptx transaction hosting mode
 [zorm transaction hosting hptx example](https://github.com/CECTC/hptx-samples/tree/main/http_zorm)
 ```go
 // Do not use proxy proxy mode,zorm to achieve transaction management, no modification of business code, zero intrusion to achieve distributed transactions
@@ -898,6 +1000,8 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 // ctx := c.Request.Context()
 // ctx = context.WithValue(ctx,"XID",xid)
 
+// The distributed transaction must be started manually and must be invoked before the local transaction is started
+ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // ctx invokes the business transaction after binding the XID
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
@@ -912,22 +1016,22 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 // It is recommended that the following code be placed in a separate file
 // ... // 
 
-// ZormGlobalTransaction packaging seata/hptx *tm.DefaultGlobalTransaction, zorm.IGlobalTransaction interface
+// ZormGlobalTransaction packaging hptx *tm.DefaultGlobalTransaction, zorm.IGlobalTransaction interface
 type ZormGlobalTransaction struct {
 	*tm.DefaultGlobalTransaction
 }
 
-// MyFuncGlobalTransaction zorm A function that ADAPTS a seata/hptx globally distributed transaction
+// MyFuncGlobalTransaction zorm A function that ADAPTS a hptx globally distributed transaction
 // important!!!! Need to configure the zorm.DataSourceConfig.FuncGlobalTransaction = MyFuncGlobalTransaction important!!!!!!
-func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, error) {
-	// Obtain the seata/hptx rootContext
+func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, context.Context, context.Context, error) {
+	// Obtain the hptx rootContext
 	rootContext := gtxContext.NewRootContext(ctx)
-	// Create a seata/hptx transaction
+	// Create a hptx transaction
 	globalTx := tm.GetCurrentOrCreate(rootContext)
-	// Use the zorm.IGlobalTransaction interface object to wrap distributed transactions and isolate seata/hptx dependencies
+	// Use the zorm.IGlobalTransaction interface object to wrap distributed transactions and isolate hptx dependencies
 	globalTransaction := &ZormGlobalTransaction{globalTx}
 
-	return globalTransaction. rootContext, nil
+	return globalTransaction, ctx, rootContext, nil
 }
 
 // IGlobalTransaction managed global distributed transaction interface (zorm.IGlobalTransaction). seata and hptx currently implement the same code, only the reference implementation package is different
