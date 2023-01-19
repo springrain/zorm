@@ -1,5 +1,6 @@
 v1.6.5
  - TDengineInsertsColumnName TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
+ - 调整FuncGlobalTransaction函数返回值,支持seata-go
  - 完善文档,注释
 
 v1.6.4
