@@ -111,7 +111,7 @@ func init() {
 - The Kingbase 8 core is based on PostgreSQL 9.6 and can be tested using https://github.com/lib/pq, and the official driver is recommended for production environments
 - Note that ora_input_emptystr_isnull = false or ora_input_emptystr_isnull = on in the data/kingbase.conf of the database (according to the version), because golang does not have a null value, the general database is not null, golang's string defaults to '', if this is set to true, The database will set the value to null, which conflicts with the field property not null, so an error is reported.
   After the configuration file is modified, restart the database.
-- Thanks to [@Jin] (https://gitee.com/GOODJIN) for testing and suggestions.
+- Thanks to [@Jin](https://gitee.com/GOODJIN) for testing and suggestions.
 
 ### Shentong (shentong)
 It is recommended to use official driver, configure zorm.DataSourceConfig ```DriverName:aci ,Dialect:shentong```  
