@@ -751,7 +751,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 
 ```  
 ##  分布式事务
-### seata proxy模式 
+### seata-go CallbackWithCtx函数模式 
 ```golang
 // DataSourceConfig 配置  DefaultTxOptions
 // DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
@@ -797,11 +797,11 @@ func main() {
 }
 ```
 
-### seata 事务托管模式 
+### seata-go 事务托管模式 
 
 ```golang
 
-// 不使用proxy代理模式,zorm实现事务托管,不修改业务代码,零侵入实现分布式事务
+// 不使用seata-go CallbackWithCtx函数,zorm实现事务托管,不修改业务代码,零侵入实现分布式事务
 
 // 必须手动开启分布式事务,必须放到本地事务开启之前调用
 ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
@@ -1078,7 +1078,7 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContex
 
 
 
-### 基于dbpack实现分布式事务  
+### dbpack分布式事务  
 ```dbpack``` 文档:https://cectc.github.io/dbpack-doc/#/README  
 使用 Mesh 方式部署,对应用集成比较简单,只需要获取xid,放到sql语句的hint就可以了
 ```golang

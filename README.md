@@ -748,7 +748,7 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 
 ```  
 ## Global transaction
-### seata proxy mode
+### seata-go CallbackWithCtx function mode
 ```go
 // DataSourceConfig configures DefaultTxOptions
 // DefaultTxOptions: &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false},
@@ -794,10 +794,10 @@ func main() {
 
 ```
 
-### seata transaction hosting mode
+### seata-go transaction hosting mode
 
 ```go
-// Do not use proxy proxy mode,zorm to achieve transaction management, no modification of business code, zero intrusion to achieve distributed transactions
+// Do not use CallbackWithCtx function,zorm to achieve transaction management, no modification of business code, zero intrusion to achieve distributed transactions
 
 
 // The distributed transaction must be started manually and must be invoked before the local transaction is started
@@ -1065,7 +1065,7 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContex
 
 // ... // 
 ```
-### Implement distributed transactions based on dbpack
+###  dbpack distributed transactions 
 ```dbpack``` document: https://cectc.github.io/dbpack-doc/#/README deployment with a Mesh, the application integration is simple, just need to get xid, in a hint of SQL statements
 ```go
 // Before starting dbpack transactions,ctx needs to bind sql hints, such as using the gin framework to obtain the xid passed by the header
