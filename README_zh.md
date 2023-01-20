@@ -39,6 +39,7 @@ zorm对国产数据库的适配不遗余力,遇到没有适配或者有问题的
 - 配置zorm.DataSourceConfig的 ```DriverName:dm ,Dialect:dm```  
 - 达梦数据库驱动: gitee.com/chunanyong/dm    
 - 达梦的TEXT类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
+- 达梦开启等保参数 COMM_ENCRYPT_NAME = AES128_ECB , 会导致驱动连接异常
 ```go
 import (
 	// 00.引入数据库驱动
