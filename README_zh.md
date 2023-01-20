@@ -871,9 +871,9 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 
 	// use new context to process current global transaction.
 	if tm.IsGlobalTx(ctx) {
-		ctx = transferTx(ctx)
+		globalRootContext := transferTx(ctx)
+		return globalTransaction, ctx, globalRootContext, nil
 	}
-
 	return globalTransaction, ctx, ctx, nil
 }
 
@@ -909,7 +909,7 @@ func (gtx *ZormGlobalTransaction) GetGTXID(ctx context.Context, globalRootContex
 // transferTx transfer the gtx into a new ctx from old ctx.
 // use it to implement suspend and resume instead of seata java
 func transferTx(ctx context.Context) context.Context {
-	newCtx := tm.InitSeataContext(ctx)
+	newCtx := tm.InitSeataContext(context.Background())
 	tm.SetXID(newCtx, tm.GetXID(ctx))
 	return newCtx
 }
