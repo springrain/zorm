@@ -104,6 +104,8 @@ type DataSourceConfig struct {
 	// 业务必须调用zorm.BindContextEnableGlobalTransaction(ctx)开启全局分布事务
 	// seata-go 的ctx是统一的绑定的是struct,也不是XID字符串.  hptx是分离的,所以返回了两个ctx,兼容两个库
 	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, context.Context, error)
+
+	// DisableAutoGlobalTransaction 属性已废弃,请勿使用,相关注释仅作记录备忘
 	// DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
 	// DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
 	// DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
