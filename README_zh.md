@@ -822,9 +822,10 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 // /----------第三方应用-------/ //
 
-
- // 第三方应用开启事务前,ctx需要绑定XID,例如是gin框架,可以使用中间件
- //r.Use(ginmiddleware.TransactionMiddleware())
+ // 不要使用seata-go默认提供的中间件,只需要ctx绑定XID即可 !!!
+ //// r.Use(ginmiddleware.TransactionMiddleware())
+  xid := c.GetHeader(constant.XidKey)
+  ctx = context.WithValue(ctx, "XID", xid)
 
  // 必须手动开启分布式事务,必须放到本地事务开启之前调用
   ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)

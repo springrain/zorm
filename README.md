@@ -818,13 +818,15 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 // /---------- Third-party application -------/ //
 
- // Before third-party applications start transactions,ctx needs to bind XID, such as gin framework, which can use middleware
- // r.Use(ginmiddleware.TransactionMiddleware())
+    // Do not use the middleware provided by seata-go by default, just ctx binding XID!!!
+    //// r.Use(ginmiddleware.TransactionMiddleware())
+    xid := c.GetHeader(constant.XidKey)
+    ctx = context.WithValue(ctx, "XID", xid)
 
-// The distributed transaction must be started manually and must be invoked before the local transaction is started
-ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
-// ctx invokes the business transaction after binding the XID
-_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+    // The distributed transaction must be started manually and must be invoked before the local transaction is started
+    ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
+    // ctx invokes the business transaction after binding the XID
+    _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
     // Business code......
 
