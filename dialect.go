@@ -872,7 +872,10 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
-func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, lastInsertID, zormSQLOutReturningID *int64, values *[]interface{}) (*int64, *int64) {
+func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
+	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
+	// 处理序列产生的自增主键,例如oracle,postgresql等
+	var lastInsertID, zormSQLOutReturningID *int64
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
 	sqlBuilder.WriteString(*sqlstr)
