@@ -872,7 +872,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
-func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, lastInsertID, zormSQLOutReturningID *int64, values *[]interface{}) {
+func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, lastInsertID, zormSQLOutReturningID *int64, values *[]interface{}) (*int64, *int64) {
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
 	sqlBuilder.WriteString(*sqlstr)
@@ -895,6 +895,7 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 	}
 
 	*sqlstr = sqlBuilder.String()
+	return lastInsertID, zormSQLOutReturningID
 }
 
 // getConfigFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect

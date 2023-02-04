@@ -1134,7 +1134,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 
 	}
 
@@ -1372,7 +1372,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, lastInsertID, zormSQLOutReturningID, &values)
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
