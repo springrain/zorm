@@ -719,6 +719,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
+	//TODO 在这里确定字段直接接收或者struct反射,sqlRowsValues 就不再额外处理了,直接映射数据,提升性能
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
