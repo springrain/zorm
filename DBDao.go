@@ -466,7 +466,7 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 }
 
 var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (has bool, err error) {
-	_, errCheck := checkEntityKind(entity)
+	typeOf, errCheck := checkEntityKind(entity)
 	if errCheck != nil {
 		errCheck = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", errCheck)
 		FuncLogError(ctx, errCheck)
@@ -547,16 +547,37 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		FuncLogError(ctx, errColumnTypes)
 		return has, errColumnTypes
 	}
-	if len(columnTypes) < 1 { // 没有返回列
-		errColumn0 := errors.New("->QueryRow-->len(columnTypes)<1,没有返回列")
+	// 查询的字段长度
+	ctLen := len(columnTypes)
+	//是否只有一列,而且可以直接赋值
+	oneColumnScanner := false
+	if ctLen < 1 { // 没有返回列
+		errColumn0 := errors.New("->QueryRow-->ctLen<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return has, errColumn0
+	} else if ctLen == 1 { //如果只查询一个字段
+		//是否是可以直接扫描的类型
+		_, oneColumnScanner = entity.(sql.Scanner)
+		if !oneColumnScanner {
+			pkgPath := typeOf.PkgPath()
+			if pkgPath == "" || pkgPath == "time" { // 系统内置变量和time包
+				oneColumnScanner = true
+			}
+		}
+
 	}
-	var oneColumnScanner *bool
-	var errScan error
-	var structType *reflect.Type
-	dbColumnFieldMap := make(map[string]reflect.StructField)
-	exportFieldMap := make(map[string]reflect.StructField)
+	var dbColumnFieldMap map[string]reflect.StructField
+	var exportFieldMap map[string]reflect.StructField
+	if !oneColumnScanner { //如果不是一个直接可以映射的字段,默认为是sturct
+		// 获取到类型的字段缓存
+		// Get the type field cache
+		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&typeOf)
+		if err != nil {
+			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			return has, err
+		}
+	}
+
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
@@ -569,16 +590,21 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			FuncLogError(ctx, errQueryRow)
 			return has, errQueryRow
 		}
-		pv := reflect.ValueOf(entity)
-		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		if oneColumnScanner {
+			err = sqlRowsValues(ctx, dialect, nil, &typeOf, rows, &driverValue, columnTypes, entity, &dbColumnFieldMap, &exportFieldMap)
+		} else {
+			pv := reflect.ValueOf(entity)
+			err = sqlRowsValues(ctx, dialect, &pv, &typeOf, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
+		}
+
 		// pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		// scanerr := rows.Scan(values...)
-		if errScan != nil {
-			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
-			FuncLogError(ctx, errScan)
-			return has, errScan
+		if err != nil {
+			err = fmt.Errorf("->Query-->sqlRowsValues错误:%w", err)
+			FuncLogError(ctx, err)
+			return has, err
 		}
 
 	}
@@ -706,16 +732,36 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, errColumnTypes)
 		return errColumnTypes
 	}
-	if len(columnTypes) < 1 { // 没有返回列
-		errColumn0 := errors.New("->Query-->len(columnTypes)<1,没有返回列")
+	// 查询的字段长度
+	ctLen := len(columnTypes)
+	//是否只有一列,而且可以直接赋值
+	oneColumnScanner := false
+	if ctLen < 1 { // 没有返回列
+		errColumn0 := errors.New("->Query-->ctLen<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return errColumn0
+	} else if ctLen == 1 { //如果只查询一个字段
+		//是否是可以直接扫描的类型
+		_, oneColumnScanner = reflect.New(sliceElementType).Interface().(sql.Scanner)
+		if !oneColumnScanner {
+			pkgPath := sliceElementType.PkgPath()
+			if pkgPath == "" || pkgPath == "time" { // 系统内置变量和time包
+				oneColumnScanner = true
+			}
+		}
+
 	}
-	var oneColumnScanner *bool
-	var errScan error
-	var structType *reflect.Type
-	dbColumnFieldMap := make(map[string]reflect.StructField)
-	exportFieldMap := make(map[string]reflect.StructField)
+	var dbColumnFieldMap map[string]reflect.StructField
+	var exportFieldMap map[string]reflect.StructField
+	if !oneColumnScanner { //如果不是一个直接可以映射的字段,默认为是sturct
+		// 获取到类型的字段缓存
+		// Get the type field cache
+		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
+		if err != nil {
+			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			return err
+		}
+	}
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
@@ -724,15 +770,21 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// Loop through the result set
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
-		oneColumnScanner, structType, errScan = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		if oneColumnScanner {
+			err = sqlRowsValues(ctx, dialect, nil, &sliceElementType, rows, &driverValue, columnTypes, pv.Interface(), &dbColumnFieldMap, &exportFieldMap)
+		} else {
+			err = sqlRowsValues(ctx, dialect, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
+		}
+
+		//err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
 		// scanerr := rows.Scan(values...)
-		if errScan != nil {
-			errScan = fmt.Errorf("->Query-->sqlRowsValues错误:%w", errScan)
-			FuncLogError(ctx, errScan)
-			return errScan
+		if err != nil {
+			err = fmt.Errorf("->Query-->sqlRowsValues错误:%w", err)
+			FuncLogError(ctx, err)
+			return err
 		}
 
 		// values[i] = f.Addr().Interface()

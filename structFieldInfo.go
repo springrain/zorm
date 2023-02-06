@@ -408,12 +408,16 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
-func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, oneColumnScanner *bool, structType *reflect.Type, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*bool, *reflect.Type, error) {
-	if valueOf == nil {
-		return nil, nil, errors.New("->sqlRowsValues-->valueOf为nil")
+func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, entity interface{}, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField) error {
+	if entity == nil && valueOf == nil {
+		return errors.New("->sqlRowsValues-->valueOfElem为nil")
 	}
-	valueOfElem := valueOf.Elem()
-	valueOfInterface := valueOf.Interface()
+
+	var valueOfElem reflect.Value
+	if entity == nil && valueOf != nil {
+		valueOfElem = valueOf.Elem()
+	}
+
 	ctLen := len(columnTypes)
 	// 声明载体数组,用于存放struct的属性指针
 	// Declare a carrier array to store the attribute pointer of the struct
@@ -423,40 +427,7 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 	if iscdvm {
 		fieldTempDriverValueMap = make(map[*sql.ColumnType]*driverValueInfo)
 	}
-
-	oneColumn := ctLen == 1
-	// oneColumn := false
-	// 单列查询并且可以直接映射,类似 string 或者[]string
-	if oneColumn && oneColumnScanner == nil {
-		oneColumnScanner = new(bool)
-		// new出来的是指针
-		// Reflectively initialize the elements in an array
-		pkgPath := valueOfElem.Type().PkgPath()
-		if pkgPath == "" || pkgPath == "time" { // 系统内置变量和time包
-			*oneColumnScanner = true
-		}
-		if !*oneColumnScanner {
-			_, *oneColumnScanner = valueOfInterface.(sql.Scanner)
-		}
-
-	}
-	if oneColumnScanner == nil {
-		oneColumnScanner = new(bool)
-	}
-
-	if structType == nil && !*oneColumnScanner {
-		st := valueOfElem.Type()
-		structType = &st
-		var err error
-		// 获取到类型的字段缓存
-		// Get the type field cache
-		*dbColumnFieldMap, *exportFieldMap, err = getDBColumnExportFieldMap(structType)
-		if err != nil {
-			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
-			return nil, nil, err
-		}
-	}
-
+	var err error
 	var customDriverValueConver ICustomDriverValueConver
 	var converOK bool
 
@@ -476,14 +447,12 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 		} else if converOK { // 如果是需要转换的字段
 			// 获取字段类型
 			var structFieldType *reflect.Type
-
-			if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
-				vtype := valueOfElem.Type()
-				structFieldType = &vtype
-			} else if structType != nil { // 如果是struct类型
+			if entity != nil { // 查询一个字段,并且可以直接接收
+				structFieldType = typeOf
+			} else { // 如果是struct类型
 				field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 				if err != nil {
-					return oneColumnScanner, structType, err
+					return err
 				}
 				if field != nil { // 存在这个字段
 					vtype := field.Type
@@ -492,10 +461,10 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 			}
 			tempDriverValue, err := customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
 			if err != nil {
-				return oneColumnScanner, structType, err
+				return err
 			}
 			if tempDriverValue == nil {
-				return oneColumnScanner, structType, errors.New("->sqlRowsValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
+				return errors.New("->sqlRowsValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
 			}
 			values[i] = tempDriverValue
 
@@ -508,14 +477,13 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
 
-		} else if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
-			values[i] = valueOfInterface
+		} else if entity != nil { // 查询一个字段,并且可以直接接收
+			values[i] = entity
 			continue
-		} else if structType != nil {
-
+		} else {
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 			if err != nil {
-				return oneColumnScanner, structType, err
+				return err
 			}
 			if field == nil { // 如果不存在这个字段
 				values[i] = new(interface{})
@@ -531,12 +499,12 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 		}
 
 	}
-	err := rows.Scan(values...)
+	err = rows.Scan(values...)
 	if err != nil {
-		return oneColumnScanner, structType, err
+		return err
 	}
 	if len(fieldTempDriverValueMap) < 1 {
-		return oneColumnScanner, structType, err
+		return err
 	}
 
 	// 循环需要替换的值
@@ -547,15 +515,17 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
-			return oneColumnScanner, structType, errConverDriverValue
+			return errConverDriverValue
 		}
-		if *oneColumnScanner && oneColumn { // 查询一个字段,并且可以直接接收
-			valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
+		if entity != nil { // 查询一个字段,并且可以直接接收
+			//entity = rightValue
+			//valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
+			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
-		} else if structType != nil { // 如果是Struct类型接收
+		} else { // 如果是Struct类型接收
 			field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 			if err != nil {
-				return oneColumnScanner, structType, err
+				return err
 			}
 			if field != nil { // 如果存在这个字段
 				// 字段的反射值
@@ -567,7 +537,7 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 
 	}
 
-	return oneColumnScanner, structType, err
+	return err
 }
 
 // getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰
