@@ -573,7 +573,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		// Get the type field cache
 		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&typeOf)
 		if err != nil {
-			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			err = fmt.Errorf("->QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return has, err
 		}
 	}
@@ -758,7 +758,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		// Get the type field cache
 		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
 		if err != nil {
-			err = fmt.Errorf("->sqlRowsValues-->getDBColumnFieldMap获取字段缓存错误:%w", err)
+			err = fmt.Errorf("->Query-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return err
 		}
 	}
