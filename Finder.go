@@ -20,8 +20,6 @@ package zorm
 
 import (
 	"errors"
-	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -181,109 +179,111 @@ func (finder *Finder) GetSQL() (string, error) {
 	if finder.InjectionCheck && (strings.Contains(sqlstr, "'")) {
 		return "", errors.New(`->finder-->GetSQL()SQL语句请不要直接拼接字符串参数,容易注入!!!请使用问号占位符,例如 finder.Append("and id=?","stringId"),如果必须拼接字符串,请设置 finder.InjectionCheck = false `)
 	}
-
-	// 处理sql语句中的in,实际就是把数组变量展开,例如 id in(?) ["1","2","3"] 语句变更为 id in (?,?,?) 参数也展开到参数数组里
-	// 这里认为 slice类型的参数就是in
-	// Processing the in in the SQL statement is actually expanding the array variables,
-	// for example, id in(?) ["1","2","3"] The statement is changed to id in (?,?,?)
-	// The parameters are also expanded to the parameters In the array
-	// It is considered that the parameter of the slice type is in
-	if finder.values == nil || len(finder.values) < 1 { // 如果没有参数
-		return sqlstr, nil
-	}
-
-	//?问号切割的数组
-	//Question mark cut array
-	questions := strings.Split(sqlstr, "?")
-
-	// 语句中没有?问号
-	// No in the sentence Question mark
-	if len(questions) < 1 {
-		return sqlstr, nil
-	}
-
-	// 重新记录参数值
-	// Re-record the parameter value
-	newValues := make([]interface{}, 0)
-	// 新的sql
-	// new sql
-	var newSQLStr strings.Builder
-	// 问号切割的语句实际长度比问号号个数多1个,先把第一个语句片段加上,后面就是比参数的索引大1
-	// The actual length of the sentence cut by the question mark is one more than the number of question marks. First, add the first sentence fragment, and the latter is one greater than the index of the parameter
-	newSQLStr.WriteString(questions[0])
-
-	// 遍历所有的参数
-	// Traverse all parameters
-	for i, v := range finder.values {
-		// 先拼接问号,问号切割之后,问号就丢失了,先补充上
-		// First splicing the question mark, after the question mark is cut, the question mark is lost, add it first
-		newSQLStr.WriteString("?")
-
-		valueOf := reflect.ValueOf(v)
-		typeOf := reflect.TypeOf(v)
-		kind := valueOf.Kind()
-		// 如果参数是个指针类型
-		// If the parameter is a pointer type
-		if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
-			valueOf = valueOf.Elem()
-			typeOf = typeOf.Elem()
-			kind = valueOf.Kind()
+	/*
+		// 处理sql语句中的in,实际就是把数组变量展开,例如 id in(?) ["1","2","3"] 语句变更为 id in (?,?,?) 参数也展开到参数数组里
+		// 这里认为 slice类型的参数就是in
+		// Processing the in in the SQL statement is actually expanding the array variables,
+		// for example, id in(?) ["1","2","3"] The statement is changed to id in (?,?,?)
+		// The parameters are also expanded to the parameters In the array
+		// It is considered that the parameter of the slice type is in
+		if finder.values == nil || len(finder.values) < 1 { // 如果没有参数
+			return sqlstr, nil
 		}
 
-		// 如果不是数组或者slice
-		// If it is not an array or slice
-		if !(kind == reflect.Array || kind == reflect.Slice) {
-			// 记录新值
-			// Record new value.
-			newValues = append(newValues, v)
-			// 记录SQL
-			// Log SQL。
-			newSQLStr.WriteString(questions[i+1])
-			continue
-		}
-		// 字节数组是特殊的情况
-		// Byte array is a special case
-		if typeOf == reflect.TypeOf([]byte{}) {
-			// 记录新值
-			// Record new value
-			newValues = append(newValues, v)
-			// 记录SQL
-			// Log SQL
-			newSQLStr.WriteString(questions[i+1])
-			continue
-		}
 
-		// 如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
-		// 获取数组类型参数值的长度
-		// If it is not a string type value, the length cannot be taken, this is a bug, first comment
-		// Get the length of the array type parameter value
-		sliceLen := valueOf.Len()
-		// 数组类型的参数长度小于1,认为是有异常的参数
-		// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
-		if sliceLen < 1 {
-			return sqlstr, errors.New("->finder-->GetSQL()语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
-		}
+			//?问号切割的数组
+			//Question mark cut array
+			questions := strings.Split(sqlstr, "?")
 
-		for j := 0; j < sliceLen; j++ {
-			// 每多一个参数,对应",?" 两个符号.增加的问号长度总计是(sliceLen-1)*2
-			// Every additional parameter, correspond ",?" ,The total length of the increased question mark is (sliceLen-1)*2
-			if j >= 1 {
-				// 记录SQL
-				// Log SQL.
-				newSQLStr.WriteString(",?")
+			// 语句中没有?问号
+			// No in the sentence Question mark
+			if len(questions) < 1 {
+				return sqlstr, nil
 			}
-			// 记录新值
-			// Record new value
-			sliceValue := valueOf.Index(j).Interface()
-			newValues = append(newValues, sliceValue)
-		}
-		// 记录SQL
-		// Log SQL
-		newSQLStr.WriteString(questions[i+1])
-	}
-	// 重新赋值
-	// Reassign
-	finder.sqlstr = newSQLStr.String()
-	finder.values = newValues
+
+			// 重新记录参数值
+			// Re-record the parameter value
+			newValues := make([]interface{}, 0)
+			// 新的sql
+			// new sql
+			var newSQLStr strings.Builder
+			// 问号切割的语句实际长度比问号号个数多1个,先把第一个语句片段加上,后面就是比参数的索引大1
+			// The actual length of the sentence cut by the question mark is one more than the number of question marks. First, add the first sentence fragment, and the latter is one greater than the index of the parameter
+			newSQLStr.WriteString(questions[0])
+
+			// 遍历所有的参数
+			// Traverse all parameters
+			for i, v := range finder.values {
+				// 先拼接问号,问号切割之后,问号就丢失了,先补充上
+				// First splicing the question mark, after the question mark is cut, the question mark is lost, add it first
+				newSQLStr.WriteString("?")
+
+				valueOf := reflect.ValueOf(v)
+				typeOf := reflect.TypeOf(v)
+				kind := valueOf.Kind()
+				// 如果参数是个指针类型
+				// If the parameter is a pointer type
+				if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
+					valueOf = valueOf.Elem()
+					typeOf = typeOf.Elem()
+					kind = valueOf.Kind()
+				}
+
+				// 如果不是数组或者slice
+				// If it is not an array or slice
+				if !(kind == reflect.Array || kind == reflect.Slice) {
+					// 记录新值
+					// Record new value.
+					newValues = append(newValues, v)
+					// 记录SQL
+					// Log SQL。
+					newSQLStr.WriteString(questions[i+1])
+					continue
+				}
+				// 字节数组是特殊的情况
+				// Byte array is a special case
+				if typeOf == reflect.TypeOf([]byte{}) {
+					// 记录新值
+					// Record new value
+					newValues = append(newValues, v)
+					// 记录SQL
+					// Log SQL
+					newSQLStr.WriteString(questions[i+1])
+					continue
+				}
+
+				// 如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
+				// 获取数组类型参数值的长度
+				// If it is not a string type value, the length cannot be taken, this is a bug, first comment
+				// Get the length of the array type parameter value
+				sliceLen := valueOf.Len()
+				// 数组类型的参数长度小于1,认为是有异常的参数
+				// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
+				if sliceLen < 1 {
+					return sqlstr, errors.New("->finder-->GetSQL()语句:" + sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+				}
+
+				for j := 0; j < sliceLen; j++ {
+					// 每多一个参数,对应",?" 两个符号.增加的问号长度总计是(sliceLen-1)*2
+					// Every additional parameter, correspond ",?" ,The total length of the increased question mark is (sliceLen-1)*2
+					if j >= 1 {
+						// 记录SQL
+						// Log SQL.
+						newSQLStr.WriteString(",?")
+					}
+					// 记录新值
+					// Record new value
+					sliceValue := valueOf.Index(j).Interface()
+					newValues = append(newValues, sliceValue)
+				}
+				// 记录SQL
+				// Log SQL
+				newSQLStr.WriteString(questions[i+1])
+			}
+			// 重新赋值
+			// Reassign
+			finder.sqlstr = newSQLStr.String()
+			finder.values = newValues
+	*/
 	return finder.sqlstr, nil
 }

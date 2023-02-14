@@ -804,29 +804,77 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 // reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 // reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
-	switch dialect {
-	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
+	argsNum := len(*args)
+	if argsNum < 1 { //没有参数,不需要处理
 		return nil
 	}
+	// 重新记录参数值
+	// Re-record the parameter value
+	newValues := make([]interface{}, 0)
+	//记录sql参数值的下标,例如 $1 @p1 ,从1开始
+	sqlParamIndex := 1
 
-	strs := strings.Split(*sqlstr, "?")
-	if len(strs) < 1 {
-		return nil
-	}
-	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
-	sqlBuilder.WriteString(strs[0])
-	for i := 1; i < len(strs); i++ {
+	// 新的sql
+	// new sql
+	var newSQLStr strings.Builder
+	newSQLStr.Grow(len(*sqlstr))
+	i := -1
+	for _, v := range []byte(*sqlstr) {
+		if v != '?' { //如果不是?问号
+			newSQLStr.WriteByte(v)
+			continue
+		}
+		i = i + 1
+		v := (*args)[i]
+		valueOf := reflect.ValueOf(v)
+		typeOf := reflect.TypeOf(v)
+		kind := valueOf.Kind()
+		// 如果参数是个指针类型
+		// If the parameter is a pointer type
+		if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
+			valueOf = valueOf.Elem()
+			typeOf = typeOf.Elem()
+			kind = valueOf.Kind()
+		}
+		// 参数值长度,默认是1,其他取值数组长度
+		valueLen := 1
+
+		// 如果不是数组或者slice
+		// If it is not an array or slice
+		if !(kind == reflect.Array || kind == reflect.Slice) {
+			// 记录新值
+			// Record new value.
+			newValues = append(newValues, v)
+		} else if typeOf == reflect.TypeOf([]byte{}) {
+			// 记录新值
+			// Record new value
+			newValues = append(newValues, v)
+		} else {
+			// 如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
+			// 获取数组类型参数值的长度
+			// If it is not a string type value, the length cannot be taken, this is a bug, first comment
+			// Get the length of the array type parameter value
+			valueLen = valueOf.Len()
+			// 数组类型的参数长度小于1,认为是有异常的参数
+			// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
+			if valueLen < 1 {
+				return errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+			} else if valueLen == 1 { //如果数组里只有一个参数,认为是单个参数
+				v = valueOf.Index(0).Interface()
+				newValues = append(newValues, v)
+			}
+
+		}
+
 		switch dialect {
+		case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
+			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
 		case "postgresql", "kingbase": // postgresql,kingbase
-			sqlBuilder.WriteString("$")
-			sqlBuilder.WriteString(strconv.Itoa(i))
+			wrapParamSQL("$", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
 		case "mssql": // mssql
-			sqlBuilder.WriteString("@p")
-			sqlBuilder.WriteString(strconv.Itoa(i))
+			wrapParamSQL("@p", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
 		case "oracle", "shentong": // oracle,神通
-			sqlBuilder.WriteString(":")
-			sqlBuilder.WriteString(strconv.Itoa(i))
+			wrapParamSQL(":", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
 		case "tdengine": // tdengine,重新处理 字符类型的参数 '?'
 			typeOf := reflect.TypeOf((*args)[i-1])
 			if typeOf.Kind() == reflect.Ptr {
@@ -834,17 +882,45 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 				typeOf = typeOf.Elem()
 			}
 			if typeOf.Kind() == reflect.String { // 如果值是字符串
-				sqlBuilder.WriteString("'?'")
+				wrapParamSQL("'?'", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
 			} else { // 其他情况,还是使用 ?
-				sqlBuilder.WriteString("?")
+				wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
 			}
 		default: // 其他情况,还是使用 ? | In other cases, or use  ?
-			sqlBuilder.WriteString("?")
+			newSQLStr.WriteByte('?')
 		}
-		sqlBuilder.WriteString(strs[i])
+
 	}
-	*sqlstr = sqlBuilder.String()
+
+	*sqlstr = newSQLStr.String()
+	*args = newValues
 	return nil
+}
+
+func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, writeIndex bool) {
+	sqlParamIndex := *sqlParamIndexPtr
+	if valueLen == 1 {
+		newSQLStr.WriteString(symbols)
+		if writeIndex {
+			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
+		}
+
+	} else if valueLen > 1 { //如果值是数组
+		for j := 0; j < valueLen; j++ {
+			if j == 0 { // 第一个
+				newSQLStr.WriteString(symbols)
+			} else {
+				newSQLStr.WriteString("," + symbols)
+			}
+			if writeIndex {
+				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
+			}
+			sliceValue := (*valueOf).Index(j).Interface()
+			*newValues = append(*newValues, sliceValue)
+		}
+	}
+	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
+
 }
 
 // reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
