@@ -257,6 +257,9 @@ func init() {
     // Custom primary key generation
 	// zorm.FuncGenerateStringID=funcmyId
 
+	// Customize the Tag column name
+	// zorm.FuncWrapFieldTagName=funcmyTagName
+
 	// Custom decimal type implementation
 	// zorm.FuncDecimalValue=funcmyDecimal
 
