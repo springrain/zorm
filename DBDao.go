@@ -800,7 +800,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 	// 查询总条数
 	// Query total number
-	if page != nil && finder.SelectTotalCount {
+	if finder.SelectTotalCount && page != nil {
 		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", errCount)
@@ -1086,7 +1086,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 
 	// 查询总条数
 	// Query total number
-	if page != nil && finder.SelectTotalCount {
+	if finder.SelectTotalCount && page != nil {
 		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->QueryMap-->selectCount查询总条数错误:%w", errCount)
