@@ -177,9 +177,9 @@ func (dbConnection *dataBaseConnection) commit() error {
 
 // execContext 执行sql语句,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // execContext Execute sql statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
-func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql *string, args []interface{}) (*sql.Result, error) {
+func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Result, error) {
 	// reBindSQL 重新处理参数代入方式
-	err := reBindSQL(dbConnection.config.Dialect, execsql, &args)
+	execsql, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}
@@ -198,20 +198,20 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 	// 小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		FuncPrintSQL(ctx, *execsql, args, 0)
+		FuncPrintSQL(ctx, *execsql, *args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
 		start = &now
 	}
 	if dbConnection.tx != nil {
-		res, err = dbConnection.tx.ExecContext(ctx, *execsql, args...)
+		res, err = dbConnection.tx.ExecContext(ctx, *execsql, *args...)
 	} else {
-		res, err = dbConnection.db.ExecContext(ctx, *execsql, args...)
+		res, err = dbConnection.db.ExecContext(ctx, *execsql, *args...)
 	}
 	if slowSQLMillis > 0 {
 		slow := time.Since(*start).Milliseconds()
 		if slow-int64(slowSQLMillis) >= 0 {
-			FuncPrintSQL(ctx, *execsql, args, slow)
+			FuncPrintSQL(ctx, *execsql, *args, slow)
 		}
 	}
 	if err != nil {
@@ -221,9 +221,9 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, execsql
 }
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
-func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, query *string, args []interface{}) (*sql.Row, error) {
+func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Row, error) {
 	// reBindSQL 重新处理参数代入方式
-	err := reBindSQL(dbConnection.config.Dialect, query, &args)
+	query, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}
@@ -237,21 +237,21 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 	// 小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		FuncPrintSQL(ctx, *query, args, 0)
+		FuncPrintSQL(ctx, *query, *args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
 		start = &now
 	}
 
 	if dbConnection.tx != nil {
-		row = dbConnection.tx.QueryRowContext(ctx, *query, args...)
+		row = dbConnection.tx.QueryRowContext(ctx, *query, *args...)
 	} else {
-		row = dbConnection.db.QueryRowContext(ctx, *query, args...)
+		row = dbConnection.db.QueryRowContext(ctx, *query, *args...)
 	}
 	if slowSQLMillis > 0 {
 		slow := time.Since(*start).Milliseconds()
 		if slow-int64(slowSQLMillis) >= 0 {
-			FuncPrintSQL(ctx, *query, args, slow)
+			FuncPrintSQL(ctx, *query, *args, slow)
 		}
 	}
 	return row, nil
@@ -259,9 +259,9 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, que
 
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
-func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query *string, args []interface{}) (*sql.Rows, error) {
+func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Rows, error) {
 	// reBindSQL 重新处理参数代入方式
-	err := reBindSQL(dbConnection.config.Dialect, query, &args)
+	query, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}
@@ -275,21 +275,21 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, query 
 	// 小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
-		FuncPrintSQL(ctx, *query, args, 0)
+		FuncPrintSQL(ctx, *query, *args, 0)
 	} else if slowSQLMillis > 0 {
 		now := time.Now() // 获取当前时间
 		start = &now
 	}
 
 	if dbConnection.tx != nil {
-		rows, err = dbConnection.tx.QueryContext(ctx, *query, args...)
+		rows, err = dbConnection.tx.QueryContext(ctx, *query, *args...)
 	} else {
-		rows, err = dbConnection.db.QueryContext(ctx, *query, args...)
+		rows, err = dbConnection.db.QueryContext(ctx, *query, *args...)
 	}
 	if slowSQLMillis > 0 {
 		slow := time.Since(*start).Milliseconds()
 		if slow-int64(slowSQLMillis) >= 0 {
-			FuncPrintSQL(ctx, *query, args, slow)
+			FuncPrintSQL(ctx, *query, *args, slow)
 		}
 	}
 	if err != nil {

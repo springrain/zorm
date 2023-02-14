@@ -513,7 +513,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 
 	// 根据语句和参数查询
 	// Query based on statements and parameters
-	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, &finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->QueryRow-->queryContext查询数据库错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
@@ -699,7 +699,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 
 	// 根据语句和参数查询
 	// Query based on statements and parameters
-	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, &finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->Query-->queryContext查询rows错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
@@ -903,7 +903,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 
 	// 根据语句和参数查询
 	// Query based on statements and parameters
-	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, finder.values)
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, &finder.values)
 	if errQueryContext != nil {
 		errQueryContext = fmt.Errorf("->QueryMap-->queryContext查询rows错误:%w", errQueryContext)
 		FuncLogError(ctx, errQueryContext)
@@ -1759,7 +1759,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	var res *sql.Result
 	var errexec error
 	if lastInsertID != nil {
-		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstrptr, values)
+		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstrptr, &values)
 		if errrow != nil {
 			return res, errrow
 		}
@@ -1769,7 +1769,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 			return res, errexec
 		}
 	} else {
-		res, errexec = dbConnection.execContext(ctx, sqlstrptr, values)
+		res, errexec = dbConnection.execContext(ctx, sqlstrptr, &values)
 	}
 
 	if errexec != nil {

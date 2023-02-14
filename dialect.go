@@ -803,10 +803,10 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 
 // reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
 // reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
-func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
+func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
 	argsNum := len(*args)
 	if argsNum < 1 { //没有参数,不需要处理
-		return nil
+		return sqlstr, args, nil
 	}
 	// 重新记录参数值
 	// Re-record the parameter value
@@ -858,7 +858,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 			// 数组类型的参数长度小于1,认为是有异常的参数
 			// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 			if valueLen < 1 {
-				return errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+				return nil, nil, errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
 			} else if valueLen == 1 { //如果数组里只有一个参数,认为是单个参数
 				v = valueOf.Index(0).Interface()
 				newValues = append(newValues, v)
@@ -891,10 +891,8 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) error {
 		}
 
 	}
-
-	*sqlstr = newSQLStr.String()
-	*args = newValues
-	return nil
+	sqlstring := newSQLStr.String()
+	return &sqlstring, &newValues, nil
 }
 
 func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, writeIndex bool) {
