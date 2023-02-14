@@ -261,6 +261,9 @@ func init() {
     // 自定义主键生成
 	// zorm.FuncGenerateStringID=funcmyId
 
+	// 自定义Tag列名
+	// zorm.FuncWrapFieldTagName=funcmyTagName
+
 	// 自定义decimal类型实现,例如github.com/shopspring/decimal
 	// zorm.FuncDecimalValue=funcmyDecimal
 

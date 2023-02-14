@@ -71,7 +71,7 @@ func Test_getFieldTagName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fn != nil {
-				WrapFieldTagName = tt.fn
+				FuncWrapFieldTagName = tt.fn
 			}
 			if got := getFieldTagName(tt.args.field); got != tt.want {
 				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
