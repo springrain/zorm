@@ -805,15 +805,9 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 // reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
 	argsNum := len(*args)
-	placeholderNum := strings.Count(*sqlstr, "?")
-	if argsNum != placeholderNum { //占位符和参数数量不一致
-		errMessage := fmt.Sprintf("sql语句中参数和值数量不一致,sql语句:%s , 参数值:%v", *sqlstr, *args)
-		return nil, nil, errors.New(errMessage)
-	}
-	if argsNum < 1 { //没有参数,不需要处理
+	if argsNum < 1 { //没有参数,不需要处理,也不判断参数数量了,数据库会报错提示
 		return sqlstr, args, nil
 	}
-
 	// 重新记录参数值
 	// Re-record the parameter value
 	newValues := make([]interface{}, 0)
@@ -831,6 +825,9 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			continue
 		}
 		i = i + 1
+		if i >= argsNum { //占位符数量比参数值多,不使用 strings.Count函数,避免多次操作字符串
+			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,sql语句:%s , 参数值:%v", *sqlstr, *args)
+		}
 		v := (*args)[i]
 		valueOf := reflect.ValueOf(v)
 		typeOf := reflect.TypeOf(v)
@@ -896,6 +893,11 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			newSQLStr.WriteByte('?')
 		}
 
+	}
+
+	//?号占位符的数量和参数不一致,不使用 strings.Count函数,避免多次操作字符串
+	if (i + 1) != argsNum {
+		return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,sql语句:%s , 参数值:%v", *sqlstr, *args)
 	}
 	sqlstring := newSQLStr.String()
 	return &sqlstring, &newValues, nil
