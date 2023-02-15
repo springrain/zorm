@@ -895,7 +895,8 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 	return &sqlstring, &newValues, nil
 }
 
-// wrapParamSQL 包装SQL语句,
+// wrapParamSQL 包装SQL语句
+// symbols(占位符) valueLen(参数长度) sqlParamIndexPtr(参数的下标指针,数组会改变值) newSQLStr(SQL字符串Builder) valueOf(参数值的反射对象) hasParamIndex(是否拼接参数下标 $1 $2) isTDengine(TDengine数据库需要单独处理字符串类型)
 func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
 	sqlParamIndex := *sqlParamIndexPtr
 	if valueLen == 1 {
@@ -917,7 +918,8 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 			if j == 0 { // 第一个
 				newSQLStr.WriteString(symbols)
 			} else {
-				newSQLStr.WriteString("," + symbols)
+				newSQLStr.WriteByte(',')
+				newSQLStr.WriteString(symbols)
 			}
 			if hasParamIndex {
 				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
