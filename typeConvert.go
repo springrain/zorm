@@ -35,7 +35,7 @@ var FuncDecimalValue = func(ctx context.Context, dialect string) interface{} {
 // funcName 是需要重写的方法命,funcObject是对应的函数. 返回值bool是否重写成功,interface{}是重写前的函数
 // 一般是在init里调用重写
 func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, error) {
-	if len(funcName) < 1 {
+	if funcName == "" {
 		return false, nil, errors.New("->OverrideFunc-->funcName不能为空")
 	}
 

@@ -113,8 +113,8 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 		return nil
 	}
 
-	if len(s) > 0 {
-		if len(finder.sqlstr) > 0 {
+	if s != "" {
+		if finder.sqlstr != "" {
 			finder.sqlstr = ""
 		}
 		// 默认加一个空格,避免手误两个字符串连接再一起

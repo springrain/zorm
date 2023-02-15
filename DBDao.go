@@ -332,7 +332,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				FuncLogError(ctx, errGlobal)
 				return nil, errGlobal
 			}
-			if len(globalXID) < 1 {
+			if globalXID == "" {
 				errGlobal = errors.New("->Transaction-->global:globalTransaction.Begin无异常开启后,获取的XID为空")
 				FuncLogError(ctx, errGlobal)
 				return nil, errGlobal
@@ -942,12 +942,13 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 	resultMapList = make([]map[string]interface{}, 0)
+	columnTypeLen := len(columnTypes)
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
 		// 接收数据库返回的数据,需要使用指针接收
 		// To receive the data returned by the database, you need to use the pointer to receive
-		values := make([]interface{}, len(columnTypes))
+		values := make([]interface{}, columnTypeLen)
 		// 使用指针类型接收字段值,需要使用interface{}包装一下
 		// To use the pointer type to receive the field value, you need to use interface() to wrap it
 		result := make(map[string]interface{})
@@ -1800,7 +1801,7 @@ func BindContextSQLHint(parent context.Context, hint string) (context.Context, e
 	if parent == nil {
 		return nil, errors.New("->BindContextSQLHint-->context的parent不能为nil")
 	}
-	if len(hint) < 1 {
+	if hint == "" {
 		return nil, errors.New("->BindContextSQLHint-->hint不能为空")
 	}
 

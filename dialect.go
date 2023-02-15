@@ -138,7 +138,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	}
 
 	sequence := entity.GetPkSequence()
-	if len(sequence) > 0 {
+	if sequence != "" {
 		// 序列自增 Sequence increment
 		autoIncrement = 2
 	}
@@ -170,7 +170,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
 				i = i - 1
-				if i > 0 { // i+1<len(*columns) 风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
+				if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
 					sqlBuilder.WriteString(",")
 					valueSQLBuilder.WriteString(",")
 				}
@@ -202,7 +202,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 			}
 		}
 
-		if i > 0 { // i+1<len(*columns) 风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
+		if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
 			sqlBuilder.WriteString(",")
 			valueSQLBuilder.WriteString(",")
 		}
@@ -524,7 +524,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	_, hasPK := dbFieldMap[entity.GetPKColumnName()]
 	if entity.GetPKColumnName() != "" && !hasPK { // 如果有主键字段,却没值,认为是自增或者序列 | If the primary key is not set, it is considered to be auto-increment or sequence
 		autoIncrement = true
-		if len(entity.GetEntityMapPkSequence()) > 0 { // 如果是序列 | If it is a sequence.
+		if entity.GetEntityMapPkSequence() != "" { // 如果是序列 | If it is a sequence.
 			sqlBuilder.WriteString(entity.GetPKColumnName())
 			valueSQLBuilder.WriteString(entity.GetEntityMapPkSequence())
 			if len(dbFieldMap) > 1 { // 如果不只有序列
@@ -785,7 +785,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	if !ok {
 		return errors.New("->wrapSQLHint-->contextValue转换string失败")
 	}
-	if len(hint) < 1 {
+	if hint == "" {
 		return nil
 	}
 	// sql去空格
