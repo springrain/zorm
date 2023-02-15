@@ -215,7 +215,7 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr 
 		}
 	}
 	if err != nil {
-		err = fmt.Errorf("->execContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *execsql, args)
+		err = fmt.Errorf("->execContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *execsql, *args)
 	}
 	return &res, err
 }
@@ -293,7 +293,7 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, sqlstr
 		}
 	}
 	if err != nil {
-		err = fmt.Errorf("->queryContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *query, args)
+		err = fmt.Errorf("->queryContext执行错误:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", err, *query, *args)
 	}
 	return rows, err
 }
