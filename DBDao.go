@@ -60,6 +60,9 @@ const contextDBConnectionValueKey = wrapContextStringKey("contextDBConnectionVal
 // contextTxOptionsKey 事务选项设置TxOptions的key,设置事务的隔离级别
 const contextTxOptionsKey = wrapContextStringKey("contextTxOptionsKey")
 
+// stringBuilderGrowLen 默认长度
+const stringBuilderGrowLen = 100
+
 // DataSourceConfig 数据库连接池的配置
 // DateSourceConfig Database connection pool configuration
 type DataSourceConfig struct {
@@ -1637,7 +1640,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		gbi = locGroupBy[0]
 	}
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(100)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	// 特殊关键字,包装SQL
 	// Special keywords, wrap SQL
 	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {

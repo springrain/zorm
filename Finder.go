@@ -50,7 +50,7 @@ type Finder struct {
 // NewFinder Initialize a Finder and generate an empty Finder
 func NewFinder() *Finder {
 	finder := Finder{}
-	finder.sqlBuilder.Grow(100)
+	finder.sqlBuilder.Grow(stringBuilderGrowLen)
 	finder.SelectTotalCount = true
 	finder.InjectionCheck = true
 	// slice扩容会生成新的slice,最后要值复制接收.问:为什么cap是3?答:经验

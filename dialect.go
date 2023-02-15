@@ -39,7 +39,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 		page.PageNo = 1
 	}
 	var sqlbuilder strings.Builder
-	sqlbuilder.Grow(50)
+	sqlbuilder.Grow(stringBuilderGrowLen)
 	sqlbuilder.WriteString(*sqlstr)
 	switch dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": // MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
@@ -94,7 +94,8 @@ func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStru
 	}
 
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
@@ -120,14 +121,14 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
-	valueSQLBuilder.Grow(50)
+	valueSQLBuilder.Grow(stringBuilderGrowLen)
 	valueSQLBuilder.WriteString(" (")
 	// 主键的名称
 	// The name of the primary key.
@@ -241,7 +242,8 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		return sqlstr, autoIncrement, firstErr
 	}
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	// sqlstr := "INSERT INTO "
@@ -341,7 +343,8 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 	}
 
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(valuesql) + 19)
+	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(valuesql) + 19)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
@@ -385,7 +388,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
@@ -452,7 +455,7 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("DELETE FROM ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" WHERE ")
@@ -476,7 +479,8 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 	// sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
 
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	//sqlBuilder.Grow(len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(inserColumnName)
@@ -505,7 +509,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(100)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString("INSERT INTO ")
 	// sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString("(")
@@ -513,7 +517,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement.
 	var valueSQLBuilder strings.Builder
-	valueSQLBuilder.Grow(30)
+	valueSQLBuilder.Grow(stringBuilderGrowLen)
 	valueSQLBuilder.WriteString(" (")
 	// 是否Set了主键
 	// Whether the primary key is set.
@@ -566,7 +570,7 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("UPDATE ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
@@ -792,7 +796,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	}
 	// sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(50)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString(sqlTrim[:sqlIndex])
 	sqlBuilder.WriteString(" ")
 	sqlBuilder.WriteString(hint)
@@ -939,7 +943,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 		// SQL语句的构造器
 		// SQL statement constructor
 		var sqlBuilder strings.Builder
-		sqlBuilder.Grow(50)
+		sqlBuilder.Grow(stringBuilderGrowLen)
 		sqlBuilder.WriteString("ALTER TABLE ")
 		sqls := findUpdateTableName(sqlstr)
 		if len(sqls) >= 2 { // 如果是更新语句
@@ -969,7 +973,8 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64
 	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
+	//sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
+	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString(*sqlstr)
 	switch dialect {
 	case "postgresql", "kingbase":
