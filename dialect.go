@@ -805,9 +805,15 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 // reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
 	argsNum := len(*args)
+	placeholderNum := strings.Count(*sqlstr, "?")
+	if argsNum != placeholderNum { //占位符和参数数量不一致
+		errMessage := fmt.Sprintf("sql语句中参数和值数量不一致,sql语句:%s , 参数值:%v", *sqlstr, *args)
+		return nil, nil, errors.New(errMessage)
+	}
 	if argsNum < 1 { //没有参数,不需要处理
 		return sqlstr, args, nil
 	}
+
 	// 重新记录参数值
 	// Re-record the parameter value
 	newValues := make([]interface{}, 0)
