@@ -829,16 +829,17 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,sql语句:%s , 参数值:%v", *sqlstr, *args)
 		}
 		v := (*args)[i]
+		//反射获取参数的值
 		valueOf := reflect.ValueOf(v)
-		typeOf := reflect.TypeOf(v)
+		//获取类型
 		kind := valueOf.Kind()
 		// 如果参数是个指针类型
 		// If the parameter is a pointer type
 		if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
 			valueOf = valueOf.Elem()
-			typeOf = typeOf.Elem()
 			kind = valueOf.Kind()
 		}
+		typeOf := valueOf.Type()
 		// 参数值长度,默认是1,其他取值数组长度
 		valueLen := 1
 
