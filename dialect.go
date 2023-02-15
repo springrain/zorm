@@ -872,24 +872,15 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 
 		switch dialect {
 		case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
-			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
+			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false, false)
 		case "postgresql", "kingbase": // postgresql,kingbase
-			wrapParamSQL("$", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
+			wrapParamSQL("$", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true, false)
 		case "mssql": // mssql
-			wrapParamSQL("@p", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
+			wrapParamSQL("@p", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true, false)
 		case "oracle", "shentong": // oracle,神通
-			wrapParamSQL(":", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true)
+			wrapParamSQL(":", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true, false)
 		case "tdengine": // tdengine,重新处理 字符类型的参数 '?'
-			typeOf := reflect.TypeOf((*args)[i-1])
-			if typeOf.Kind() == reflect.Ptr {
-				// 获取指针下的类型
-				typeOf = typeOf.Elem()
-			}
-			if typeOf.Kind() == reflect.String { // 如果值是字符串
-				wrapParamSQL("'?'", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
-			} else { // 其他情况,还是使用 ?
-				wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false)
-			}
+			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false, true)
 		default: // 其他情况,还是使用 ? | In other cases, or use  ?
 			newSQLStr.WriteByte('?')
 		}
@@ -904,25 +895,34 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 	return &sqlstring, &newValues, nil
 }
 
-func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, writeIndex bool) {
+// wrapParamSQL 包装SQL语句,
+func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
 	sqlParamIndex := *sqlParamIndexPtr
 	if valueLen == 1 {
+		if isTDengine && valueOf.Kind() == reflect.String { //处理tdengine的字符串类型
+			symbols = "'?'"
+		}
 		newSQLStr.WriteString(symbols)
-		if writeIndex {
+
+		if hasParamIndex {
 			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
 		}
 
 	} else if valueLen > 1 { //如果值是数组
 		for j := 0; j < valueLen; j++ {
+			valuej := (*valueOf).Index(j)
+			if isTDengine && valuej.Kind() == reflect.String { //处理tdengine的字符串类型
+				symbols = "'?'"
+			}
 			if j == 0 { // 第一个
 				newSQLStr.WriteString(symbols)
 			} else {
 				newSQLStr.WriteString("," + symbols)
 			}
-			if writeIndex {
+			if hasParamIndex {
 				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
 			}
-			sliceValue := (*valueOf).Index(j).Interface()
+			sliceValue := valuej.Interface()
 			*newValues = append(*newValues, sliceValue)
 		}
 	}
