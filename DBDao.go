@@ -552,14 +552,14 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	}
 	// 查询的字段长度
 	ctLen := len(columnTypes)
-	//是否只有一列,而且可以直接赋值
+	// 是否只有一列,而且可以直接赋值
 	oneColumnScanner := false
 	if ctLen < 1 { // 没有返回列
 		errColumn0 := errors.New("->QueryRow-->ctLen<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return has, errColumn0
-	} else if ctLen == 1 { //如果只查询一个字段
-		//是否是可以直接扫描的类型
+	} else if ctLen == 1 { // 如果只查询一个字段
+		// 是否是可以直接扫描的类型
 		_, oneColumnScanner = entity.(sql.Scanner)
 		if !oneColumnScanner {
 			pkgPath := typeOf.PkgPath()
@@ -571,7 +571,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	}
 	var dbColumnFieldMap map[string]reflect.StructField
 	var exportFieldMap map[string]reflect.StructField
-	if !oneColumnScanner { //如果不是一个直接可以映射的字段,默认为是sturct
+	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
 		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&typeOf)
@@ -737,14 +737,14 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}
 	// 查询的字段长度
 	ctLen := len(columnTypes)
-	//是否只有一列,而且可以直接赋值
+	// 是否只有一列,而且可以直接赋值
 	oneColumnScanner := false
 	if ctLen < 1 { // 没有返回列
 		errColumn0 := errors.New("->Query-->ctLen<1,没有返回列")
 		FuncLogError(ctx, errColumn0)
 		return errColumn0
-	} else if ctLen == 1 { //如果只查询一个字段
-		//是否是可以直接扫描的类型
+	} else if ctLen == 1 { // 如果只查询一个字段
+		// 是否是可以直接扫描的类型
 		_, oneColumnScanner = reflect.New(sliceElementType).Interface().(sql.Scanner)
 		if !oneColumnScanner {
 			pkgPath := sliceElementType.PkgPath()
@@ -756,7 +756,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}
 	var dbColumnFieldMap map[string]reflect.StructField
 	var exportFieldMap map[string]reflect.StructField
-	if !oneColumnScanner { //如果不是一个直接可以映射的字段,默认为是sturct
+	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
 		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
@@ -768,7 +768,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
-	//TODO 在这里确定字段直接接收或者struct反射,sqlRowsValues 就不再额外处理了,直接映射数据,提升性能
+	// TODO 在这里确定字段直接接收或者struct反射,sqlRowsValues 就不再额外处理了,直接映射数据,提升性能
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
@@ -779,7 +779,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 			err = sqlRowsValues(ctx, dialect, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
 		}
 
-		//err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
+		// err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values

@@ -94,7 +94,7 @@ func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStru
 	}
 
 	var sqlBuilder strings.Builder
-	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
 	sqlBuilder.WriteString("INSERT INTO ")
@@ -242,7 +242,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		return sqlstr, autoIncrement, firstErr
 	}
 	var sqlBuilder strings.Builder
-	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
@@ -343,7 +343,7 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 	}
 
 	var sqlBuilder strings.Builder
-	//sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(valuesql) + 19)
+	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(valuesql) + 19)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
@@ -479,7 +479,7 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 	// sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
 
 	var sqlBuilder strings.Builder
-	//sqlBuilder.Grow(len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
+	// sqlBuilder.Grow(len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
@@ -791,12 +791,12 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 		return nil
 	}
 	sqlByte := []byte(*sqlstr)
-	//获取第一个单词
+	// 获取第一个单词
 	firstWord, start, end, err := oneWord(0, &sqlByte)
 	if err != nil {
 		return err
 	}
-	if start == -1 { //未取到字符串
+	if start == -1 { // 未取到字符串
 		return nil
 	}
 	var sqlBuilder strings.Builder
@@ -813,34 +813,34 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 // reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
 func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
 	argsNum := len(*args)
-	if argsNum < 1 { //没有参数,不需要处理,也不判断参数数量了,数据库会报错提示
+	if argsNum < 1 { // 没有参数,不需要处理,也不判断参数数量了,数据库会报错提示
 		return sqlstr, args, nil
 	}
 	// 重新记录参数值
 	// Re-record the parameter value
 	newValues := make([]interface{}, 0)
-	//记录sql参数值的下标,例如 $1 @p1 ,从1开始
+	// 记录sql参数值的下标,例如 $1 @p1 ,从1开始
 	sqlParamIndex := 1
 
 	// 新的sql
 	// new sql
 	var newSQLStr strings.Builder
-	//newSQLStr.Grow(len(*sqlstr))
+	// newSQLStr.Grow(len(*sqlstr))
 	newSQLStr.Grow(stringBuilderGrowLen)
 	i := -1
 	for _, v := range []byte(*sqlstr) {
-		if v != '?' { //如果不是?问号
+		if v != '?' { // 如果不是?问号
 			newSQLStr.WriteByte(v)
 			continue
 		}
 		i = i + 1
-		if i >= argsNum { //占位符数量比参数值多,不使用 strings.Count函数,避免多次操作字符串
+		if i >= argsNum { // 占位符数量比参数值多,不使用 strings.Count函数,避免多次操作字符串
 			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", *sqlstr, *args)
 		}
 		v := (*args)[i]
-		//反射获取参数的值
+		// 反射获取参数的值
 		valueOf := reflect.ValueOf(v)
-		//获取类型
+		// 获取类型
 		kind := valueOf.Kind()
 		// 如果参数是个指针类型
 		// If the parameter is a pointer type
@@ -872,7 +872,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 			if valueLen < 1 {
 				return nil, nil, errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
-			} else if valueLen == 1 { //如果数组里只有一个参数,认为是单个参数
+			} else if valueLen == 1 { // 如果数组里只有一个参数,认为是单个参数
 				v = valueOf.Index(0).Interface()
 				newValues = append(newValues, v)
 			}
@@ -911,12 +911,12 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	}
 	// 处理clickhouse的特殊更新语法
 	sqlByte := []byte(*sqlstr)
-	//获取第一个单词
+	// 获取第一个单词
 	firstWord, start, end, err := oneWord(0, &sqlByte)
 	if err != nil {
 		return err
 	}
-	if start == -1 { //未取到字符串
+	if start == -1 { // 未取到字符串
 		return nil
 	}
 	// SQL语句的构造器
@@ -926,21 +926,21 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	sqlBuilder.WriteString("ALTER TABLE ")
 	firstWord = strings.ToUpper(firstWord)
 	tableName := ""
-	if firstWord == "UPDATE" { //更新  update tableName set
+	if firstWord == "UPDATE" { // 更新  update tableName set
 		tableName, start, end, err = oneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
-		//拿到 set
+		// 拿到 set
 		_, start, end, err = oneWord(end, &sqlByte)
 
 	} else if firstWord == "DELETE" { // 删除 delete from tableName
-		//拿到from
+		// 拿到from
 		_, start, end, err = oneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
-		//拿到 tableName
+		// 拿到 tableName
 		tableName, start, end, err = oneWord(end, &sqlByte)
 	} else { // 只处理UPDATE 和 DELETE 语法
 		return nil
@@ -948,17 +948,16 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	if err != nil {
 		return err
 	}
-	if start < 0 || end < 0 { //获取的位置异常
+	if start < 0 || end < 0 { // 获取的位置异常
 		return errors.New("->reUpdateSQL中clickhouse语法异常,请检查sql语句是否标准,-->zormErrorExecSQL:" + *sqlstr)
 	}
 	sqlBuilder.WriteString(tableName)
 	sqlBuilder.WriteByte(' ')
 	sqlBuilder.WriteString(firstWord)
-	//sqlBuilder.WriteByte(' ')
+	// sqlBuilder.WriteByte(' ')
 	sqlBuilder.WriteString((*sqlstr)[end:])
 	*sqlstr = sqlBuilder.String()
 	return nil
-
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
@@ -967,7 +966,7 @@ func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect str
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64
 	var sqlBuilder strings.Builder
-	//sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
+	// sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString(*sqlstr)
 	switch dialect {
@@ -1014,7 +1013,7 @@ func getConfigFromConnection(ctx context.Context, dbConnection *dataBaseConnecti
 func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
 	sqlParamIndex := *sqlParamIndexPtr
 	if valueLen == 1 {
-		if isTDengine && valueOf.Kind() == reflect.String { //处理tdengine的字符串类型
+		if isTDengine && valueOf.Kind() == reflect.String { // 处理tdengine的字符串类型
 			symbols = "'?'"
 		}
 		newSQLStr.WriteString(symbols)
@@ -1023,10 +1022,10 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
 		}
 
-	} else if valueLen > 1 { //如果值是数组
+	} else if valueLen > 1 { // 如果值是数组
 		for j := 0; j < valueLen; j++ {
 			valuej := (*valueOf).Index(j)
-			if isTDengine && valuej.Kind() == reflect.String { //处理tdengine的字符串类型
+			if isTDengine && valuej.Kind() == reflect.String { // 处理tdengine的字符串类型
 				symbols = "'?'"
 			}
 			if j == 0 { // 第一个
@@ -1047,34 +1046,33 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 
 // oneWord 从指定下标,获取一个单词,不包含前后空格,并返回开始是下标和结束的下标,如果找不到合法的字符串,返回-1
 func oneWord(index int, strByte *[]byte) (string, int, int, error) {
-
 	start := -1
 	end := -1
 	byteLen := len(*strByte)
 	if index < 0 {
 		return "", start, end, errors.New("->oneWord索引小于0")
 	}
-	if index > byteLen { //如果索引大于长度
+	if index > byteLen { // 如果索引大于长度
 		return "", start, end, errors.New("->oneWord索引大于字符串长度")
 	}
 	var newStr strings.Builder
 	newStr.Grow(10)
 	for ; index < byteLen; index++ {
 		v := (*strByte)[index]
-		if start == -1 && v != ' ' { //不是空格
+		if start == -1 && v != ' ' { // 不是空格
 			start = index
 		}
-		if start == -1 && v == ' ' { //空格
+		if start == -1 && v == ' ' { // 空格
 			continue
 		}
-		if start >= 0 && v != ' ' { //需要的字符
+		if start >= 0 && v != ' ' { // 需要的字符
 			newStr.WriteByte(v)
-		} else { //遇到空格结束记录
+		} else { // 遇到空格结束记录
 			end = index
 			break
 		}
 	}
-	if start >= 0 && end == -1 { //记录到结尾,不是空格结束
+	if start >= 0 && end == -1 { // 记录到结尾,不是空格结束
 		end = byteLen
 	}
 

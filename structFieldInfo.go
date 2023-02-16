@@ -518,8 +518,8 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 			return errConverDriverValue
 		}
 		if entity != nil { // 查询一个字段,并且可以直接接收
-			//entity = rightValue
-			//valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
+			// entity = rightValue
+			// valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
 		} else { // 如果是Struct类型接收
