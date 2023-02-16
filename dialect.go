@@ -1051,10 +1051,10 @@ func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
 	end := -1
 	byteLen := len(*strByte)
 	if index < 0 {
-		return "", start, end, errors.New("->oneWord索引小于0")
+		return "", start, end, errors.New("->firstOneWord索引小于0")
 	}
 	if index > byteLen { // 如果索引大于长度
-		return "", start, end, errors.New("->oneWord索引大于字符串长度")
+		return "", start, end, errors.New("->firstOneWord索引大于字符串长度")
 	}
 	var newStr strings.Builder
 	newStr.Grow(10)
