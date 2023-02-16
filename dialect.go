@@ -1060,7 +1060,7 @@ func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
 	newStr.Grow(10)
 	for ; index < byteLen; index++ {
 		v := (*strByte)[index]
-		if v == '(' { // 不处理括号
+		if v == '(' || v == ')' { // 不处理括号
 			continue
 		}
 		if start == -1 && v != ' ' { // 不是空格
