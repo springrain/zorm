@@ -1044,7 +1044,7 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
 }
 
-// oneWord 从指定下标,获取一个单词,不包含前后空格,并返回开始是下标和结束的下标,如果找不到合法的字符串,返回-1
+// oneWord 从指定下标,获取一个单词,不包含前后空格,并返回开始下标和结束下标,如果找不到合法的字符串,返回-1
 func oneWord(index int, strByte *[]byte) (string, int, int, error) {
 	start := -1
 	end := -1
