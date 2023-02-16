@@ -45,7 +45,7 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": // MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
-		sqlbuilder.WriteString(",")
+		sqlbuilder.WriteByte(',')
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
 	case "postgresql", "kingbase", "shentong": // postgresql,kingbase,神通数据库
@@ -171,8 +171,8 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				*values = append((*values)[:i], (*values)[i+1:]...)
 				i = i - 1
 				if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-					sqlBuilder.WriteString(",")
-					valueSQLBuilder.WriteString(",")
+					sqlBuilder.WriteByte(',')
+					valueSQLBuilder.WriteByte(',')
 				}
 				colName := getFieldTagName(&field)
 				sqlBuilder.WriteString(colName)
@@ -203,8 +203,8 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 		}
 
 		if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-			sqlBuilder.WriteString(",")
-			valueSQLBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
+			valueSQLBuilder.WriteByte(',')
 		}
 
 		colName := getFieldTagName(&field)
@@ -270,7 +270,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		// 拼接字符串
 		// Splicing string
 		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-			sqlBuilder.WriteString(" ")
+			sqlBuilder.WriteByte(' ')
 			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
 			if config.TDengineInsertsColumnName {
 				sqlBuilder.WriteString(inserColumnName)
@@ -278,7 +278,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 			sqlBuilder.WriteString(" VALUES")
 			sqlBuilder.WriteString(valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'),('4','5')
-			sqlBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
 			sqlBuilder.WriteString(valuesql)
 		}
 
@@ -355,7 +355,7 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 		// 拼接字符串
 		// Splicing string
 		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-			sqlBuilder.WriteString(" ")
+			sqlBuilder.WriteByte(' ')
 			sqlBuilder.WriteString(entityMapSlice[i].GetTableName())
 			if config.TDengineInsertsColumnName {
 				sqlBuilder.WriteString(inserColumnName)
@@ -363,7 +363,7 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 			sqlBuilder.WriteString(" VALUES")
 			sqlBuilder.WriteString(valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
-			sqlBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
 			sqlBuilder.WriteString(valuesql)
 		}
 
@@ -429,7 +429,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 
 		}
 		if i > 0 {
-			sqlBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
 		}
 		colName := getFieldTagName(&field)
 		sqlBuilder.WriteString(colName)
@@ -528,8 +528,8 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 			sqlBuilder.WriteString(entity.GetPKColumnName())
 			valueSQLBuilder.WriteString(entity.GetEntityMapPkSequence())
 			if len(dbFieldMap) > 1 { // 如果不只有序列
-				sqlBuilder.WriteString(",")
-				valueSQLBuilder.WriteString(",")
+				sqlBuilder.WriteByte(',')
+				valueSQLBuilder.WriteByte(',')
 			}
 
 		}
@@ -538,8 +538,8 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	dbFieldMapKey := entity.GetDBFieldMapKey()
 	for dbFieldMapIndex := 0; dbFieldMapIndex < len(dbFieldMapKey); dbFieldMapIndex++ {
 		if dbFieldMapIndex > 0 {
-			sqlBuilder.WriteString(",")
-			valueSQLBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
+			valueSQLBuilder.WriteByte(',')
 		}
 		k := dbFieldMapKey[dbFieldMapIndex]
 		v := dbFieldMap[k]
@@ -589,7 +589,7 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 			continue
 		}
 		if dbFieldMapIndex > 0 {
-			sqlBuilder.WriteString(",")
+			sqlBuilder.WriteByte(',')
 		}
 
 		// 拼接字符串 | Splicing string.
@@ -706,6 +706,7 @@ func findSelectFromIndex(strsql string) int {
 	return fromIndex
 }
 */
+/*
 // 从更新语句中获取表名
 //update\\s(.+)set\\s.*
 var (
@@ -733,6 +734,7 @@ func findDeleteTableName(strsql *string) []string {
 	matchs := deleteRegexp.FindStringSubmatch(*strsql)
 	return matchs
 }
+*/
 
 // FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 // FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
@@ -788,19 +790,21 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	if hint == "" {
 		return nil
 	}
-	// sql去空格
-	sqlTrim := strings.TrimSpace(*sqlstr)
-	sqlIndex := strings.Index(sqlTrim, " ")
-	if sqlIndex < 0 {
+	sqlByte := []byte(*sqlstr)
+	//获取第一个单词
+	firstWord, start, end, err := oneWord(0, &sqlByte)
+	if err != nil {
+		return err
+	}
+	if start == -1 { //未取到字符串
 		return nil
 	}
-	// sql := sqlTrim[:sqlIndex] + " " + hint + sqlTrim[sqlIndex:]
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
-	sqlBuilder.WriteString(sqlTrim[:sqlIndex])
-	sqlBuilder.WriteString(" ")
+	sqlBuilder.WriteString(firstWord)
+	sqlBuilder.WriteByte(' ')
 	sqlBuilder.WriteString(hint)
-	sqlBuilder.WriteString(sqlTrim[sqlIndex:])
+	sqlBuilder.WriteString((*sqlstr)[end:])
 	*sqlstr = sqlBuilder.String()
 	return nil
 }
@@ -821,7 +825,8 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 	// 新的sql
 	// new sql
 	var newSQLStr strings.Builder
-	newSQLStr.Grow(len(*sqlstr))
+	//newSQLStr.Grow(len(*sqlstr))
+	newSQLStr.Grow(stringBuilderGrowLen)
 	i := -1
 	for _, v := range []byte(*sqlstr) {
 		if v != '?' { //如果不是?问号
@@ -899,72 +904,61 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 	return &sqlstring, &newValues, nil
 }
 
-// wrapParamSQL 包装SQL语句
-// symbols(占位符) valueLen(参数长度) sqlParamIndexPtr(参数的下标指针,数组会改变值) newSQLStr(SQL字符串Builder) valueOf(参数值的反射对象) hasParamIndex(是否拼接参数下标 $1 $2) isTDengine(TDengine数据库需要单独处理字符串类型)
-func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
-	sqlParamIndex := *sqlParamIndexPtr
-	if valueLen == 1 {
-		if isTDengine && valueOf.Kind() == reflect.String { //处理tdengine的字符串类型
-			symbols = "'?'"
-		}
-		newSQLStr.WriteString(symbols)
-
-		if hasParamIndex {
-			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
-		}
-
-	} else if valueLen > 1 { //如果值是数组
-		for j := 0; j < valueLen; j++ {
-			valuej := (*valueOf).Index(j)
-			if isTDengine && valuej.Kind() == reflect.String { //处理tdengine的字符串类型
-				symbols = "'?'"
-			}
-			if j == 0 { // 第一个
-				newSQLStr.WriteString(symbols)
-			} else {
-				newSQLStr.WriteByte(',')
-				newSQLStr.WriteString(symbols)
-			}
-			if hasParamIndex {
-				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
-			}
-			sliceValue := valuej.Interface()
-			*newValues = append(*newValues, sliceValue)
-		}
-	}
-	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
-
-}
-
 // reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
 func reUpdateSQL(dialect string, sqlstr *string) error {
-	// 处理clickhouse的特殊更新语法
-	if dialect == "clickhouse" {
-		// SQL语句的构造器
-		// SQL statement constructor
-		var sqlBuilder strings.Builder
-		sqlBuilder.Grow(stringBuilderGrowLen)
-		sqlBuilder.WriteString("ALTER TABLE ")
-		sqls := findUpdateTableName(sqlstr)
-		if len(sqls) >= 2 { // 如果是更新语句
-			sqlBuilder.WriteString(sqls[1])
-			sqlBuilder.WriteString(" UPDATE ")
-		} else { // 如果不是更新语句
-			sqls = findDeleteTableName(sqlstr)
-			if len(sqls) < 2 { // 如果也不是删除语句
-				return nil
-			}
-			sqlBuilder.WriteString(sqls[1])
-			sqlBuilder.WriteString(" DELETE WHERE ")
-		}
-
-		// 截取字符串
-		content := (*sqlstr)[len(sqls[0]):]
-		sqlBuilder.WriteString(content)
-		*sqlstr = sqlBuilder.String()
+	if dialect != "clickhouse" { // 目前只处理clickhouse
 		return nil
 	}
+	// 处理clickhouse的特殊更新语法
+	sqlByte := []byte(*sqlstr)
+	//获取第一个单词
+	firstWord, start, end, err := oneWord(0, &sqlByte)
+	if err != nil {
+		return err
+	}
+	if start == -1 { //未取到字符串
+		return nil
+	}
+	// SQL语句的构造器
+	// SQL statement constructor
+	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(stringBuilderGrowLen)
+	sqlBuilder.WriteString("ALTER TABLE ")
+	firstWord = strings.ToUpper(firstWord)
+	tableName := ""
+	if firstWord == "UPDATE" { //更新  update tableName set
+		tableName, start, end, err = oneWord(end, &sqlByte)
+		if err != nil {
+			return err
+		}
+		//拿到 set
+		_, start, end, err = oneWord(end, &sqlByte)
+
+	} else if firstWord == "DELETE" { // 删除 delete from tableName
+		//拿到from
+		_, start, end, err = oneWord(end, &sqlByte)
+		if err != nil {
+			return err
+		}
+		//拿到 tableName
+		tableName, start, end, err = oneWord(end, &sqlByte)
+	} else { // 只处理UPDATE 和 DELETE 语法
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if start < 0 || end < 0 { //获取的位置异常
+		return errors.New("->reUpdateSQL中clickhouse语法异常,请检查sql语句是否标准,-->zormErrorExecSQL:" + *sqlstr)
+	}
+	sqlBuilder.WriteString(tableName)
+	sqlBuilder.WriteByte(' ')
+	sqlBuilder.WriteString(firstWord)
+	//sqlBuilder.WriteByte(' ')
+	sqlBuilder.WriteString((*sqlstr)[end:])
+	*sqlstr = sqlBuilder.String()
 	return nil
+
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
@@ -1013,4 +1007,76 @@ func getConfigFromConnection(ctx context.Context, dbConnection *dataBaseConnecti
 		config = dbConnection.config
 	}
 	return config, nil
+}
+
+// wrapParamSQL 包装SQL语句
+// symbols(占位符) valueLen(参数长度) sqlParamIndexPtr(参数的下标指针,数组会改变值) newSQLStr(SQL字符串Builder) valueOf(参数值的反射对象) hasParamIndex(是否拼接参数下标 $1 $2) isTDengine(TDengine数据库需要单独处理字符串类型)
+func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
+	sqlParamIndex := *sqlParamIndexPtr
+	if valueLen == 1 {
+		if isTDengine && valueOf.Kind() == reflect.String { //处理tdengine的字符串类型
+			symbols = "'?'"
+		}
+		newSQLStr.WriteString(symbols)
+
+		if hasParamIndex {
+			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
+		}
+
+	} else if valueLen > 1 { //如果值是数组
+		for j := 0; j < valueLen; j++ {
+			valuej := (*valueOf).Index(j)
+			if isTDengine && valuej.Kind() == reflect.String { //处理tdengine的字符串类型
+				symbols = "'?'"
+			}
+			if j == 0 { // 第一个
+				newSQLStr.WriteString(symbols)
+			} else {
+				newSQLStr.WriteByte(',')
+				newSQLStr.WriteString(symbols)
+			}
+			if hasParamIndex {
+				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
+			}
+			sliceValue := valuej.Interface()
+			*newValues = append(*newValues, sliceValue)
+		}
+	}
+	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
+}
+
+// oneWord 从指定下标,获取一个单词,不包含前后空格,并返回开始是下标和结束的下标,如果找不到合法的字符串,返回-1
+func oneWord(index int, strByte *[]byte) (string, int, int, error) {
+
+	start := -1
+	end := -1
+	byteLen := len(*strByte)
+	if index < 0 {
+		return "", start, end, errors.New("->oneWord索引小于0")
+	}
+	if index > byteLen { //如果索引大于长度
+		return "", start, end, errors.New("->oneWord索引大于字符串长度")
+	}
+	var newStr strings.Builder
+	newStr.Grow(10)
+	for ; index < byteLen; index++ {
+		v := (*strByte)[index]
+		if start == -1 && v != ' ' { //不是空格
+			start = index
+		}
+		if start == -1 && v == ' ' { //空格
+			continue
+		}
+		if start >= 0 && v != ' ' { //需要的字符
+			newStr.WriteByte(v)
+		} else { //遇到空格结束记录
+			end = index
+			break
+		}
+	}
+	if start >= 0 && end == -1 { //记录到结尾,不是空格结束
+		end = byteLen
+	}
+
+	return newStr.String(), start, end, nil
 }

@@ -119,7 +119,7 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 		}
 		// 默认加一个空格,避免手误两个字符串连接再一起
 		// A space is added by default to avoid hand mistakes when connecting two strings together
-		finder.sqlBuilder.WriteString(" ")
+		finder.sqlBuilder.WriteByte(' ')
 
 		finder.sqlBuilder.WriteString(s)
 
