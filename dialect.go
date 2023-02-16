@@ -792,7 +792,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	}
 	sqlByte := []byte(*sqlstr)
 	// 获取第一个单词
-	firstWord, start, end, err := oneWord(0, &sqlByte)
+	firstWord, start, end, err := firstOneWord(0, &sqlByte)
 	if err != nil {
 		return err
 	}
@@ -912,7 +912,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	// 处理clickhouse的特殊更新语法
 	sqlByte := []byte(*sqlstr)
 	// 获取第一个单词
-	firstWord, start, end, err := oneWord(0, &sqlByte)
+	firstWord, start, end, err := firstOneWord(0, &sqlByte)
 	if err != nil {
 		return err
 	}
@@ -927,21 +927,21 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	firstWord = strings.ToUpper(firstWord)
 	tableName := ""
 	if firstWord == "UPDATE" { // 更新  update tableName set
-		tableName, start, end, err = oneWord(end, &sqlByte)
+		tableName, start, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
 		// 拿到 set
-		_, start, end, err = oneWord(end, &sqlByte)
+		_, start, end, err = firstOneWord(end, &sqlByte)
 
 	} else if firstWord == "DELETE" { // 删除 delete from tableName
 		// 拿到from
-		_, start, end, err = oneWord(end, &sqlByte)
+		_, start, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
 		// 拿到 tableName
-		tableName, start, end, err = oneWord(end, &sqlByte)
+		tableName, start, end, err = firstOneWord(end, &sqlByte)
 	} else { // 只处理UPDATE 和 DELETE 语法
 		return nil
 	}
@@ -1044,8 +1044,8 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
 }
 
-// oneWord 从指定下标,获取第一个单词,不包含前后空格,并返回开始下标和结束下标,如果找不到合法的字符串,返回-1
-func oneWord(index int, strByte *[]byte) (string, int, int, error) {
+// firstOneWord 从指定下标,获取第一个单词,不包含前后空格,并返回开始下标和结束下标,如果找不到合法的字符串,返回-1
+func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
 	start := -1
 	end := -1
 	byteLen := len(*strByte)
