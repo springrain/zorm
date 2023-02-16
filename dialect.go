@@ -937,7 +937,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 
 	} else if firstWord == "DELETE" { // 删除 delete from tableName
 		// 拿到from
-		_, start, end, err = firstOneWord(end, &sqlByte)
+		_, _, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
