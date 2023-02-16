@@ -792,16 +792,16 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	}
 	sqlByte := []byte(*sqlstr)
 	// 获取第一个单词
-	firstWord, start, end, err := firstOneWord(0, &sqlByte)
+	_, start, end, err := firstOneWord(0, &sqlByte)
 	if err != nil {
 		return err
 	}
-	if start == -1 { // 未取到字符串
+	if start == -1 || end == -1 { // 未取到字符串
 		return nil
 	}
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
-	sqlBuilder.WriteString(firstWord)
+	sqlBuilder.WriteString((*sqlstr)[:end])
 	sqlBuilder.WriteByte(' ')
 	sqlBuilder.WriteString(hint)
 	sqlBuilder.WriteString((*sqlstr)[end:])
@@ -923,11 +923,12 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
+	sqlBuilder.WriteString((*sqlstr)[:start])
 	sqlBuilder.WriteString("ALTER TABLE ")
 	firstWord = strings.ToUpper(firstWord)
 	tableName := ""
 	if firstWord == "UPDATE" { // 更新  update tableName set
-		tableName, start, end, err = firstOneWord(end, &sqlByte)
+		tableName, _, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
 			return err
 		}
@@ -948,7 +949,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	if err != nil {
 		return err
 	}
-	if start < 0 || end < 0 { // 获取的位置异常
+	if start == -1 || end == -1 { // 获取的位置异常
 		return errors.New("->reUpdateSQL中clickhouse语法异常,请检查sql语句是否标准,-->zormErrorExecSQL:" + *sqlstr)
 	}
 	sqlBuilder.WriteString(tableName)
@@ -1059,6 +1060,17 @@ func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
 	newStr.Grow(10)
 	for ; index < byteLen; index++ {
 		v := (*strByte)[index]
+		if v == '(' { // 不处理括号
+			continue
+		} else if v == ')' {
+			if start >= 0 {
+				end = index
+				break
+			} else {
+				continue
+			}
+
+		}
 		if start == -1 && v != ' ' { // 不是空格
 			start = index
 		}
