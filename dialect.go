@@ -1062,14 +1062,6 @@ func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
 		v := (*strByte)[index]
 		if v == '(' { // 不处理括号
 			continue
-		} else if v == ')' {
-			if start >= 0 {
-				end = index
-				break
-			} else {
-				continue
-			}
-
 		}
 		if start == -1 && v != ' ' { // 不是空格
 			start = index
