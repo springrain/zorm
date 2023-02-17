@@ -71,7 +71,7 @@ func NewSelectFinder(tableName string, strs ...string) *Finder {
 	if strsLen == 1 { // 只取值第一个字符串
 		finder.sqlBuilder.WriteString(strs[0])
 	} else {
-		finder.sqlBuilder.WriteString("*")
+		finder.sqlBuilder.WriteByte('*')
 	}
 	finder.sqlBuilder.WriteString(" FROM ")
 	finder.sqlBuilder.WriteString(tableName)

@@ -209,7 +209,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 
 		colName := getFieldTagName(&field)
 		sqlBuilder.WriteString(colName)
-		valueSQLBuilder.WriteString("?")
+		valueSQLBuilder.WriteByte('?')
 
 	}
 
@@ -546,7 +546,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 		// 拼接字符串
 		// Concatenated string
 		sqlBuilder.WriteString(k)
-		valueSQLBuilder.WriteString("?")
+		valueSQLBuilder.WriteByte('?')
 		values = append(values, v)
 	}
 
