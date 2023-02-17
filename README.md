@@ -13,9 +13,9 @@ go get gitee.com/chunanyong/zorm
 ```  
 
 * Based on native SQL statements, the learning cost is lower  
-* [Code generator](https://gitee.com/zhou-a-xing/zorm-generate-struct)    
+* [Code generator](https://gitee.com/zhou-a-xing/zorm-generate-struct)	
 * The code is concise, the main body is 2500 lines, zero dependency 4000 lines, detailed comments, easy to customize and modify
-* <font color=red>Support for transaction propagation, which was the main reason for the birth of ZORM</font>        
+* <font color=red>Support for transaction propagation, which was the main reason for the birth of ZORM</font>		
 * Support dm (dameng), kingbase (jincang), shentong (Shentong), gbase (Nantong), TDengine, mysql, postgresql, oracle, mssql, sqlite, db2, clickhouse...
 * Supports multi-database and read/write splitting  
 * Joint primary keys are not supported, workarounds are assumed to be no primary keys, and business control is implemented (difficult trade-offs)
@@ -102,7 +102,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // It's usually registered in the init method
 func init() {
 	// dialectColumnType is a Dialect.FieldType, such as dm.TEXT
-    zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
+	zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 ```
 ### Kingbase
@@ -206,10 +206,10 @@ func (entity *demoStruct) GetPKColumnName() string {
 func newDemoStruct() demoStruct {
 	demo := demoStruct{
 		// if Id == ", "save zorm will call zorm.FuncGenerateStringID(ctx), the default time stamp + random number, also can define your own implementations, such as zorm.FuncGenerateStringID = funcmyId
-		Id:         zorm.FuncGenerateStringID(ctx),
+		Id:		 zorm.FuncGenerateStringID(ctx),
 		UserName:   "defaultUserName",
 		Password:   "defaultPassword",
-		Active:     1,
+		Active:	 1,
 		CreateTime: time.Now(),
 	}
 	return demo
@@ -254,7 +254,7 @@ func init() {
 	// log.SetFlags(log.LstdFlags)
 	// zorm.FuncPrintSQL = zorm.FuncPrintSQL
 
-    // Custom primary key generation
+	// Custom primary key generation
 	// zorm.FuncGenerateStringID=funcmyId
 
 	// Customize the Tag column name
@@ -263,7 +263,7 @@ func init() {
 	// Custom decimal type implementation
 	// zorm.FuncDecimalValue=funcmyDecimal
 
-    // the Go database driver list: https://github.com/golang/go/wiki/SQLDrivers
+	// the Go database driver list: https://github.com/golang/go/wiki/SQLDrivers
 
 	// dbDaoConfig Configure the database. This is just a simulation, the production should be reading the configuration configuration file and constructing the DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
@@ -289,17 +289,17 @@ func init() {
 
 		// FuncGlobalTransaction seata/hptx An adaptation function of a globally distributed transaction that returns the implementation of the IGlobalTransaction interface
 		// business must call ctx, _ = zorm.BindContextEnableGlobalTransaction (ctx) on the global distribution of transactions
-	    // FuncGlobalTransaction : MyFuncGlobalTransaction,
+		// FuncGlobalTransaction : MyFuncGlobalTransaction,
 
-	    // SQLDB uses an existing database connection and has a higher priority than DSN
-	    // SQLDB : nil,
+		// SQLDB uses an existing database connection and has a higher priority than DSN
+		// SQLDB : nil,
 
-	    // DisableTransaction disables transactions. The default value is false. If DisableTransaction=true is set, the Transaction method becomes invalid and no transaction is required. Some databases, such as TDengine, do not support transactions
-	    // Disable transactions should have the driver forgery transaction API, there should be no orm implementation,clickhouse's driver does just that
-	    // DisableTransaction :false,
+		// DisableTransaction disables transactions. The default value is false. If DisableTransaction=true is set, the Transaction method becomes invalid and no transaction is required. Some databases, such as TDengine, do not support transactions
+		// Disable transactions should have the driver forgery transaction API, there should be no orm implementation,clickhouse's driver does just that
+		// DisableTransaction :false,
 
 		// TDengineInsertsColumnName Whether there are column names in the TDengine batch insert statement. The default false has no column name, and the insertion value and database column order are consistent, reducing the length of the statement
-	    // TDengineInsertsColumnName :false,
+		// TDengineInsertsColumnName :false,
 	}
 
 	// Create dbDao based on dbDaoConfig. Perform this operation once for each database. The first database is defaultDao and the subsequent zorm.xxx method uses defaultDao by default
@@ -308,11 +308,11 @@ func init() {
 
 // TestInsert 02. Test save the Struct object
 func TestInsert(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// Create a demo object
@@ -333,11 +333,11 @@ func TestInsert(t *testing.T) {
 // TestInsertSlice 03. Tests batch save Struct object Slice
 // The primary key property in the Struct object cannot be assigned if the primary key is autoincrement
 func TestInsertSlice(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
@@ -367,11 +367,11 @@ func TestInsertSlice(t *testing.T) {
 
 // TestInsertEntityMap 04. Test to save an EntityMap object for scenarios where it is not convenient to use struct. Use Map as the carrier
 func TestInsertEntityMap(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// To create an EntityMap, pass in the table name
@@ -404,8 +404,8 @@ func TestInsertEntityMap(t *testing.T) {
 
 // TestInsertEntityMapSlice 05. Test batch save []IEntityMap for scenarios where it is not convenient to use struct, using Map as carrier
 func TestInsertEntityMapSlice(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	_, err := Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		entityMapSlice := make([]IEntityMap, 0)
@@ -441,8 +441,8 @@ func TestInsertEntityMapSlice(t *testing.T) {
 
 // TestQueryRow 06. Test query a struct object
 func TestQueryRow(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// Declares a pointer to an object that holds the returned data
 	demo := demoStruct{}
@@ -472,8 +472,8 @@ func TestQueryRow(t *testing.T) {
 
 // TestQueryRowMap 07. Test query map receives results. It is flexible for scenarios that are not suitable for structs
 func TestQueryRowMap(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// finder used to construct the query
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
@@ -493,8 +493,8 @@ func TestQueryRowMap(t *testing.T) {
 
 // TestQuery 08. Test the list of query objects
 func TestQuery(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// Create a slice for receiving results
 	list := make([]demoStruct, 0)
@@ -510,7 +510,7 @@ func TestQuery(t *testing.T) {
 	// The total number of entries is not queried
 	// finder.SelectTotalCount = false
 
-    // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
+	// You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
 	// countFinder.Append(") tempcountfinder")
@@ -527,12 +527,12 @@ func TestQuery(t *testing.T) {
 
 // TestQueryMap 09. Test query map list. Used in the scenario where struct is not convenient
 func TestQueryMap(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// finder used to construct the query
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-    finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
+	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	// Create a paging object. After the query is complete, the page object can be directly used by the front-end paging component
 	page := zorm.NewPage()
 	page.PageNo = 1   // Query page 1. The default value is 1
@@ -541,7 +541,7 @@ func TestQueryMap(t *testing.T) {
 	// The total number of entries is not queried
 	// finder.SelectTotalCount = false
 	
-    // You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
+	// You can manually specify paging statements if they are particularly complex statements that cause count statement construction to fail
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
 	// countFinder.Append(") tempcountfinder")
@@ -558,11 +558,11 @@ func TestQueryMap(t *testing.T) {
 
 // TestUpdateNotZeroValue 10. Update the struct object with only the non-zero fields. The primary key must have a value
 func TestUpdateNotZeroValue(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// Declares a pointer to an object used to update data
@@ -584,11 +584,11 @@ func TestUpdateNotZeroValue(t *testing.T) {
 
 // TestUpdate 11. Update the struct object, updating all fields. The primary key must have a value
 func TestUpdate(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
@@ -609,11 +609,11 @@ func TestUpdate(t *testing.T) {
 
 // TestUpdateFinder 12. With finder update,zorm's most flexible way of writing any update statement, even manually writing insert statements
 func TestUpdateFinder(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
@@ -635,11 +635,11 @@ func TestUpdateFinder(t *testing.T) {
 
 // TestUpdateEntityMap 13. Update an EntityMap. The primary key must have a value
 func TestUpdateEntityMap(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// To create an EntityMap, pass in the table name
@@ -663,11 +663,11 @@ func TestUpdateEntityMap(t *testing.T) {
 
 // TestDelete 14. Delete a struct object. The primary key must have a value
 func TestDelete(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
-    // if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
+	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
 	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := demoStruct{}
@@ -687,8 +687,8 @@ func TestDelete(t *testing.T) {
 
 // TestProc 15. Test calls the stored procedure
 func TestProc(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	demo := demoStruct{}
 	finder := zorm.NewFinder().Append("call testproc(?)", "u_10001")
@@ -698,8 +698,8 @@ func TestProc(t *testing.T) {
 
 // TestFunc 16. Test calls custom functions
 func TestFunc(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	userName := ""
 	finder := zorm.NewFinder().Append("select testfunc(?)", "u_10001")
@@ -709,8 +709,8 @@ func TestFunc(t *testing.T) {
 
 // TestOther 17. Some other instructions. Thank you very much for seeing this line
 func TestOther(t *testing.T) {
-    // ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
-    var ctx = context.Background()
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
+	var ctx = context.Background()
 
 	// Scenario 1. Multiple databases. The dbDao of the corresponding database calls BindContextDBConnection, binds the database connection to the returned ctx, and passes ctx to zorm's function
 	// You can also rewrite the FuncReadWriteStrategy function to return the DBDao of the specified database by setting a different key via ctx
@@ -776,12 +776,12 @@ func main() {
 	// Initialize the configuration
 	conf := config.InitConf(configPath)
 	// Initialize the zorm database
-    // note: zorm DriverName: seataSQL SeataATMySQLDriver,!!!!!!!!!!
-    initZorm()
+	// note: zorm DriverName: seataSQL SeataATMySQLDriver,!!!!!!!!!!
+	initZorm()
 
 	// Start distributed transactions
 	tm.WithGlobalTx(context.Background(), &tm.GtxConfig{
-		Name:    "ATSampleLocalGlobalTx",
+		Name:	"ATSampleLocalGlobalTx",
 		Timeout: time.Second * 30,
 	}, CallbackWithCtx)
 	// CallbackWithCtx business callback definition
@@ -809,8 +809,8 @@ ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // Distributed transaction sample code
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-    // Get the XID of the current distributed transaction. Don't worry about how, if it is a distributed transaction environment, the value will be set automatically
-    // xid := ctx.Value("XID").(string)
+	// Get the XID of the current distributed transaction. Don't worry about how, if it is a distributed transaction environment, the value will be set automatically
+	// xid := ctx.Value("XID").(string)
 
 	// Pass the xid to the third party application
 	// req.Header.Set("XID", xid)
@@ -821,17 +821,17 @@ _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 // /---------- Third-party application -------/ //
 
-    // Do not use the middleware provided by seata-go by default, just ctx binding XID!!!
-    //// r.Use(ginmiddleware.TransactionMiddleware())
-    xid := c.GetHeader(constant.XidKey)
-    ctx = context.WithValue(ctx, "XID", xid)
+	// Do not use the middleware provided by seata-go by default, just ctx binding XID!!!
+	//// r.Use(ginmiddleware.TransactionMiddleware())
+	xid := c.GetHeader(constant.XidKey)
+	ctx = context.WithValue(ctx, "XID", xid)
 
-    // The distributed transaction must be started manually and must be invoked before the local transaction is started
-    ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
-    // ctx invokes the business transaction after binding the XID
-    _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
+	// The distributed transaction must be started manually and must be invoked before the local transaction is started
+	ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
+	// ctx invokes the business transaction after binding the XID
+	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-    // Business code......
+	// Business code......
 
 	// If err is not returned nil, local and distributed transactions are rolled back
 	return nil, err
@@ -854,11 +854,11 @@ func MyFuncGlobalTransaction(ctx context.Context) (zorm.IGlobalTransaction, cont
 	globalTransaction := &ZormGlobalTransaction{globalTx}
 
 	if tm.IsSeataContext(ctx) {
-	    return globalTransaction, ctx, ctx, nil
+		return globalTransaction, ctx, ctx, nil
 	}
 	// open global transaction for the first time
 	ctx = tm.InitSeataContext(ctx)
-    // There is a request to come in, manually get the XID
+	// There is a request to come in, manually get the XID
 	xidObj := ctx.Value("XID")
 	if xidObj ! = nil {
 		xid := xidObj.(string)
@@ -941,7 +941,7 @@ func main() {
 	hptx.InitFromFile(configPath)
 	
 	// Register the mysql driver
-    mysql.RegisterResource(config.GetATConfig().DSN)
+	mysql.RegisterResource(config.GetATConfig().DSN)
 	resource.InitATBranchResource(mysql.GetDataSourceManager())
 	// sqlDB, err := sql.Open("mysql", config.GetATConfig().DSN)
 
@@ -986,8 +986,8 @@ ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // Distributed transaction sample code
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-    // Get the XID of the current distributed transaction. Don't worry about how, if it is a distributed transaction environment, the value will be set automatically
-    // xid := ctx.Value("XID").(string)
+	// Get the XID of the current distributed transaction. Don't worry about how, if it is a distributed transaction environment, the value will be set automatically
+	// xid := ctx.Value("XID").(string)
 
 	// Pass the xid to the third party application
 	// req.Header.Set("XID", xid)
@@ -1011,7 +1011,7 @@ ctx,_ = zorm.BindContextEnableGlobalTransaction(ctx)
 // ctx invokes the business transaction after binding the XID
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-    // Business code......
+	// Business code......
 
 	// If err is not returned nil, local and distributed transactions are rolled back
 	return nil, err
@@ -1086,7 +1086,7 @@ ctx,_ = zorm.BindContextSQLHint(ctx, hint)
 // After ctx binds the sql hint, the business transaction is invoked and ctx is transmitted to realize the propagation of the distributed transaction
 _, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
-    // Business code......
+	// Business code......
 
 	// If err is not returned nil, local and distributed transactions are rolled back
 	return nil, err

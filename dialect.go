@@ -123,7 +123,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString("(")
+	sqlBuilder.WriteByte('(')
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement
@@ -213,8 +213,8 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 
 	}
 
-	sqlBuilder.WriteString(")")
-	valueSQLBuilder.WriteString(")")
+	sqlBuilder.WriteByte(')')
+	valueSQLBuilder.WriteByte(')')
 	inserColumnName = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
 	return inserColumnName, valuesql, autoIncrement, pktype, nil
@@ -512,7 +512,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString("INSERT INTO ")
 	// sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString("(")
+	sqlBuilder.WriteByte('(')
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement.
@@ -550,8 +550,8 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 		values = append(values, v)
 	}
 
-	sqlBuilder.WriteString(")")
-	valueSQLBuilder.WriteString(")")
+	sqlBuilder.WriteByte(')')
+	valueSQLBuilder.WriteByte(')')
 	inserColumnName = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
 
@@ -916,7 +916,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 	if err != nil {
 		return err
 	}
-	if start == -1 { // 未取到字符串
+	if start == -1 || end == -1 { // 未取到字符串
 		return nil
 	}
 	// SQL语句的构造器

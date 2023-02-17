@@ -45,7 +45,7 @@ import (
 // "BindContextDBConnection" is already a connection to the specified database and will conflict with this function. As a single database read and write separation of processing
 var FuncReadWriteStrategy = func(ctx context.Context, rwType int) (*DBDao, error) {
 	if defaultDao == nil {
-		return nil, errors.New("->FuncReadWriteStrategy-->defaultDao为nil")
+		return nil, errors.New("->FuncReadWriteStrategy-->defaultDao为nil,请检查数据库初始化配置是否正确,主要是DSN,DriverName和Dialect")
 	}
 	return defaultDao, nil
 }
