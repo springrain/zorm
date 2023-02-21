@@ -757,15 +757,22 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 }
 
 // FuncWrapFieldTagName 用于包裹字段名, eg. `describe`
+var FuncWrapFieldTagName func(colName string) string = nil
+
+/*
 var FuncWrapFieldTagName = func(colName string) string {
 	// custom: return fmt.Sprintf("`%s`", colName)
 	return colName
 }
+*/
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
 func getFieldTagName(field *reflect.StructField) string {
 	colName := field.Tag.Get(tagColumnName)
-	colName = FuncWrapFieldTagName(colName)
+	if FuncWrapFieldTagName != nil {
+		colName = FuncWrapFieldTagName(colName)
+	}
+
 	/*
 		if dialect == "kingbase" {
 			// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错

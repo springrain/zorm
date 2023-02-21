@@ -1,3 +1,6 @@
+v1.6.7
+ - 完善文档,注释
+
 v1.6.6
  - 感谢 @encircles 的pr,使用FuncWrapFieldTagName函数自定义Tag列名
  - 简化查询逻辑,统一reBindSQL,不覆盖finder参数值,提升性能
