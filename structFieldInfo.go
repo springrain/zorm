@@ -188,10 +188,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	cacheStructFieldInfoMap.Store(exportCacheKey, exportStructFieldMap)
 	cacheStructFieldInfoMap.Store(privateCacheKey, privateStructFieldMap)
 	cacheStructFieldInfoMap.Store(dbColumnCacheKey, dbColumnFieldMap)
-	// cacheStructFieldInfoMap[exportCacheKey] = exportStructFieldMap
-	// cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
-	// cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
-
 	cacheStructFieldInfoMap.Store(structFieldTagCacheKey, structFieldTagMap)
 
 	// 不按照字母顺序,按照反射获取的Struct属性顺序,生成insert语句和update语句
