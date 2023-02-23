@@ -44,7 +44,7 @@ const (
 	dbColumnNameSlicePrefix = "_dbColumnNameSlice_"
 
 	// field对应的column的tag值 缓存的前缀
-	// structFieldTagPrefix = "_structFieldTag_"
+	structFieldTagPrefix = "_structFieldTag_"
 	// 数据库主键  缓存的前缀
 	// dbPKNamePrefix = "_dbPKName_"
 )
@@ -76,7 +76,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	// 所有数据库字段名称的slice,经过排序,不区分大小写
 	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
 
-	// structFieldTagCacheKey := structFieldTagPrefix + entityName
+	structFieldTagCacheKey := structFieldTagPrefix + entityName
 	// dbPKNameCacheKey := dbPKNamePrefix + entityName
 	// 缓存的数据库主键值
 	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
@@ -101,7 +101,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	privateStructFieldMap := make(map[string]reflect.StructField)
 	dbColumnFieldMap := make(map[string]reflect.StructField)
 
-	// structFieldTagMap := make(map[string]string)
+	structFieldTagMap := make(map[string]string)
 	dbColumnFieldNameSlice := make([]string, 0)
 
 	// 遍历sync.Map,要求输入一个func作为参数
@@ -111,21 +111,23 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	funcMapKV := func(k, v interface{}) bool {
 		field := v.(reflect.StructField)
 		fieldName := field.Name
+		fieldNameLower := strings.ToLower(fieldName)
 		if ast.IsExported(fieldName) { // 如果是可以输出的,不区分大小写
-			exportStructFieldMap[strings.ToLower(fieldName)] = field
+			exportStructFieldMap[fieldNameLower] = field
 			// 如果是数据库字段
 			tagColumnValue := field.Tag.Get(tagColumnName)
-			if len(tagColumnValue) > 0 {
+			if tagColumnValue != "" {
 				// dbColumnFieldMap[tagColumnValue] = field
 				// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
 				tagColumnValueLower := strings.ToLower(tagColumnValue)
 				dbColumnFieldMap[tagColumnValueLower] = field
 				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
-				// structFieldTagMap[fieldName] = tagColumnValue
+				//记录字段名称和tag里字段名的对应关系
+				structFieldTagMap[fieldName] = tagColumnValue
 			}
 
 		} else { // 私有属性
-			privateStructFieldMap[strings.ToLower(fieldName)] = field
+			privateStructFieldMap[fieldNameLower] = field
 		}
 
 		return true
@@ -190,7 +192,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	// cacheStructFieldInfoMap[privateCacheKey] = privateStructFieldMap
 	// cacheStructFieldInfoMap[dbColumnCacheKey] = dbColumnFieldMap
 
-	// cacheStructFieldTagInfoMap[structFieldTagCacheKey] = structFieldTagMap
+	cacheStructFieldInfoMap.Store(structFieldTagCacheKey, structFieldTagMap)
 
 	// 不按照字母顺序,按照反射获取的Struct属性顺序,生成insert语句和update语句
 	// sort.Strings(dbColumnFieldNameSlice)
@@ -273,6 +275,19 @@ func getDBColumnFieldNameSlice(typeOf *reflect.Type) ([]string, error) {
 		return dbcfSlice, errors.New("->getDBColumnFieldNameSlice-->dbColumnFieldSlice取值转[]string类型异常")
 	}
 	return dbcfSlice, nil
+}
+
+// getStructFieldTagMap 获取实体类的数据库字段Tag的map,fieldName-->tagValue
+func getStructFieldTagMap(typeOf *reflect.Type) (*map[string]string, error) {
+	structFieldTagMap, dbmapErr := getCacheStructFieldInfo(typeOf, structFieldTagPrefix)
+	if dbmapErr != nil {
+		return nil, fmt.Errorf("->getStructFieldTagMap-->getCacheStructFieldInfo()取值错误:%w", dbmapErr)
+	}
+	tagMap, efOK := structFieldTagMap.(map[string]string)
+	if !efOK {
+		return &tagMap, errors.New("->getStructFieldTagMap-->structFieldTagMap取值转map[string]string类型异常")
+	}
+	return &tagMap, nil
 }
 
 // getCacheStructFieldInfo 根据类型和key,获取缓存的数据字段信息slice,已经排序

@@ -132,15 +132,21 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	valueSQLBuilder.WriteString(" (")
 	// 主键的名称
 	// The name of the primary key.
-	pkFieldName, e := entityPKFieldName(entity, typeOf)
-	if e != nil {
-		return inserColumnName, valuesql, autoIncrement, pktype, e
+	pkFieldName, err := entityPKFieldName(entity, typeOf)
+	if err != nil {
+		return inserColumnName, valuesql, autoIncrement, pktype, err
 	}
 
 	sequence := entity.GetPkSequence()
 	if sequence != "" {
 		// 序列自增 Sequence increment
 		autoIncrement = 2
+	}
+
+	//获取所有字段和tag对照的Map
+	tagMap, err := getStructFieldTagMap(typeOf)
+	if err != nil {
+		return inserColumnName, valuesql, autoIncrement, pktype, err
 	}
 
 	for i := 0; i < len(*columns); i++ {
@@ -160,10 +166,6 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				return inserColumnName, valuesql, autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
 			}
 
-			// 主键的值
-			// The value of the primary key
-			pkValue := (*values)[i]
-			valueIsZero := reflect.ValueOf(pkValue).IsZero()
 			if autoIncrement == 2 { // 如果是序列自增 | If it is a sequence increment
 				// 去掉这一列,后续不再处理
 				// Remove this column and will not process it later.
@@ -174,13 +176,19 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 					sqlBuilder.WriteByte(',')
 					valueSQLBuilder.WriteByte(',')
 				}
-				colName := getFieldTagName(&field)
+				colName := getFieldTagName(&field, tagMap)
 				sqlBuilder.WriteString(colName)
 				valueSQLBuilder.WriteString(sequence)
 
 				continue
+			}
 
-			} else if valueIsZero && (pktype == "string") { // 主键是字符串类型,并且值为"",赋值id
+			// 主键的值
+			// The value of the primary key
+			pkValue := (*values)[i]
+			valueIsZero := reflect.ValueOf(pkValue).IsZero()
+
+			if valueIsZero && (pktype == "string") { // 主键是字符串类型,并且值为"",赋值id
 				// 生成主键字符串
 				// Generate primary key string
 				id := FuncGenerateStringID(ctx)
@@ -207,7 +215,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 			valueSQLBuilder.WriteByte(',')
 		}
 
-		colName := getFieldTagName(&field)
+		colName := getFieldTagName(&field, tagMap)
 		sqlBuilder.WriteString(colName)
 		valueSQLBuilder.WriteByte('?')
 
@@ -398,9 +406,15 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	var pkValue interface{}
 	// 主键的名称
 	// The name of the primary key
-	pkFieldName, e := entityPKFieldName(entity, typeOf)
-	if e != nil {
-		return sqlstr, e
+	pkFieldName, err := entityPKFieldName(entity, typeOf)
+	if err != nil {
+		return sqlstr, err
+	}
+
+	//获取所有字段和tag对照的Map
+	tagMap, err := getStructFieldTagMap(typeOf)
+	if err != nil {
+		return sqlstr, err
 	}
 
 	for i := 0; i < len(*columns); i++ {
@@ -431,7 +445,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 		if i > 0 {
 			sqlBuilder.WriteByte(',')
 		}
-		colName := getFieldTagName(&field)
+		colName := getFieldTagName(&field, tagMap)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString("=?")
 
@@ -767,8 +781,9 @@ var FuncWrapFieldTagName = func(colName string) string {
 */
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
-func getFieldTagName(field *reflect.StructField) string {
-	colName := field.Tag.Get(tagColumnName)
+func getFieldTagName(field *reflect.StructField, structFieldTagMap *map[string]string) string {
+	//colName := field.Tag.Get(tagColumnName)
+	colName := (*structFieldTagMap)[field.Name]
 	if FuncWrapFieldTagName != nil {
 		colName = FuncWrapFieldTagName(colName)
 	}

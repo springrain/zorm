@@ -68,12 +68,14 @@ func Test_getFieldTagName(t *testing.T) {
 			want: "described",
 		},
 	}
+	tagMap := make(map[string]string)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fn != nil {
 				FuncWrapFieldTagName = tt.fn
 			}
-			if got := getFieldTagName(tt.args.field); got != tt.want {
+			tagMap[tt.args.field.Name] = tt.args.field.Tag.Get("column")
+			if got := getFieldTagName(tt.args.field, &tagMap); got != tt.want {
 				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
 			}
 		})
