@@ -170,7 +170,7 @@ func (finder *Finder) GetSQL() (string, error) {
 	if finder == nil || finder.values == nil {
 		return "", errors.New("->finder-->GetSQL()不要自己构建finder,使用NewFinder()方法")
 	}
-	if len(finder.sqlstr) > 0 {
+	if finder.sqlstr != "" {
 		return finder.sqlstr, nil
 	}
 	sqlstr := finder.sqlBuilder.String()

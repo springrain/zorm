@@ -562,7 +562,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		// 是否是可以直接扫描的类型
 		_, oneColumnScanner = entity.(sql.Scanner)
 		if !oneColumnScanner {
-			pkgPath := typeOf.PkgPath()
+			pkgPath := (*typeOf).PkgPath()
 			if pkgPath == "" || pkgPath == "time" { // 系统内置变量和time包
 				oneColumnScanner = true
 			}
@@ -574,7 +574,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
-		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&typeOf)
+		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(typeOf)
 		if err != nil {
 			err = fmt.Errorf("->QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return has, err
@@ -594,10 +594,10 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, dialect, nil, &typeOf, rows, &driverValue, columnTypes, entity, &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, nil, typeOf, rows, &driverValue, columnTypes, entity, &dbColumnFieldMap, &exportFieldMap)
 		} else {
 			pv := reflect.ValueOf(entity)
-			err = sqlRowsValues(ctx, dialect, &pv, &typeOf, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, &pv, typeOf, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
 		}
 
 		// pv = pv.Elem()
@@ -1126,7 +1126,7 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, finder.values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, &(finder.values), nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1156,7 +1156,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
-	if len(columns) < 1 {
+	if len(*columns) < 1 {
 		return affected, errors.New("->Insert-->没有tag信息,请检查struct中 column 的tag")
 	}
 	// 从contxt中获取数据库连接,可能为nil
@@ -1173,7 +1173,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	// SQL语句
 	// SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, &typeOf, entity, &columns, &values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, typeOf, entity, columns, values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1191,12 +1191,12 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, &values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, values)
 
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1273,7 +1273,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		FuncLogError(ctx, columnAndValueErr)
 		return affected, columnAndValueErr
 	}
-	if len(columns) < 1 {
+	if len(*columns) < 1 {
 		return affected, errors.New("->InsertSlice-->columns没有tag信息,请检查struct中 column 的tag")
 	}
 	// 从contxt中获取数据库连接,可能为nil
@@ -1290,14 +1290,14 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		return affected, errConfig
 	}
 	// SQL语句
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, config, &typeOf, entityStructSlice, &columns, &values)
+	sqlstr, _, err := wrapInsertSliceSQL(ctx, config, typeOf, entityStructSlice, columns, values)
 	if err != nil {
 		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1352,7 +1352,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, checkerr
 	}
 
-	pkName, pkNameErr := entityPKFieldName(entity, &typeOf)
+	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
 
 	if pkNameErr != nil {
 		pkNameErr = fmt.Errorf("->Delete-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
@@ -1377,7 +1377,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	values := make([]interface{}, 1)
 	values[0] = value
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, &values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Delete-->wrapExecUpdateValuesAffected执行删除错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1429,7 +1429,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, &values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, values)
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1502,7 +1502,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertEntityMapSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1550,7 +1550,7 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		return affected, err
 	}
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->UpdateEntityMap-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1590,7 +1590,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 
 	// SQL语句
 	// SQL statement
-	sqlstr, err := wrapUpdateSQL(&typeOf, entity, &columns, &values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateSQL(typeOf, entity, columns, values, onlyUpdateNotZero)
 	if err != nil {
 		return nil, err
 	}
@@ -1598,7 +1598,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	finder := NewFinder()
 	finder.sqlstr = sqlstr
 	finder.sqlBuilder.WriteString(sqlstr)
-	finder.values = values
+	finder.values = *values
 	return finder, nil
 }
 
@@ -1750,7 +1750,7 @@ func checkDBConnection(ctx context.Context, dbConnection *dataBaseConnection, ha
 }
 
 // wrapExecUpdateValuesAffected 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
-func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr *string, values []interface{}, lastInsertID *int64) (*sql.Result, error) {
+func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr *string, values *[]interface{}, lastInsertID *int64) (*sql.Result, error) {
 	// 必须要有dbConnection和事务.有可能会创建dbConnection放入ctx或者开启事务,所以要尽可能的接近执行时检查
 	// There must be a db Connection and transaction.It is possible to create a db Connection into ctx or open a transaction, so check as close as possible to the execution
 	var dbConnectionerr error
@@ -1763,7 +1763,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 	var res *sql.Result
 	var errexec error
 	if lastInsertID != nil {
-		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstrptr, &values)
+		sqlrow, errrow := dbConnection.queryRowContext(ctx, sqlstrptr, values)
 		if errrow != nil {
 			return res, errrow
 		}
@@ -1773,7 +1773,7 @@ func wrapExecUpdateValuesAffected(ctx context.Context, affected *int, sqlstrptr 
 			return res, errexec
 		}
 	} else {
-		res, errexec = dbConnection.execContext(ctx, sqlstrptr, &values)
+		res, errexec = dbConnection.execContext(ctx, sqlstrptr, values)
 	}
 
 	if errexec != nil {

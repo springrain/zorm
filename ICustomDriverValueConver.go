@@ -49,7 +49,7 @@ type ICustomDriverValueConver interface {
 // dialectColumnType 值是 Dialect.字段类型,例如: dm.TEXT
 // 一般是放到init方法里进行注册
 func RegisterCustomDriverValueConver(dialectColumnType string, customDriverValueConver ICustomDriverValueConver) error {
-	if len(dialectColumnType) < 1 {
+	if dialectColumnType == "" {
 		return errors.New("->RegisterCustomDriverValueConver-->dialectColumnType为空")
 	}
 	dialectColumnTypes := strings.Split(dialectColumnType, ".")

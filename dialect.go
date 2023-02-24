@@ -86,11 +86,11 @@ func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, string, error) {
+func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
 	if err != nil {
-		return sqlstr, autoIncrement, pktype, err
+		return &sqlstr, autoIncrement, pktype, err
 	}
 
 	var sqlBuilder strings.Builder
@@ -99,18 +99,18 @@ func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStru
 	// sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(inserColumnName)
+	sqlBuilder.WriteString(*inserColumnName)
 	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(valuesql)
+	sqlBuilder.WriteString(*valuesql)
 	sqlstr = sqlBuilder.String()
-	return sqlstr, autoIncrement, pktype, err
+	return &sqlstr, autoIncrement, pktype, err
 }
 
 // wrapInsertValueSQL 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
 // 数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
 // Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, string, int, string, error) {
+func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, *string, int, string, error) {
 	var inserColumnName, valuesql string
 	// 自增类型  0(不自增),1(普通自增),2(序列自增)
 	// Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment)
@@ -134,7 +134,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	// The name of the primary key.
 	pkFieldName, err := entityPKFieldName(entity, typeOf)
 	if err != nil {
-		return inserColumnName, valuesql, autoIncrement, pktype, err
+		return &inserColumnName, &valuesql, autoIncrement, pktype, err
 	}
 
 	sequence := entity.GetPkSequence()
@@ -146,7 +146,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	//获取所有字段和tag对照的Map
 	tagMap, err := getStructFieldTagMap(typeOf)
 	if err != nil {
-		return inserColumnName, valuesql, autoIncrement, pktype, err
+		return &inserColumnName, &valuesql, autoIncrement, pktype, err
 	}
 
 	for i := 0; i < len(*columns); i++ {
@@ -163,7 +163,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 			case reflect.Int64:
 				pktype = "int64"
 			default:
-				return inserColumnName, valuesql, autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
+				return &inserColumnName, &valuesql, autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
 			}
 
 			if autoIncrement == 2 { // 如果是序列自增 | If it is a sequence increment
@@ -225,18 +225,18 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 	valueSQLBuilder.WriteByte(')')
 	inserColumnName = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
-	return inserColumnName, valuesql, autoIncrement, pktype, nil
+	return &inserColumnName, &valuesql, autoIncrement, pktype, nil
 }
 
 // wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, int, error) {
+func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error) {
 	sliceLen := len(entityStructSlice)
 	sqlstr := ""
 	if entityStructSlice == nil || sliceLen < 1 {
-		return sqlstr, 0, errors.New("->wrapInsertSliceSQL对象数组不能为空")
+		return &sqlstr, 0, errors.New("->wrapInsertSliceSQL对象数组不能为空")
 	}
 
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
@@ -247,7 +247,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	// Generate a statement first
 	inserColumnName, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
 	if firstErr != nil {
-		return sqlstr, autoIncrement, firstErr
+		return &sqlstr, autoIncrement, firstErr
 	}
 	var sqlBuilder strings.Builder
 	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
@@ -258,20 +258,22 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
 	} else {
 		// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-		sqlBuilder.WriteString(inserColumnName)
+		sqlBuilder.WriteString(*inserColumnName)
 	}
 	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(valuesql)
+	sqlBuilder.WriteString(*valuesql)
+
+	sqlstr = sqlBuilder.String()
 	// 如果只有一个Struct对象
 	// If there is only one Struct object
 	if sliceLen == 1 {
-		return sqlBuilder.String(), autoIncrement, firstErr
+		return &sqlstr, autoIncrement, firstErr
 	}
 	// 主键的名称
 	// The name of the primary key
 	pkFieldName, e := entityPKFieldName(entity, typeOf)
 	if e != nil {
-		return sqlBuilder.String(), autoIncrement, e
+		return &sqlstr, autoIncrement, e
 	}
 
 	for i := 1; i < sliceLen; i++ {
@@ -281,13 +283,13 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 			sqlBuilder.WriteByte(' ')
 			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
 			if config.TDengineInsertsColumnName {
-				sqlBuilder.WriteString(inserColumnName)
+				sqlBuilder.WriteString(*inserColumnName)
 			}
 			sqlBuilder.WriteString(" VALUES")
-			sqlBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(*valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'),('4','5')
 			sqlBuilder.WriteByte(',')
-			sqlBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(*valuesql)
 		}
 
 		entityStruct := entityStructSlice[i]
@@ -326,28 +328,28 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	}
 
 	sqlstr = sqlBuilder.String()
-	return sqlstr, autoIncrement, nil
+	return &sqlstr, autoIncrement, nil
 }
 
 // wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
-func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, entityMapSlice []IEntityMap) (string, []interface{}, error) {
+func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, entityMapSlice []IEntityMap) (*string, *[]interface{}, error) {
 	sliceLen := len(entityMapSlice)
 	sqlstr := ""
 	if entityMapSlice == nil || sliceLen < 1 {
-		return sqlstr, nil, errors.New("->wrapInsertSliceSQL对象数组不能为空")
+		return &sqlstr, nil, errors.New("->wrapInsertSliceSQL对象数组不能为空")
 	}
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityMapSlice[0]
 	// 检查是否是指针对象
 	_, err := checkEntityKind(entity)
 	if err != nil {
-		return sqlstr, nil, err
+		return &sqlstr, nil, err
 	}
 	dbFieldMapKey := entity.GetDBFieldMapKey()
 	// SQL语句
 	inserColumnName, valuesql, values, _, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
-		return sqlstr, values, err
+		return &sqlstr, values, err
 	}
 
 	var sqlBuilder strings.Builder
@@ -356,9 +358,9 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
 	// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-	sqlBuilder.WriteString(inserColumnName)
+	sqlBuilder.WriteString(*inserColumnName)
 	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(valuesql)
+	sqlBuilder.WriteString(*valuesql)
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string
@@ -366,25 +368,25 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 			sqlBuilder.WriteByte(' ')
 			sqlBuilder.WriteString(entityMapSlice[i].GetTableName())
 			if config.TDengineInsertsColumnName {
-				sqlBuilder.WriteString(inserColumnName)
+				sqlBuilder.WriteString(*inserColumnName)
 			}
 			sqlBuilder.WriteString(" VALUES")
-			sqlBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(*valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
 			sqlBuilder.WriteByte(',')
-			sqlBuilder.WriteString(valuesql)
+			sqlBuilder.WriteString(*valuesql)
 		}
 
 		entityMap := entityMapSlice[i]
 		for j := 0; j < len(dbFieldMapKey); j++ {
 			key := dbFieldMapKey[j]
 			value := entityMap.GetDBFieldMap()[key]
-			values = append(values, value)
+			*values = append(*values, value)
 		}
 	}
 
 	sqlstr = sqlBuilder.String()
-	return sqlstr, values, err
+	return &sqlstr, values, err
 }
 
 // wrapUpdateSQL 包装更新Struct语句
@@ -483,7 +485,7 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 // wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, error) {
+func wrapInsertEntityMapSQL(entity IEntityMap) (string, *[]interface{}, bool, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
@@ -497,9 +499,9 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(inserColumnName)
+	sqlBuilder.WriteString(*inserColumnName)
 	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(valuesql)
+	sqlBuilder.WriteString(*valuesql)
 	sqlstr = sqlBuilder.String()
 
 	return sqlstr, values, autoIncrement, nil
@@ -508,13 +510,13 @@ func wrapInsertEntityMapSQL(entity IEntityMap) (string, []interface{}, bool, err
 // wrapInsertValueEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapInsertValueEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface{}, bool, error) {
+func wrapInsertValueEntityMapSQL(entity IEntityMap) (*string, *string, *[]interface{}, bool, error) {
 	var inserColumnName, valuesql string
 	// 是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
 	if len(dbFieldMap) < 1 {
-		return inserColumnName, inserColumnName, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return &inserColumnName, &inserColumnName, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	// SQL对应的参数
 	// SQL corresponding parameters
@@ -569,17 +571,17 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (string, string, []interface
 	inserColumnName = sqlBuilder.String()
 	valuesql = valueSQLBuilder.String()
 
-	return inserColumnName, valuesql, values, autoIncrement, nil
+	return &inserColumnName, &valuesql, &values, autoIncrement, nil
 }
 
 // wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
+func wrapUpdateEntityMapSQL(entity IEntityMap) (*string, *[]interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
 	if len(dbFieldMap) < 1 {
-		return sqlstr, nil, errors.New("->wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
+		return &sqlstr, nil, errors.New("->wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	// SQL语句的构造器
 	// SQL statement constructor
@@ -621,7 +623,7 @@ func wrapUpdateEntityMapSQL(entity IEntityMap) (string, []interface{}, error) {
 	sqlBuilder.WriteString("=?")
 	sqlstr = sqlBuilder.String()
 
-	return sqlstr, values, nil
+	return &sqlstr, &values, nil
 }
 
 // wrapQuerySQL 封装查询语句

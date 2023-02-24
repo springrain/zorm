@@ -219,12 +219,12 @@ func setFieldValueByColumnName(entity interface{}, columnName string, value inte
 }
 
 // structFieldValue 获取指定字段的值
-func structFieldValue(s interface{}, fieldName string) (interface{}, error) {
-	if s == nil || len(fieldName) < 1 {
+func structFieldValue(entity interface{}, fieldName string) (interface{}, error) {
+	if entity == nil || fieldName == "" {
 		return nil, errors.New("->structFieldValue数据为空")
 	}
 	// entity的s类型
-	valueOf := reflect.ValueOf(s)
+	valueOf := reflect.ValueOf(entity)
 
 	kind := valueOf.Kind()
 	if !(kind == reflect.Ptr || kind == reflect.Struct) {
@@ -328,7 +328,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (map[str
 }
 
 // columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
-func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []interface{}, error) {
+func columnAndValue(entity interface{}) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return typeOf, nil, nil, checkerr
@@ -340,11 +340,11 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	// 先从本地缓存中查找
 	// typeOf := reflect.TypeOf(entity).Elem()
 
-	dbMap, err := getDBColumnFieldMap(&typeOf)
+	dbMap, err := getDBColumnFieldMap(typeOf)
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
-	dbSlice, err := getDBColumnFieldNameSlice(&typeOf)
+	dbSlice, err := getDBColumnFieldNameSlice(typeOf)
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
@@ -376,7 +376,7 @@ func columnAndValue(entity interface{}) (reflect.Type, []reflect.StructField, []
 	}
 
 	// 缓存数据库的列
-	return typeOf, columns, values, nil
+	return typeOf, &columns, &values, nil
 }
 
 // entityPKFieldName 获取实体类主键属性名称
@@ -399,7 +399,7 @@ func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, erro
 }
 
 // checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
-func checkEntityKind(entity interface{}) (reflect.Type, error) {
+func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 	if entity == nil {
 		return nil, errors.New("->checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
 	}
@@ -411,7 +411,7 @@ func checkEntityKind(entity interface{}) (reflect.Type, error) {
 	//if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
 	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
 	//}
-	return typeOf, nil
+	return &typeOf, nil
 }
 
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
