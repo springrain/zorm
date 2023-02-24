@@ -201,11 +201,11 @@ func structFieldInfo(typeOf *reflect.Type) error {
 func setFieldValueByColumnName(entity interface{}, columnName string, value interface{}) error {
 
 	valueOf := reflect.ValueOf(entity)
-	typeOf := valueOf.Type()
-	if typeOf.Kind() == reflect.Ptr { // 如果是指针
-		typeOf = typeOf.Elem()
+	if valueOf.Kind() == reflect.Ptr { // 如果是指针
 		valueOf = valueOf.Elem()
 	}
+	typeOf := valueOf.Type()
+
 	// 先从本地缓存中查找
 	dbMap, err := getDBColumnFieldMap(&typeOf)
 	if err != nil {
