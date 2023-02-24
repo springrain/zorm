@@ -569,8 +569,8 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 
 	}
-	var dbColumnFieldMap map[string]reflect.StructField
-	var exportFieldMap map[string]reflect.StructField
+	var dbColumnFieldMap *map[string]reflect.StructField
+	var exportFieldMap *map[string]reflect.StructField
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
@@ -594,10 +594,10 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, dialect, nil, typeOf, rows, &driverValue, columnTypes, entity, &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, nil, typeOf, rows, &driverValue, columnTypes, entity, dbColumnFieldMap, exportFieldMap)
 		} else {
 			pv := reflect.ValueOf(entity)
-			err = sqlRowsValues(ctx, dialect, &pv, typeOf, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, &pv, typeOf, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
 		}
 
 		// pv = pv.Elem()
@@ -754,8 +754,8 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		}
 
 	}
-	var dbColumnFieldMap map[string]reflect.StructField
-	var exportFieldMap map[string]reflect.StructField
+	var dbColumnFieldMap *map[string]reflect.StructField
+	var exportFieldMap *map[string]reflect.StructField
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
@@ -774,9 +774,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, dialect, nil, &sliceElementType, rows, &driverValue, columnTypes, pv.Interface(), &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, nil, &sliceElementType, rows, &driverValue, columnTypes, pv.Interface(), dbColumnFieldMap, exportFieldMap)
 		} else {
-			err = sqlRowsValues(ctx, dialect, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, &dbColumnFieldMap, &exportFieldMap)
+			err = sqlRowsValues(ctx, dialect, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
 		}
 
 		// err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
