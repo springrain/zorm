@@ -122,7 +122,7 @@ func structFieldInfo(typeOf *reflect.Type) error {
 				tagColumnValueLower := strings.ToLower(tagColumnValue)
 				dbColumnFieldMap[tagColumnValueLower] = field
 				dbColumnFieldNameSlice = append(dbColumnFieldNameSlice, tagColumnValueLower)
-				//记录字段名称和tag里字段名的对应关系
+				// 记录字段名称和tag里字段名的对应关系
 				structFieldTagMap[fieldName] = tagColumnValue
 			}
 
@@ -199,7 +199,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 
 // setFieldValueByColumnName 根据数据库的字段名,找到struct映射的字段,并赋值
 func setFieldValueByColumnName(entity interface{}, columnName string, value interface{}) error {
-
 	valueOf := reflect.ValueOf(entity)
 	if valueOf.Kind() == reflect.Ptr { // 如果是指针
 		valueOf = valueOf.Elem()
@@ -316,7 +315,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (*map[st
 	if dbmapErr != nil {
 		return nil, fmt.Errorf("->getCacheStructFieldInfoMap-->getCacheStructFieldInfo()取值错误:%w", dbmapErr)
 	}
-	//dbcfMap, efOK := dbColumnFieldMap.(*map[string]reflect.StructField)
+	// dbcfMap, efOK := dbColumnFieldMap.(*map[string]reflect.StructField)
 	dbcfMap, efOK := (*dbColumnFieldMap).(map[string]reflect.StructField)
 	if !efOK {
 		return &dbcfMap, errors.New("->getCacheStructFieldInfoMap-->dbColumnFieldMap取值转map[string]reflect.StructField类型异常")
@@ -325,7 +324,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (*map[st
 }
 
 // columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
-func columnAndValue(entity interface{}) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
+func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return typeOf, nil, nil, checkerr
@@ -365,8 +364,18 @@ func columnAndValue(entity interface{}) (*reflect.Type, *[]reflect.StructField, 
 		//}
 		field := (*dbMap)[fieldName]
 		columns = append(columns, field)
+		var value interface{}
+		fv := valueOf.FieldByName(field.Name)
 		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
-		value := valueOf.FieldByName(field.Name).Interface()
+		if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
+			if !fv.IsNil() { // 如果不是nil值
+				value = fv.Elem().Interface()
+			} else {
+				value = nil
+			}
+		} else {
+			value = fv.Interface()
+		}
 		// 添加到记录值的数组
 		values = append(values, value)
 
@@ -498,9 +507,19 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 			} else {
 				// fieldType := refPV.FieldByName(field.Name).Type()
 				// v := reflect.New(field.Type).Interface()
+				var v interface{}
 				// 字段的反射值
 				fieldValue := valueOfElem.FieldByName(field.Name)
-				v := fieldValue.Addr().Interface()
+				if fieldValue.Kind() == reflect.Ptr { // 如果是指针类型
+					// 反射new一个对应类型的指针
+					newValue := reflect.New(fieldValue.Type().Elem())
+					// 反射赋值到字段值
+					fieldValue.Set(newValue)
+					// 获取字段值
+					v = fieldValue.Interface()
+				} else {
+					v = fieldValue.Addr().Interface()
+				}
 				// v := new(interface{})
 				values[i] = v
 			}

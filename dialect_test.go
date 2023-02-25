@@ -7,7 +7,6 @@ import (
 )
 
 func Test_getFieldTagName(t *testing.T) {
-
 	type args struct {
 		field *reflect.StructField
 	}

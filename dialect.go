@@ -143,7 +143,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 		autoIncrement = 2
 	}
 
-	//获取所有字段和tag对照的Map
+	// 获取所有字段和tag对照的Map
 	tagMap, err := getStructFieldTagMap(typeOf)
 	if err != nil {
 		return &inserColumnName, &valuesql, autoIncrement, pktype, err
@@ -413,7 +413,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 		return sqlstr, err
 	}
 
-	//获取所有字段和tag对照的Map
+	// 获取所有字段和tag对照的Map
 	tagMap, err := getStructFieldTagMap(typeOf)
 	if err != nil {
 		return sqlstr, err
@@ -784,7 +784,7 @@ var FuncWrapFieldTagName = func(colName string) string {
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
 func getFieldTagName(field *reflect.StructField, structFieldTagMap *map[string]string) string {
-	//colName := field.Tag.Get(tagColumnName)
+	// colName := field.Tag.Get(tagColumnName)
 	colName := (*structFieldTagMap)[field.Name]
 	if FuncWrapFieldTagName != nil {
 		colName = FuncWrapFieldTagName(colName)
@@ -862,23 +862,36 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", *sqlstr, *args)
 		}
 		v := (*args)[i]
-		// 反射获取参数的值
-		valueOf := reflect.ValueOf(v)
-		// 获取类型
-		kind := valueOf.Kind()
-		// 如果参数是个指针类型
-		// If the parameter is a pointer type
-		if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
-			valueOf = valueOf.Elem()
-			kind = valueOf.Kind()
-		}
-		typeOf := valueOf.Type()
+		var valueOf reflect.Value
+		var kind reflect.Kind
+		var typeOf reflect.Type
 		// 参数值长度,默认是1,其他取值数组长度
 		valueLen := 1
+		// 值是否有效,例如指针类型的值为nil
+		isValid := false
+		if v != nil {
+			isValid = true
+			// 反射获取参数的值
+			valueOf = reflect.ValueOf(v)
+			// 获取类型
+			kind = valueOf.Kind()
 
-		// 如果不是数组或者slice
-		// If it is not an array or slice
-		if !(kind == reflect.Array || kind == reflect.Slice) {
+			// 如果参数是个指针类型
+			// If the parameter is a pointer type
+			if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
+				valueOf = valueOf.Elem()
+				kind = valueOf.Kind()
+				//(Type=*int,Value=nil)/(Type=nil,Value=nil)  https://golang.org/doc/faq#nil_error
+				isValid = valueOf.IsValid()
+			}
+		}
+		// 如果是有效值,获取类型
+		if isValid {
+			typeOf = valueOf.Type()
+		}
+		if !isValid { // 如果是无效值,设值为nil
+			newValues = append(newValues, nil)
+		} else if !(kind == reflect.Array || kind == reflect.Slice) { // 如果不是数组或者slice
 			// 记录新值
 			// Record new value.
 			newValues = append(newValues, v)
@@ -895,7 +908,9 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			// 数组类型的参数长度小于1,认为是有异常的参数
 			// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 			if valueLen < 1 {
-				return nil, nil, errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+				// return nil, nil, errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+				valueLen = 1
+				newValues = append(newValues, nil)
 			} else if valueLen == 1 { // 如果数组里只有一个参数,认为是单个参数
 				v = valueOf.Index(0).Interface()
 				newValues = append(newValues, v)
