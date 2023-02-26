@@ -336,33 +336,35 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 	// 先从本地缓存中查找
 	// typeOf := reflect.TypeOf(entity).Elem()
 
-	dbMap, err := getDBColumnFieldMap(typeOf)
+	dbColumnFieldMap, err := getDBColumnFieldMap(typeOf)
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
-	dbSlice, err := getDBColumnFieldNameSlice(typeOf)
+	dbColumnFieldNameSlice, err := getDBColumnFieldNameSlice(typeOf)
 	if err != nil {
 		return typeOf, nil, nil, err
 	}
-	// 实体类公开字段的长度
-	fLen := len(*dbMap)
-	// 长度不一致
-	if fLen-len(*dbSlice) != 0 {
-		return typeOf, nil, nil, errors.New("->columnAndValue-->缓存的数据库字段和实体类字段不对应")
-	}
+	// 数据库字段的长度
+	fLen := len(*dbColumnFieldMap)
+	/*
+		// 长度不一致
+		if fLen-len(*dbColumnFieldNameSlice) != 0 {
+			return typeOf, nil, nil, errors.New("->columnAndValue-->缓存的数据库字段和实体类字段不对应")
+		}
+	*/
 	// 接收列的数组,这里是做一个副本,避免外部更改掉原始的列信息
 	columns := make([]reflect.StructField, 0, fLen)
 	// 接收值的数组
 	values := make([]interface{}, 0, fLen)
 
 	// 遍历所有数据库属性
-	for _, fieldName := range *dbSlice {
+	for _, fieldName := range *dbColumnFieldNameSlice {
 		//获取字段类型的Kind
 		//	fieldKind := field.Type.Kind()
 		//if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
 		//}
-		field := (*dbMap)[fieldName]
+		field := (*dbColumnFieldMap)[fieldName]
 		columns = append(columns, field)
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
@@ -378,7 +380,6 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 		}
 		// 添加到记录值的数组
 		values = append(values, value)
-
 	}
 
 	// 缓存数据库的列

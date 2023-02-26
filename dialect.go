@@ -394,7 +394,6 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
-	sqlstr := ""
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -410,13 +409,13 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	// The name of the primary key
 	pkFieldName, err := entityPKFieldName(entity, typeOf)
 	if err != nil {
-		return sqlstr, err
+		return "", err
 	}
 
 	// 获取所有字段和tag对照的Map
 	tagMap, err := getStructFieldTagMap(typeOf)
 	if err != nil {
-		return sqlstr, err
+		return "", err
 	}
 
 	for i := 0; i < len(*columns); i++ {
@@ -442,7 +441,6 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 			*values = append((*values)[:i], (*values)[i+1:]...)
 			i = i - 1
 			continue
-
 		}
 		if i > 0 {
 			sqlBuilder.WriteByte(',')
@@ -460,7 +458,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 	sqlBuilder.WriteString(" WHERE ")
 	sqlBuilder.WriteString(entity.GetPKColumnName())
 	sqlBuilder.WriteString("=?")
-	sqlstr = sqlBuilder.String()
+	sqlstr := sqlBuilder.String()
 
 	return sqlstr, nil
 }
