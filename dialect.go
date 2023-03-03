@@ -434,7 +434,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 
 		// 如果是默认值字段,删除掉,不更新
 		// If it is the default value field, delete it and do not update
-		if onlyUpdateNotZero && (reflect.ValueOf((*values)[i]).IsZero()) {
+		if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
 			// 去掉这一列,不再处理
 			// Remove this column and no longer process
 			*columns = append((*columns)[:i], (*columns)[i+1:]...)

@@ -268,7 +268,7 @@ func init() {
 	// dbDaoConfig Configure the database. This is just a simulation, the production should be reading the configuration configuration file and constructing the DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN database connection string. parseTime=true is automatically converted to time format. The default query is the []byte array
-		DSN: "root:root@tcp(127.0.0.1:3306)/zorm?charset=utf8&parseTime=true",
+		DSN: "root:root@tcp(127.0.0.1:3306)/zorm?charset=utf8&parseTime=true&loc=Local",
 		// DriverName database driver name: mysql, postgres, oracle(go-ora), essentially, sqlite3, go_ibm_db, clickhouse, dm, kingbase, aci, taosSql | taosRestful Correspond to Dialect
 		// sql.Open(DriverName,DSN) DriverName is the first string parameter of the sql.Open of the driver. The value can be obtained according to the actual conditions of the driver
 		DriverName: "mysql",
