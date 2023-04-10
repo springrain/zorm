@@ -367,8 +367,8 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 		}
 	}
 
-	// 遍历所有数据库属性
-	for _, fieldName := range *dbColumnFieldNameSlice {
+	// 遍历所有数据库字段名,小写的
+	for _, columnNameLower := range *dbColumnFieldNameSlice {
 		//获取字段类型的Kind
 		//	fieldKind := field.Type.Kind()
 		//if !allowTypeMap[fieldKind] { //不允许的类型
@@ -377,10 +377,10 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 		//默认值
 		isDefaultValue := false
 		var defaultValue interface{}
-		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值
-			defaultValue, isDefaultValue = defaultValueMap[fieldName]
+		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+			defaultValue, isDefaultValue = defaultValueMap[columnNameLower]
 		}
-		field := (*dbColumnFieldMap)[fieldName]
+		field := (*dbColumnFieldMap)[columnNameLower]
 		columns = append(columns, field)
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
