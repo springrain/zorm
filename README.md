@@ -202,7 +202,7 @@ func (entity *demoStruct) GetPKColumnName() string {
 	return "id"
 }
 
-// GetDefaultValueMap Get the default value Map of the column, where key is the lowercase column name, value is the default value, which can be nil
+// GetDefaultValueMap Gets the default value Map for the column for the Insert and Update Struct objects. The key that returns map is a lowercase column name, value is the default value, and value can be nil
 //func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
 //	return map[string]interface{}{"username": nil}
 //}
