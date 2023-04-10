@@ -31,8 +31,7 @@ import (
 
 const (
 	// tag标签的名称
-	tagColumnName  = "column"
-	tagDefaultName = "default"
+	tagColumnName = "column"
 
 	// 输出字段 缓存的前缀
 	exportPrefix = "_exportStructFields_"
