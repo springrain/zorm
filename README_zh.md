@@ -203,6 +203,13 @@ func (entity *demoStruct) GetPKColumnName() string {
 	return "id"
 }
 
+
+// GetDefaultValueMap 获取列的默认值Map,key是小写列名,value是默认值,可以是nil
+// GetDefaultValueMap Get the default value Map of the column, where key is the lowercase column name, value is the default value, which can be nil
+//func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
+//	return nil
+//}
+
 // newDemoStruct 创建一个默认对象
 func newDemoStruct() demoStruct {
 	demo := demoStruct{

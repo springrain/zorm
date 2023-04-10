@@ -32,6 +32,10 @@ type IEntityStruct interface {
 	// GetPkSequence 主键序列
 	// GetPkSequence Primary key sequence
 	GetPkSequence() string
+
+	// GetDefaultValueMap 获取列的默认值Map,key是小写列名,value是默认值,可以是nil
+	//GetDefaultValueMap Get the default value Map of the column, where key is the lowercase column name, value is the default value, which can be nil
+	GetDefaultValueMap() map[string]interface{}
 }
 
 // IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要"entityMap.Set"主键的值
@@ -91,6 +95,12 @@ func (entity *EntityStruct) GetPKColumnName() string {
 // GetPkSequence Primary key sequence
 func (entity *EntityStruct) GetPkSequence() string {
 	return ""
+}
+
+// GetDefaultValueMap 获取列的默认值Map,key是小写列名,value是默认值,可以是nil
+// GetDefaultValueMap Get the default value Map of the column, where key is the lowercase column name, value is the default value, which can be nil
+func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
+	return nil
 }
 
 //-------------------------------------------------------------------------//

@@ -31,7 +31,8 @@ import (
 
 const (
 	// tag标签的名称
-	tagColumnName = "column"
+	tagColumnName  = "column"
+	tagDefaultName = "default"
 
 	// 输出字段 缓存的前缀
 	exportPrefix = "_exportStructFields_"
@@ -357,6 +358,12 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 	// 接收值的数组
 	values := make([]interface{}, 0, fLen)
 
+	//默认值的map
+	hasDefaultValueMap := false
+	defaultValueMap := entity.GetDefaultValueMap()
+	if len(defaultValueMap) > 0 {
+		hasDefaultValueMap = true
+	}
 	// 遍历所有数据库属性
 	for _, fieldName := range *dbColumnFieldNameSlice {
 		//获取字段类型的Kind
@@ -364,12 +371,20 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 		//if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
 		//}
+		//默认值
+		isDefaultValue := false
+		var defaultValue interface{}
+		if hasDefaultValueMap {
+			defaultValue, isDefaultValue = defaultValueMap[fieldName]
+		}
 		field := (*dbColumnFieldMap)[fieldName]
 		columns = append(columns, field)
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
 		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
-		if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
+		if isDefaultValue && fv.IsZero() { //如果有默认值,并且fv是零值,等于默认值
+			value = defaultValue
+		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值
 				value = fv.Elem().Interface()
 			} else {
@@ -378,6 +393,7 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 		} else {
 			value = fv.Interface()
 		}
+
 		// 添加到记录值的数组
 		values = append(values, value)
 	}
