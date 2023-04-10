@@ -202,6 +202,11 @@ func (entity *demoStruct) GetPKColumnName() string {
 	return "id"
 }
 
+// GetDefaultValueMap Get the default value Map of the column, where key is the lowercase column name, value is the default value, which can be nil
+//func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
+//	return map[string]interface{}{"username": nil}
+//}
+
 // newDemoStruct creates a default object
 func newDemoStruct() demoStruct {
 	demo := demoStruct{
