@@ -207,7 +207,7 @@ func (entity *demoStruct) GetPKColumnName() string {
 // GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象.返回map的key是小写列名,value是默认值,value可以是nil
 // GetDefaultValueMap Gets the default value Map for the column for the Insert and Update Struct objects. The key that returns map is a lowercase column name, value is the default value, and value can be nil
 //func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
-//	return map[string]interface{}{"username": nil}
+//	return map[string]interface{}{"username": "zorm","active":nil}
 //}
 
 // newDemoStruct 创建一个默认对象

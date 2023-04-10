@@ -324,7 +324,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (*map[st
 }
 
 // columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
-func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
+func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return typeOf, nil, nil, checkerr
@@ -359,10 +359,14 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 
 	//默认值的map
 	hasDefaultValueMap := false
-	defaultValueMap := entity.GetDefaultValueMap()
-	if len(defaultValueMap) > 0 {
-		hasDefaultValueMap = true
+	var defaultValueMap map[string]interface{}
+	if !onlyUpdateNotZero { //如果只更新不是零值的字段,零值时不能更新为默认值
+		defaultValueMap = entity.GetDefaultValueMap()
+		if len(defaultValueMap) > 0 {
+			hasDefaultValueMap = true
+		}
 	}
+
 	// 遍历所有数据库属性
 	for _, fieldName := range *dbColumnFieldNameSlice {
 		//获取字段类型的Kind
@@ -373,7 +377,7 @@ func columnAndValue(entity IEntityStruct) (*reflect.Type, *[]reflect.StructField
 		//默认值
 		isDefaultValue := false
 		var defaultValue interface{}
-		if hasDefaultValueMap {
+		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值
 			defaultValue, isDefaultValue = defaultValueMap[fieldName]
 		}
 		field := (*dbColumnFieldMap)[fieldName]
