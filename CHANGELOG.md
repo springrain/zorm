@@ -1,3 +1,7 @@
+v1.6.8
+ - IEntityStruct接口增加GetDefaultValueMap函数,实现数据库字段默认值功能
+ - 完善文档,注释
+
 v1.6.7
  - 感谢 @gxdvip 的反馈,修复指针类型nil值异常
  - 使用指针传递变量,避免多次复制
