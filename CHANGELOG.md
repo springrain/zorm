@@ -1,4 +1,5 @@
 v1.6.8
+ - 自动生成CountFinder.InjectionCheck和查询Finder保持一致
  - IEntityStruct接口增加GetDefaultValueMap函数,实现数据库字段默认值功能
  - 完善文档,注释
 
