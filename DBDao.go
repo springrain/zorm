@@ -1664,6 +1664,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	countFinder := NewFinder()
 	countFinder.Append(countsql)
 	countFinder.values = finder.values
+	countFinder.InjectionCheck = finder.InjectionCheck
 
 	count := -1
 	_, cerr := QueryRow(ctx, countFinder, &count)
