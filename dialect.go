@@ -276,6 +276,13 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		return &sqlstr, autoIncrement, e
 	}
 
+	//默认值的map
+	hasDefaultValueMap := false
+	defaultValueMap := entity.GetDefaultValueMap()
+	if len(defaultValueMap) > 0 {
+		hasDefaultValueMap = true
+	}
+
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string
@@ -319,10 +326,19 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 					continue
 				}
 			}
-
+			//默认值
+			isDefaultValue := false
+			var defaultValue interface{}
+			if hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+				defaultValue, isDefaultValue = defaultValueMap[field.Name]
+			}
 			// 给字段赋值
 			// Assign a value to the field.
-			*values = append(*values, fieldValue.Interface())
+			if isDefaultValue && fieldValue.IsZero() {
+				*values = append(*values, defaultValue)
+			} else {
+				*values = append(*values, fieldValue.Interface())
+			}
 
 		}
 	}

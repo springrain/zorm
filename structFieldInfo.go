@@ -374,16 +374,19 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 		//if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
 		//}
-		//默认值
-		isDefaultValue := false
-		var defaultValue interface{}
-		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
-			defaultValue, isDefaultValue = defaultValueMap[columnNameLower]
-		}
+
 		field := (*dbColumnFieldMap)[columnNameLower]
 		columns = append(columns, field)
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
+
+		//默认值
+		isDefaultValue := false
+		var defaultValue interface{}
+		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+			defaultValue, isDefaultValue = defaultValueMap[field.Name]
+		}
+
 		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
 		if isDefaultValue && fv.IsZero() { //如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue

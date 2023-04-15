@@ -33,8 +33,8 @@ type IEntityStruct interface {
 	// GetPkSequence Primary key sequence
 	GetPkSequence() string
 
-	// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,默认值对UpdateNotZeroValue无效.返回map的key是小写列名,value是默认值,value可以是nil.
-	// GetDefaultValueMap Gets the default value Map of the column for the Insert and Update Struct objects, the default value is not valid for UpdateNotZeroValue. The key returned to map is the lowercase column name, value is the default value, and value can be nil.
+	// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,默认值对UpdateNotZeroValue无效.返回map的key是Struct属性名,value是默认值,value可以是nil.
+	// GetDefaultValueMap Gets the default value Map of the column for the Insert and Update Struct objects, the default value is not valid for UpdateNotZeroValue. The key that returns map is the name of the Struct property, value is the default value, and value can be nil.
 	GetDefaultValueMap() map[string]interface{}
 }
 
@@ -97,8 +97,8 @@ func (entity *EntityStruct) GetPkSequence() string {
 	return ""
 }
 
-// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,默认值对UpdateNotZeroValue无效.返回map的key是小写列名,value是默认值,value可以是nil.
-// GetDefaultValueMap Gets the default value Map of the column for the Insert and Update Struct objects, the default value is not valid for UpdateNotZeroValue. The key returned to map is the lowercase column name, value is the default value, and value can be nil.
+// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,默认值对UpdateNotZeroValue无效.返回map的key是Struct属性名,value是默认值,value可以是nil.
+// GetDefaultValueMap Gets the default value Map of the column for the Insert and Update Struct objects, the default value is not valid for UpdateNotZeroValue. The key that returns map is the name of the Struct property, value is the default value, and value can be nil.
 func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
 	return nil
 }
