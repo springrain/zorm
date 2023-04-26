@@ -1837,7 +1837,7 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 // contextMustUpdateValueKey 把必须更新的属性放到context里使用的key
 const contextMustUpdateValueKey = wrapContextStringKey("contextMustUpdateValueKey")
 
-// BindContextMustUpdate 指定必须更新的列,只对UpdateNotZeroValue方法有效.mustUpdateMap的key是Struct属性名,value是默认值,value可以是nil.
+// BindContextMustUpdate 指定必须更新的列,只对UpdateNotZeroValue方法有效.mustUpdateMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil.
 func BindContextMustUpdate(parent context.Context, mustUpdateMap map[string]interface{}) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextMustUpdate-->context的parent不能为nil")

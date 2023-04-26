@@ -1,5 +1,5 @@
 v1.6.9
- - 为UpdateNotZeroValue增加BindContextMustUpdate函数,通过ctx绑定强制更新的属性,map的key是Struct属性名,value是默认值,value可以是nil.
+ - 为UpdateNotZeroValue增加BindContextMustUpdate函数,通过ctx绑定强制更新的属性,map的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil.
  - 完善文档,注释
 
 v1.6.8
