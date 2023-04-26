@@ -409,7 +409,7 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}, onlyUpdateNotZero bool) (string, error) {
+func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -448,16 +448,18 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 			continue
 		}
 
-		// 如果是默认值字段,删除掉,不更新
-		// If it is the default value field, delete it and do not update
-		if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
-			// 去掉这一列,不再处理
-			// Remove this column and no longer process
-			*columns = append((*columns)[:i], (*columns)[i+1:]...)
-			*values = append((*values)[:i], (*values)[i+1:]...)
-			i = i - 1
-			continue
-		}
+		/*
+			// 如果是默认值字段,删除掉,不更新
+			// If it is the default value field, delete it and do not update
+			if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
+				// 去掉这一列,不再处理
+				// Remove this column and no longer process
+				*columns = append((*columns)[:i], (*columns)[i+1:]...)
+				*values = append((*values)[:i], (*values)[i+1:]...)
+				i = i - 1
+				continue
+			}
+		*/
 		if i > 0 {
 			sqlBuilder.WriteByte(',')
 		}

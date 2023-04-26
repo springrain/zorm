@@ -1150,7 +1150,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if entity == nil {
 		return affected, errors.New("->Insert-->entity对象不能为空")
 	}
-	typeOf, columns, values, columnAndValueErr := columnAndValue(entity, false)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("->Insert-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
@@ -1267,7 +1267,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	}
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityStructSlice[0]
-	typeOf, columns, values, columnAndValueErr := columnAndValue(entity, false)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("->InsertSlice-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
@@ -1583,14 +1583,14 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
 	}
 
-	typeOf, columns, values, columnAndValueErr := columnAndValue(entity, onlyUpdateNotZero)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, onlyUpdateNotZero)
 	if columnAndValueErr != nil {
 		return nil, columnAndValueErr
 	}
 
 	// SQL语句
 	// SQL statement
-	sqlstr, err := wrapUpdateSQL(typeOf, entity, columns, values, onlyUpdateNotZero)
+	sqlstr, err := wrapUpdateSQL(typeOf, entity, columns, values)
 	if err != nil {
 		return nil, err
 	}
@@ -1831,6 +1831,19 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 		return nil, errors.New("->BindContextDisableTransaction-->context的parent不能为nil")
 	}
 	ctx := context.WithValue(parent, contextDisableTransactionValueKey, true)
+	return ctx, nil
+}
+
+// contextMustUpdateValueKey 把必须更新的属性放到context里使用的key
+const contextMustUpdateValueKey = wrapContextStringKey("contextMustUpdateValueKey")
+
+// BindContextMustUpdate 指定必须更新的列,只对UpdateNotZeroValue方法有效.mustUpdateMap的key是Struct属性名,value是默认值,value可以是nil.
+func BindContextMustUpdate(parent context.Context, mustUpdateMap map[string]interface{}) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("->BindContextMustUpdate-->context的parent不能为nil")
+	}
+
+	ctx := context.WithValue(parent, contextMustUpdateValueKey, mustUpdateMap)
 	return ctx, nil
 }
 

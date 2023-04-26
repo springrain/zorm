@@ -1,3 +1,7 @@
+v1.6.9
+ - 为UpdateNotZeroValue增加BindContextMustUpdate函数,通过ctx绑定强制更新的属性,map的key是Struct属性名,value是默认值,value可以是nil.
+ - 完善文档,注释
+
 v1.6.8
  - 自动生成CountFinder.InjectionCheck和查询Finder保持一致
  - IEntityStruct接口增加GetDefaultValueMap函数,设置Struct属性默认值

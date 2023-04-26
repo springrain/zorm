@@ -324,7 +324,7 @@ func getCacheStructFieldInfoMap(typeOf *reflect.Type, keyPrefix string) (*map[st
 }
 
 // columnAndValue 根据保存的对象,返回插入的语句,需要插入的字段,字段的值
-func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
+func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type, *[]reflect.StructField, *[]interface{}, error) {
 	typeOf, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return typeOf, nil, nil, checkerr
@@ -360,12 +360,16 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 	//默认值的map
 	hasDefaultValueMap := false
 	var defaultValueMap map[string]interface{}
-	if !onlyUpdateNotZero { //如果只更新不是零值的字段,零值时不能更新为默认值
-		defaultValueMap = entity.GetDefaultValueMap()
-		if len(defaultValueMap) > 0 {
-			hasDefaultValueMap = true
+	if onlyUpdateNotZero { //从ctx中获取默认值
+		ctxValueMap := ctx.Value(contextMustUpdateValueKey)
+		if ctxValueMap != nil {
+			defaultValueMap = ctxValueMap.(map[string]interface{})
 		}
+	} else {
+		defaultValueMap = entity.GetDefaultValueMap()
 	}
+
+	hasDefaultValueMap = len(defaultValueMap) > 0
 
 	// 遍历所有数据库字段名,小写的
 	for _, columnNameLower := range *dbColumnFieldNameSlice {
@@ -376,20 +380,23 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 		//}
 
 		field := (*dbColumnFieldMap)[columnNameLower]
-		columns = append(columns, field)
+
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
 
 		//默认值
 		isDefaultValue := false
 		var defaultValue interface{}
-		if !onlyUpdateNotZero && hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+		if hasDefaultValueMap {
 			defaultValue, isDefaultValue = defaultValueMap[field.Name]
 		}
 
+		isZero := fv.IsZero()
 		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
-		if isDefaultValue && fv.IsZero() { //如果有默认值,并且fv是零值,等于默认值
+		if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
+		} else if onlyUpdateNotZero && isZero { //如果只更新不为零值的
+			continue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值
 				value = fv.Elem().Interface()
@@ -400,6 +407,8 @@ func columnAndValue(entity IEntityStruct, onlyUpdateNotZero bool) (*reflect.Type
 			value = fv.Interface()
 		}
 
+		//添加列
+		columns = append(columns, field)
 		// 添加到记录值的数组
 		values = append(values, value)
 	}

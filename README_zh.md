@@ -204,8 +204,8 @@ func (entity *demoStruct) GetPKColumnName() string {
 }
 
 
-// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,默认值对UpdateNotZeroValue无效.返回map的key是Struct属性名,value是默认值,value可以是nil
-// GetDefaultValueMap Gets the default value Map of the column for the Insert and Update Struct objects, the default value is not valid for UpdateNotZeroValue. The key that returns map is the name of the Struct property, value is the default value, and value can be nil.
+// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,UpdateNotZeroValue请使用BindContextMustUpdate方法.返回map的key是Struct属性名,value是默认值,value可以是nil
+// GetDefaultValueMap To get the default value of the Map, for the Insert and Update Struct objects, UpdateNotZeroValue use the BindContextMustUpdate method. The key that returns map is the Struct property name, value is the default value, and value can be nil.
 //func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
 //	return map[string]interface{}{"CreateTime": time.Now(),"Active":nil}
 //}
@@ -580,6 +580,9 @@ func TestUpdateNotZeroValue(t *testing.T) {
 		demo := demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
+
+        // ctx绑定强制更新的属性,map的key是Struct属性名,value是默认值,value可以是nil.
+		// ctx, _ = BindContextMustUpdate(ctx, map[string]interface{}{"Active": nil})
 
 		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
 		_, err := zorm.UpdateNotZeroValue(ctx, &demo)
