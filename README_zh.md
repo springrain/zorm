@@ -582,7 +582,9 @@ func TestUpdateNotZeroValue(t *testing.T) {
 		demo.UserName = "UpdateNotZeroValue"
 
         // ctx绑定强制更新的属性,map的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil
-		// ctx, _ = zorm.BindContextMustUpdate(ctx, map[string]interface{}{"Active": nil})
+		// ctx里bind的值zorm不会清空,使用时请尽量不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
+		// newCtx, _ := zorm.BindContextMustUpdate(ctx, map[string]interface{}{"Active": nil})
+		// _, err := zorm.UpdateNotZeroValue(newCtx, &demo)
 
 		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
 		_, err := zorm.UpdateNotZeroValue(ctx, &demo)
