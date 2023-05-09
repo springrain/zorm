@@ -521,7 +521,7 @@ func TestQuery(t *testing.T) {
 	// 不查询总条数
 	// finder.SelectTotalCount = false
 
-	// 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
+	// 如果是特别复杂的语句,造成count语句构造失败,可以手动指定count语句
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
 	// countFinder.Append(") tempcountfinder")
@@ -552,7 +552,7 @@ func TestQueryMap(t *testing.T) {
 	// 不查询总条数
 	// finder.SelectTotalCount = false
 
-	// 如果是特别复杂的语句,造成count语句构造失败,可以手动指定分页语句
+	// 如果是特别复杂的语句,造成count语句构造失败,可以手动指定count语句
 	// countFinder := zorm.NewFinder().Append("select count(*) from (")
 	// countFinder.AppendFinder(finder)
 	// countFinder.Append(") tempcountfinder")
