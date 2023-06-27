@@ -1,3 +1,7 @@
+v1.7.0
+ - Finder和EntityMap增加序列化JSON方法,适配兼容wasm环境.
+ - 完善文档,注释
+
 v1.6.9
  - 为UpdateNotZeroValue增加BindContextMustUpdate函数,通过ctx绑定强制更新的属性,map的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil.
  - 完善文档,注释
