@@ -19,6 +19,7 @@
 package zorm
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -34,13 +35,13 @@ type Finder struct {
 	values []interface{}
 	// 注入检查,默认true 不允许SQL注入的 ' 单引号
 	// Injection check, default true does not allow SQL injection  single quote
-	InjectionCheck bool
+	InjectionCheck bool `json:"injectionCheck,omitempty"`
 	// CountFinder 自定义的查询总条数'Finder',使用指针默认为nil.主要是为了在'group by'等复杂情况下,为了性能,手动编写总条数语句
 	// CountFinder The total number of custom queries is'Finder', and the pointer is nil by default. It is mainly used to manually write the total number of statements for performance in complex situations such as'group by'
-	CountFinder *Finder
+	CountFinder *Finder `json:"countFinder,omitempty"`
 	// 是否自动查询总条数,默认true.同时需要Page不为nil,才查询总条数
 	// Whether to automatically query the total number of entries, the default is true. At the same time, the Page is not nil to query the total number of entries
-	SelectTotalCount bool
+	SelectTotalCount bool `json:"selectTotalCount,omitempty"`
 	// SQL语句
 	// SQL statement
 	sqlstr string
@@ -181,4 +182,61 @@ func (finder *Finder) GetSQL() (string, error) {
 	}
 	finder.sqlstr = sqlstr
 	return sqlstr, nil
+}
+
+// GetValues 返回Finder封装的values值
+func (finder *Finder) GetValues() ([]interface{}, error) {
+	// 不要自己构建finder,使用NewFinder方法
+	// Don't build finder by yourself, use NewFinder method
+	if finder == nil || finder.values == nil {
+		return nil, errors.New("->finder-->GetValues()不要自己构建finder,使用NewFinder()方法")
+	}
+	return finder.values, nil
+}
+
+func (finder *Finder) MarshalJSON() ([]byte, error) {
+	if finder == nil {
+		return nil, errors.New("->finder-->MarshalJSON()finder对象为nil")
+	}
+	sqlstr, err := finder.GetSQL()
+	if err != nil {
+		return nil, err
+	}
+	values, err := finder.GetValues()
+	if err != nil {
+		return nil, err
+	}
+
+	type FinderJSON Finder
+	data := struct {
+		*FinderJSON
+		SQLStr string        `json:"sqlstr,omitempty"`
+		Values []interface{} `json:"values,omitempty"`
+	}{
+		FinderJSON: (*FinderJSON)(finder),
+		SQLStr:     sqlstr,
+		Values:     values,
+	}
+	return json.Marshal(data)
+}
+
+func (finder *Finder) UnmarshalJSON(data []byte) error {
+	if finder == nil {
+		return errors.New("->finder-->UnmarshalJSON()finder对象为nil")
+	}
+	type FinderJSON Finder
+	aux := &struct {
+		*FinderJSON
+		SQLStr string        `json:"sqlstr,omitempty"`
+		Values []interface{} `json:"values,omitempty"`
+	}{
+		FinderJSON: (*FinderJSON)(finder),
+		Values:     make([]interface{}, 0),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	finder.Append(aux.SQLStr, aux.Values...)
+	return nil
 }

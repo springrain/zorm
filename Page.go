@@ -23,35 +23,35 @@ package zorm
 type Page struct {
 	// 当前页码,从1开始
 	// Current page number, starting from 1
-	PageNo int
+	PageNo int `json:"pageNo,omitempty"`
 
 	// 每页多少条,默认20条
 	// How many items per page, 20 items by default
-	PageSize int
+	PageSize int `json:"pageSize,omitempty"`
 
 	// 数据总条数
 	// Total number of data
-	TotalCount int
+	TotalCount int `json:"totalCount,omitempty"`
 
 	// 共多少页
 	// How many pages
-	PageCount int
+	PageCount int `json:"pageCount,omitempty"`
 
 	// 是否是第一页
 	// Is it the first page
-	FirstPage bool
+	FirstPage bool `json:"firstPage,omitempty"`
 
 	// 是否有上一页
 	// Whether there is a previous page
-	HasPrev bool
+	HasPrev bool `json:"hasPrev,omitempty"`
 
 	// 是否有下一页
 	// Is there a next page
-	HasNext bool
+	HasNext bool `json:"hasNext,omitempty"`
 
 	// 是否是最后一页
 	// Is it the last page
-	LastPage bool
+	LastPage bool `json:"lastPage,omitempty"`
 }
 
 // NewPage 创建Page对象

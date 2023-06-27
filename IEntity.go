@@ -18,6 +18,11 @@
 
 package zorm
 
+import (
+	"encoding/json"
+	"errors"
+)
+
 // IEntityStruct "struct"实体类的接口,所有的struct实体类都要实现这个接口
 // IEntityStruct The interface of the "struct" entity class, all struct entity classes must implement this interface
 type IEntityStruct interface {
@@ -77,9 +82,9 @@ const defaultPkName = "id"
 
 //GetTableName 获取表名称,必须有具体的Struct实现,类似java的抽象方法,避免手误忘记写表名.如果有扩展需求,建议使用接口进行扩展,不要默认实现GetTableName
 /*
-func (entity *EntityStruct) GetTableName() string {
-	return ""
-}
+ func (entity *EntityStruct) GetTableName() string {
+	 return ""
+ }
 */
 
 // GetPKColumnName 获取数据库表的主键字段名称.因为要兼容Map,只能是数据库的字段名称
@@ -110,9 +115,9 @@ type EntityMap struct {
 	// 表名
 	tableName string
 	// 主键列名
-	PkColumnName string
+	PkColumnName string `json:"pkColumnName,omitempty"`
 	// 主键序列,如果有值,优先级最高
-	PkSequence string
+	PkSequence string `json:"pkSequence,omitempty"`
 	// 数据库字段,不暴露外部
 	dbFieldMap map[string]interface{}
 	// 列名,记录顺序
@@ -167,4 +172,50 @@ func (entity *EntityMap) Set(key string, value interface{}) map[string]interface
 	entity.dbFieldMap[key] = value
 
 	return entity.dbFieldMap
+}
+
+func (entityMap *EntityMap) MarshalJSON() ([]byte, error) {
+	if entityMap == nil {
+		return nil, errors.New("->entityMap-->MarshalJSON()entityMap对象为nil")
+	}
+
+	type EntityMapJSON EntityMap
+	data := struct {
+		*EntityMapJSON
+		TableName     string                 `json:"tableName,omitempty"`
+		DBFieldMap    map[string]interface{} `json:"dbFieldMap,omitempty"`
+		DBFieldMapKey []string               `json:"dbFieldMapKey,omitempty"`
+	}{
+		EntityMapJSON: (*EntityMapJSON)(entityMap),
+		TableName:     entityMap.tableName,
+		DBFieldMap:    entityMap.dbFieldMap,
+		DBFieldMapKey: entityMap.dbFieldMapKey,
+	}
+	return json.Marshal(data)
+}
+
+func (entityMap *EntityMap) UnmarshalJSON(data []byte) error {
+	if entityMap == nil {
+		return errors.New("->entityMap-->UnmarshalJSON()entityMap对象为nil")
+	}
+	type EntityMapJSON EntityMap
+	aux := &struct {
+		*EntityMapJSON
+		TableName     string                 `json:"tableName,omitempty"`
+		DBFieldMap    map[string]interface{} `json:"dbFieldMap,omitempty"`
+		DBFieldMapKey []string               `json:"dbFieldMapKey,omitempty"`
+	}{
+		EntityMapJSON: (*EntityMapJSON)(entityMap),
+		DBFieldMap:    make(map[string]interface{}, 0),
+		DBFieldMapKey: make([]string, 0),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	entityMap.tableName = aux.TableName
+	entityMap.dbFieldMap = aux.DBFieldMap
+	entityMap.dbFieldMapKey = aux.DBFieldMapKey
+
+	return nil
 }
