@@ -1571,6 +1571,18 @@ func IsInTransaction(ctx context.Context) (bool, error) {
 	return false, err
 }
 
+// IsBindDBConnection 检查ctx是否已经绑定数据库连接
+func IsBindDBConnection(ctx context.Context) (bool, error) {
+	dbConnection, err := getDBConnectionFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	if dbConnection != nil {
+		return true, err
+	}
+	return false, err
+}
+
 // WrapUpdateStructFinder 返回更新IEntityStruct的Finder对象
 // ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 // Finder为更新执行的Finder,更新语句统一使用Finder执行
