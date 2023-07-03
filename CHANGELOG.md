@@ -1,5 +1,6 @@
 v1.7.0
  - Finder和EntityMap增加序列化JSON方法,适配兼容wasm环境.
+ - IsBindDBConnection 检查ctx是否已经绑定数据库连接
  - 完善文档,注释
 
 v1.6.9
