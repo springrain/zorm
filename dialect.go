@@ -875,7 +875,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 		}
 		i = i + 1
 		if i >= argsNum { // 占位符数量比参数值多,不使用 strings.Count函数,避免多次操作字符串
-			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", *sqlstr, *args)
+			return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%s", *sqlstr, sqlErrorValues2String(*args))
 		}
 		v := (*args)[i]
 		var valueOf reflect.Value
@@ -953,7 +953,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 
 	//?号占位符的数量和参数不一致,不使用 strings.Count函数,避免多次操作字符串
 	if (i + 1) != argsNum {
-		return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%v", *sqlstr, *args)
+		return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%s", *sqlstr, sqlErrorValues2String(*args))
 	}
 	sqlstring := newSQLStr.String()
 	return &sqlstring, &newValues, nil

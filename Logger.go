@@ -20,6 +20,7 @@ package zorm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 )
@@ -60,4 +61,13 @@ func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, exe
 	} else {
 		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",execSQLMillis:", execSQLMillis))
 	}
+}
+
+func sqlErrorValues2String(values []interface{}) string {
+	jsonStr := ""
+	bytes, err := json.Marshal(values)
+	if err == nil {
+		jsonStr = string(bytes)
+	}
+	return jsonStr
 }
