@@ -1810,6 +1810,7 @@ const contextSQLHintValueKey = wrapContextStringKey("contextSQLHintValueKey")
 
 // BindContextSQLHint context中绑定sql的hint,使用这个Context的方法都会传播hint传播的语句
 // hint 是完整的sql片段, 例如: hint:="/*+ XID('gs/aggregationSvc/2612341069705662465') */"
+// 在第一个单词的后面拼接 hint sql,例如 select /*+ XID('gs/aggregationSvc/2612341069705662465') */ id,name from user
 func BindContextSQLHint(parent context.Context, hint string) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextSQLHint-->context的parent不能为nil")
