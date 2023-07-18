@@ -225,7 +225,7 @@ func (finder *Finder) UnmarshalJSON(data []byte) error {
 		return errors.New("->finder-->UnmarshalJSON()finder对象为nil")
 	}
 	type FinderJSON Finder
-	aux := &struct {
+	finderJson := &struct {
 		*FinderJSON
 		SQLStr string        `json:"sqlstr,omitempty"`
 		Values []interface{} `json:"values,omitempty"`
@@ -234,9 +234,9 @@ func (finder *Finder) UnmarshalJSON(data []byte) error {
 		Values:     make([]interface{}, 0),
 	}
 
-	if err := json.Unmarshal(data, aux); err != nil {
+	if err := json.Unmarshal(data, finderJson); err != nil {
 		return err
 	}
-	finder.Append(aux.SQLStr, aux.Values...)
+	finder.Append(finderJson.SQLStr, finderJson.Values...)
 	return nil
 }
