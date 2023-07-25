@@ -1,5 +1,5 @@
 v1.7.0
- - Finder和EntityMap增加序列化JSON方法,适配兼容wasm环境.
+ - Finder和EntityMap增加序列化json方法,适配兼容wasm环境.
  - IsBindDBConnection 检查ctx是否已经绑定数据库连接
  - Finder增加GetValues方法,返回Finder封装的values值
  - zormErrorSQLValues 使用json格式输出

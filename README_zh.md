@@ -766,6 +766,25 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // --------------------------------------------
 // OverrideFunc 重写ZORM的函数,当你使用这个函数时,你必须知道自己在做什么
 
+//oldInsertFunc 默认的Insert实现
+var oldInsertFunc func(ctx context.Context, entity IEntityStruct) (int, error)
+
+//newInsertFunc 新的Insert实现
+var newInsertFunc = func(ctx context.Context, entity IEntityStruct) (int, error) {
+	fmt.Println("Insert前")
+	i, err := oldInsertFunc(ctx, entity)
+	fmt.Println("Insert后")
+	return i, err
+}
+
+// 在init函数中注册覆盖老的函数
+func init() {
+	ok, oldFunc, err := zorm.OverrideFunc("Insert", newInsertFunc)
+	if ok && err == nil {
+		oldInsertFunc = oldFunc.(func(ctx context.Context, entity IEntityStruct) (int, error))
+	}
+}
+
 ```  
 ##  分布式事务
 ### seata-go CallbackWithCtx函数模式 

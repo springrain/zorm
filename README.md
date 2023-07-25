@@ -755,6 +755,25 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // --------------------------------------------
 // OverrideFunc Rewrite the functions of ZORM, when you use this function, you have to know what you are doing
 
+// oldInsertFunc The default Insert implementation
+var oldInsertFunc func(ctx context.Context, entity IEntityStruct) (int, error)
+
+// newInsertFunc New Insert implementation
+var newInsertFunc = func(ctx context.Context, entity IEntityStruct) (int, error) {
+	fmt.Println("Insert before")
+	i, err := oldInsertFunc(ctx, entity)
+	fmt.Println("Insert after")
+	return i, err
+}
+
+// Register the old function in the init function that overrides the old one
+func init() {
+	ok, oldFunc, err := zorm.OverrideFunc("Insert", newInsertFunc)
+	if ok && err == nil {
+		oldInsertFunc = oldFunc.(func(ctx context.Context, entity IEntityStruct) (int, error))
+	}
+}
+
 ```  
 ## Global transaction
 ### seata-go CallbackWithCtx function mode
