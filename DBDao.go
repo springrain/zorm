@@ -1861,6 +1861,20 @@ func BindContextMustUpdate(parent context.Context, mustUpdateMap map[string]inte
 	return ctx, nil
 }
 
+// contextOnlyUpdateColsValueKey 把仅更新的数据库字段放到context里使用的key
+const contextOnlyUpdateColsValueKey = wrapContextStringKey("contextOnlyUpdateColsValueKey")
+
+// BindContextOnlyUpdateCols 指定仅更新的数据库字段,只对Update方法有效.cols是数据库列名切片
+// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个Update方法.
+func BindContextOnlyUpdateCols(parent context.Context, cols []string) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("->BindContextOnlyUpdateCols-->context的parent不能为nil")
+	}
+
+	ctx := context.WithValue(parent, contextOnlyUpdateColsValueKey, cols)
+	return ctx, nil
+}
+
 // getContextBoolValue 从ctx中获取key的bool值,ctx如果没有值使用defaultValue
 func getContextBoolValue(ctx context.Context, key wrapContextStringKey, defaultValue bool) bool {
 	boolValue := false

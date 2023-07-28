@@ -603,6 +603,11 @@ func TestUpdate(t *testing.T) {
 	// ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
 	var ctx = context.Background()
 
+	// BindContextOnlyUpdateCols 指定仅更新的数据库字段,只对Update方法有效.cols是数据库列名切片
+    // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个Update方法.
+	// ctx, _ = zorm.BindContextOnlyUpdateCols(ctx, []string{"userName", "active"})
+
+
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
 	// 如果zorm.DataSourceConfig.DefaultTxOptions配置不满足需求,可以在zorm.Transaction事务方法前设置事务的隔离级别
 	// 例如 ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}),如果txOptions为nil,使用zorm.DataSourceConfig.DefaultTxOptions

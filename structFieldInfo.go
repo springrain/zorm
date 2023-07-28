@@ -357,6 +357,10 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	// 接收值的数组
 	values := make([]interface{}, 0, fLen)
 
+	//Update仅更新指定列
+	isOnlyUpdateCols := false
+	var onlyUpdateColsMap map[string]bool
+
 	//默认值的map
 	hasDefaultValueMap := false
 	var defaultValueMap map[string]interface{}
@@ -367,6 +371,21 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		}
 	} else {
 		defaultValueMap = entity.GetDefaultValueMap()
+		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
+		if onlyUpdateCols != nil { //指定了仅更新的列
+			cols := onlyUpdateCols.([]string)
+			if len(cols) > 0 {
+				isOnlyUpdateCols = true
+				onlyUpdateColsMap = make(map[string]bool)
+				for i := 0; i < len(cols); i++ {
+					key := strings.ToLower(cols[i]) //变成小写
+					onlyUpdateColsMap[key] = true
+				}
+				//添加主键
+				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+			}
+
+		}
 	}
 
 	hasDefaultValueMap = len(defaultValueMap) > 0
@@ -378,6 +397,11 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		//if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
 		//}
+
+		//指定仅更新的列
+		if isOnlyUpdateCols && (!onlyUpdateColsMap[columnNameLower]) {
+			continue
+		}
 
 		field := (*dbColumnFieldMap)[columnNameLower]
 
