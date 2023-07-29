@@ -870,9 +870,9 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 	// newSQLStr.Grow(len(*sqlstr))
 	newSQLStr.Grow(stringBuilderGrowLen)
 	i := -1
-	for _, v := range []byte(*sqlstr) {
-		if v != '?' { // 如果不是?问号
-			newSQLStr.WriteByte(v)
+	for _, vbyte := range []byte(*sqlstr) {
+		if vbyte != '?' { // 如果不是?问号
+			newSQLStr.WriteByte(vbyte)
 			continue
 		}
 		i = i + 1
@@ -913,7 +913,11 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			// 记录新值
 			// Record new value.
 			newValues = append(newValues, v)
-		} else if typeOf == reflect.TypeOf([]byte{}) {
+		} else if _, ok := v.([]byte); ok { //字节数组
+			// 记录新值
+			// Record new value
+			newValues = append(newValues, v)
+		} else if kind == reflect.Slice && typeOf.Elem().Kind() == reflect.Uint8 { //字节数组的派生
 			// 记录新值
 			// Record new value
 			newValues = append(newValues, v)
