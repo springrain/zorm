@@ -358,37 +358,37 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	values := make([]interface{}, 0, fLen)
 
 	//Update仅更新指定列
-	isOnlyUpdateCols := false
 	var onlyUpdateColsMap map[string]bool
+	//UpdateNotZero必须更新指定列
+	var mustUpdateColsMap map[string]bool
 
 	//默认值的map
-	hasDefaultValueMap := false
 	var defaultValueMap map[string]interface{}
-	if onlyUpdateNotZero { //从ctx中获取默认值
-		ctxValueMap := ctx.Value(contextMustUpdateValueKey)
-		if ctxValueMap != nil {
-			defaultValueMap = ctxValueMap.(map[string]interface{})
-		}
+	ctxValueMap := ctx.Value(contextDefaultValueKey)
+	if ctxValueMap != nil {
+		defaultValueMap = ctxValueMap.(map[string]interface{})
 	} else {
 		defaultValueMap = entity.GetDefaultValueMap()
+	}
+	if onlyUpdateNotZero { //只更新非零值时,需要考虑mustUpdateCols
+		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
+		if mustUpdateCols != nil { //指定了仅更新的列
+			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
+			if mustUpdateColsMap != nil {
+				//添加主键
+				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+			}
+		}
+	} else { //update 更新全部字段时,需要考虑onlyUpdateCols
 		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
 		if onlyUpdateCols != nil { //指定了仅更新的列
-			cols := onlyUpdateCols.([]string)
-			if len(cols) > 0 {
-				isOnlyUpdateCols = true
-				onlyUpdateColsMap = make(map[string]bool)
-				for i := 0; i < len(cols); i++ {
-					key := strings.ToLower(cols[i]) //变成小写
-					onlyUpdateColsMap[key] = true
-				}
+			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
+			if onlyUpdateColsMap != nil {
 				//添加主键
 				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
 			}
-
 		}
 	}
-
-	hasDefaultValueMap = len(defaultValueMap) > 0
 
 	// 遍历所有数据库字段名,小写的
 	for _, columnNameLower := range *dbColumnFieldNameSlice {
@@ -398,8 +398,8 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		//	continue
 		//}
 
-		//指定仅更新的列
-		if isOnlyUpdateCols && (!onlyUpdateColsMap[columnNameLower]) {
+		//指定仅更新的列,当前列不用更新
+		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[columnNameLower]) {
 			continue
 		}
 
@@ -411,15 +411,21 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		//默认值
 		isDefaultValue := false
 		var defaultValue interface{}
-		if hasDefaultValueMap {
+		if defaultValueMap != nil {
 			defaultValue, isDefaultValue = defaultValueMap[field.Name]
+		}
+
+		//必须更新的字段
+		isMustUpdate := false
+		if mustUpdateColsMap != nil {
+			isMustUpdate = mustUpdateColsMap[columnNameLower]
 		}
 
 		isZero := fv.IsZero()
 		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
 		if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
-		} else if onlyUpdateNotZero && isZero { //如果只更新不为零值的
+		} else if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
 			continue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值

@@ -204,8 +204,8 @@ func (entity *demoStruct) GetPKColumnName() string {
 }
 
 
-// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,UpdateNotZeroValue请使用BindContextMustUpdate方法.返回map的key是Struct属性名,value是默认值,value可以是nil
-// GetDefaultValueMap To get the default value of the Map, for the Insert and Update Struct objects, UpdateNotZeroValue use the BindContextMustUpdate method. The key that returns map is the Struct property name, value is the default value, and value can be nil.
+// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
+// GetDefaultValueMap To get the default value of the Map, for the Insert and Update Struct objects,  The key that returns map is the Struct property name, value is the default value, and value can be nil.
 //func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
 //	return map[string]interface{}{"CreateTime": time.Now(),"Active":nil}
 //}
@@ -581,9 +581,9 @@ func TestUpdateNotZeroValue(t *testing.T) {
 		demo.Id = "20210630163227149563000042432429"
 		demo.UserName = "UpdateNotZeroValue"
 
-        // ctx绑定强制更新的属性,map的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil
+        // 指定必须更新的数据库字段,只对UpdateNotZeroValue方法有效.cols是数据库列名切片
 		// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
-		// newCtx, _ := zorm.BindContextMustUpdate(ctx, map[string]interface{}{"Active": nil})
+		// newCtx, _ := zorm.BindContextMustUpdateCols(ctx, []string{"active"})
 		// _, err := zorm.UpdateNotZeroValue(newCtx, &demo)
 
 		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]

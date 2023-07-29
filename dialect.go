@@ -277,10 +277,12 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	}
 
 	//默认值的map
-	hasDefaultValueMap := false
-	defaultValueMap := entity.GetDefaultValueMap()
-	if len(defaultValueMap) > 0 {
-		hasDefaultValueMap = true
+	var defaultValueMap map[string]interface{}
+	ctxValueMap := ctx.Value(contextDefaultValueKey)
+	if ctxValueMap != nil {
+		defaultValueMap = ctxValueMap.(map[string]interface{})
+	} else {
+		defaultValueMap = entity.GetDefaultValueMap()
 	}
 
 	for i := 1; i < sliceLen; i++ {
@@ -329,7 +331,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 			//默认值
 			isDefaultValue := false
 			var defaultValue interface{}
-			if hasDefaultValueMap { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+			if defaultValueMap != nil { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
 				defaultValue, isDefaultValue = defaultValueMap[field.Name]
 			}
 			// 给字段赋值

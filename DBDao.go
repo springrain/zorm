@@ -1847,17 +1847,34 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 	return ctx, nil
 }
 
-// contextMustUpdateValueKey 把必须更新的属性放到context里使用的key
-const contextMustUpdateValueKey = wrapContextStringKey("contextMustUpdateValueKey")
+// contextDefaultValueKey 把属性的默认值放到context里使用的key
+const contextDefaultValueKey = wrapContextStringKey("contextDefaultValueKey")
 
-// BindContextMustUpdate 指定必须更新的列,只对UpdateNotZeroValue方法有效.mustUpdateMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil
-// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
-func BindContextMustUpdate(parent context.Context, mustUpdateMap map[string]interface{}) (context.Context, error) {
+// BindContextDefaultValue 设置属性的默认值.
+// defaultValueMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
+// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个方法.
+func BindContextDefaultValue(parent context.Context, defaultValueMap map[string]interface{}) (context.Context, error) {
 	if parent == nil {
-		return nil, errors.New("->BindContextMustUpdate-->context的parent不能为nil")
+		return nil, errors.New("->BindContextDefaultValue-->context的parent不能为nil")
 	}
+	ctx := context.WithValue(parent, contextDefaultValueKey, defaultValueMap)
+	return ctx, nil
+}
 
-	ctx := context.WithValue(parent, contextMustUpdateValueKey, mustUpdateMap)
+// contextMustUpdateColsValueKey 把仅更新的数据库字段放到context里使用的key
+const contextMustUpdateColsValueKey = wrapContextStringKey("contextMustUpdateColsValueKey")
+
+// BindContextMustUpdateCols 指定必须更新的数据库字段,只对UpdateNotZeroValue方法有效.cols是数据库列名切片
+// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
+func BindContextMustUpdateCols(parent context.Context, cols []string) (context.Context, error) {
+	if parent == nil {
+		return nil, errors.New("->BindContextMustUpdateCols-->context的parent不能为nil")
+	}
+	colsMap := make(map[string]bool)
+	for i := 0; i < len(cols); i++ {
+		colsMap[strings.ToLower(cols[i])] = true
+	}
+	ctx := context.WithValue(parent, contextMustUpdateColsValueKey, colsMap)
 	return ctx, nil
 }
 
@@ -1870,8 +1887,11 @@ func BindContextOnlyUpdateCols(parent context.Context, cols []string) (context.C
 	if parent == nil {
 		return nil, errors.New("->BindContextOnlyUpdateCols-->context的parent不能为nil")
 	}
-
-	ctx := context.WithValue(parent, contextOnlyUpdateColsValueKey, cols)
+	colsMap := make(map[string]bool)
+	for i := 0; i < len(cols); i++ {
+		colsMap[strings.ToLower(cols[i])] = true
+	}
+	ctx := context.WithValue(parent, contextOnlyUpdateColsValueKey, colsMap)
 	return ctx, nil
 }
 
