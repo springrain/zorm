@@ -5,7 +5,7 @@ v1.7.0
  - zormErrorSQLValues 使用json格式输出
  - BindContextOnlyUpdateCols 指定仅更新的数据库字段,只对Update方法有效.cols是数据库列名切片
  - BindContextMustUpdateCols 指定必须更新的数据库字段,只对UpdateNotZeroValue方法有效.cols是数据库列名切片
- - BindContextDefaultValue 替代 BindContextMustUpdate函数
+ - BindContextDefaultValue 替代 BindContextMustUpdate函数, 优先级高于 GetDefaultValueMap
  - 完善文档,注释
 
 v1.6.9
