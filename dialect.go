@@ -913,11 +913,9 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			// 记录新值
 			// Record new value.
 			newValues = append(newValues, v)
-		} else if _, ok := v.([]byte); ok { //字节数组
-			// 记录新值
-			// Record new value
-			newValues = append(newValues, v)
-		} else if kind == reflect.Slice && typeOf.Elem().Kind() == reflect.Uint8 { //字节数组的派生
+			//} else if _, ok := v.([]byte); ok { //字节数组
+			//	newValues = append(newValues, v)
+		} else if kind == reflect.Slice && typeOf.Elem().Kind() == reflect.Uint8 { //[]byte字节数组或派生类型
 			// 记录新值
 			// Record new value
 			newValues = append(newValues, v)
