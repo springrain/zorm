@@ -1850,7 +1850,7 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 // contextDefaultValueKey 把属性的默认值放到context里使用的key
 const contextDefaultValueKey = wrapContextStringKey("contextDefaultValueKey")
 
-// BindContextDefaultValue 设置属性的默认值. 优先级高于 GetDefaultValueMap
+// BindContextDefaultValue 设置属性的默认值. 优先级高于 GetDefaultValue
 // defaultValueMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
 // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个方法.
 func BindContextDefaultValue(parent context.Context, defaultValueMap map[string]interface{}) (context.Context, error) {

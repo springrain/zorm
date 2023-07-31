@@ -282,7 +282,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	if ctxValueMap != nil {
 		defaultValueMap = ctxValueMap.(map[string]interface{})
 	} else {
-		defaultValueMap = entity.GetDefaultValueMap()
+		defaultValueMap = entity.GetDefaultValue()
 	}
 
 	for i := 1; i < sliceLen; i++ {

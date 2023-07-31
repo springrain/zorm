@@ -38,9 +38,9 @@ type IEntityStruct interface {
 	// GetPkSequence Primary key sequence
 	GetPkSequence() string
 
-	// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
-	// GetDefaultValueMap To get the default value of the Map, for the Insert and Update Struct objects,  The key that returns map is the Struct property name, value is the default value, and value can be nil.
-	GetDefaultValueMap() map[string]interface{}
+	// GetDefaultValue 获取列的默认值Map,用于Insert和Update Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
+	// GetDefaultValue To get the default value of the Map, for the Insert and Update Struct objects,  The key that returns map is the Struct property name, value is the default value, and value can be nil.
+	GetDefaultValue() map[string]interface{}
 }
 
 // IEntityMap 使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要"entityMap.Set"主键的值
@@ -102,11 +102,11 @@ func (entity *EntityStruct) GetPkSequence() string {
 	return ""
 }
 
-// GetDefaultValueMap 获取列的默认值Map,用于Insert和Update Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil.不能是类型的默认值,比如int类型设置默认值为0
-// BindContextDefaultValue 优先级高于 GetDefaultValueMap
-// GetDefaultValueMap To get the default value of the Map, for the Insert and Update Struct objects,  The key that returns map is the Struct property name, value is the default value, and value can be nil.It cannot be the default value of the type, for example, the default value of the int type is set to 0
-// BindContextDefaultValue takes precedence over GetDefaultValueMap
-func (entity *EntityStruct) GetDefaultValueMap() map[string]interface{} {
+// GetDefaultValue 获取列的默认值Map,用于Insert和Update Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil.不能是类型的默认值,比如int类型设置默认值为0
+// BindContextDefaultValue 优先级高于 GetDefaultValue
+// GetDefaultValue To get the default value of the Map, for the Insert and Update Struct objects,  The key that returns map is the Struct property name, value is the default value, and value can be nil.It cannot be the default value of the type, for example, the default value of the int type is set to 0
+// BindContextDefaultValue takes precedence over GetDefaultValue
+func (entity *EntityStruct) GetDefaultValue() map[string]interface{} {
 	return nil
 }
 

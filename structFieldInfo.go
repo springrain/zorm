@@ -368,7 +368,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	if ctxValueMap != nil {
 		defaultValueMap = ctxValueMap.(map[string]interface{})
 	} else {
-		defaultValueMap = entity.GetDefaultValueMap()
+		defaultValueMap = entity.GetDefaultValue()
 	}
 	if onlyUpdateNotZero { //只更新非零值时,需要考虑mustUpdateCols
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
