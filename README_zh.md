@@ -15,13 +15,13 @@ go get gitee.com/chunanyong/zorm
 ```  
 * 基于原生sql语句,学习成本更低  
 * [代码生成器](https://gitee.com/zhou-a-xing/zorm-generate-struct)	
-* 代码精简,主体2500行,零依赖4000行,注释详细,方便定制修改   
+* 代码精简,主体3000行,零依赖5000行,注释详细,方便定制修改   
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
 * 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 * 支持多库和读写分离
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
 * 支持seata,hptx,dbpack分布式事务,支持全局事务托管,不修改业务代码,零侵入分布式事务
-* 支持clickhouse,更新,删除语句使用SQL92标准语法.clickhouse-go官方驱动不支持批量insert语法,建议使用https://github.com/mailru/go-clickhouse
+* 支持clickhouse,更新和删除语句使用SQL92标准语法
 
 ## 事务传播
 事务传播是zorm的核心功能,也是zorm所有方法都有ctx入参的主要原因.	

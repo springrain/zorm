@@ -14,13 +14,13 @@ go get gitee.com/chunanyong/zorm
 
 * Based on native SQL statements, the learning cost is lower  
 * [Code generator](https://gitee.com/zhou-a-xing/zorm-generate-struct)	
-* The code is concise, the main body is 2500 lines, zero dependency 4000 lines, detailed comments, easy to customize and modify
+* The code is concise, the main body is 3000 lines, zero dependency 5000 lines, detailed comments, easy to customize and modify
 * <font color=red>Support for transaction propagation, which was the main reason for the birth of ZORM</font>		
 * Support dm (dameng), kingbase (jincang), shentong (Shentong), gbase (Nantong), TDengine, mysql, postgresql, oracle, mssql, sqlite, db2, clickhouse...
 * Supports multi-database and read/write splitting  
 * Joint primary keys are not supported, workarounds are assumed to be no primary keys, and business control is implemented (difficult trade-offs)
 * Support seata, HPTX, dbpack distributed transactions, support global transaction hosting, do not modify business code, zero intrusion distributed transactions  
-* Support clickhouse, update, delete statements using SQL92 standard syntax.clickhouse-go official driver does not support batch insert syntax, it is recommended to use https://github.com/mailru/go-clickhouse
+* Support clickhouse, update, delete statements using SQL92 standard syntax
 
 ## Transaction propagation  
 Transaction propagation is the core function of ZORM and the main reason why all methods of ZORM have ctx parameters.  
