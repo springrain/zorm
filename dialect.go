@@ -791,7 +791,7 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 }
 
 // FuncWrapFieldTagName 用于包裹字段名, eg. `describe`
-var FuncWrapFieldTagName func(colName string) string = nil
+var FuncWrapFieldTagName func(field *reflect.StructField, colName string) string = nil
 
 /*
 var FuncWrapFieldTagName = func(colName string) string {
@@ -805,7 +805,7 @@ func getFieldTagName(field *reflect.StructField, structFieldTagMap *map[string]s
 	// colName := field.Tag.Get(tagColumnName)
 	colName := (*structFieldTagMap)[field.Name]
 	if FuncWrapFieldTagName != nil {
-		colName = FuncWrapFieldTagName(colName)
+		colName = FuncWrapFieldTagName(field, colName)
 	}
 
 	/*

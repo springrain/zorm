@@ -13,7 +13,7 @@ func Test_getFieldTagName(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		fn   func(string) string
+		fn   func(*reflect.StructField, string) string
 		want string
 	}{
 		{
@@ -24,7 +24,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(colName string) string {
+			fn: func(field *reflect.StructField, colName string) string {
 				return fmt.Sprintf("`%s`", colName)
 			},
 			want: "`described`",
@@ -37,7 +37,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(colName string) string {
+			fn: func(field *reflect.StructField, colName string) string {
 				return fmt.Sprintf("'%s'", colName)
 			},
 			want: "'described'",
@@ -50,7 +50,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(colName string) string {
+			fn: func(field *reflect.StructField, colName string) string {
 				return fmt.Sprintf("%s", colName)
 			},
 			want: "described",
