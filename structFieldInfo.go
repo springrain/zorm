@@ -365,7 +365,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	//默认值的map,onlyUpdateNotZero不处理
 	var defaultValueMap map[string]interface{} = nil
 
-	if onlyUpdateNotZero { //只更新非零值时,需要考虑mustUpdateCols,不处理defaultValue
+	if onlyUpdateNotZero { //只更新非零值时,需要处理mustUpdateCols,不处理defaultValue
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
 		if mustUpdateCols != nil { //指定了仅更新的列
 			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
@@ -374,8 +374,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
 			}
 		}
-	} else { //update 更新全部字段时,需要考虑onlyUpdateCols
-		//获取默认值
+	} else { //update 更新全部字段时,需要处理defaultValueonly和onlyUpdateCols
 		ctxValueMap := ctx.Value(contextDefaultValueKey)
 		if ctxValueMap != nil {
 			defaultValueMap = ctxValueMap.(map[string]interface{})
