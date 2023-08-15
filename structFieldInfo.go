@@ -374,7 +374,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
 			}
 		}
-	} else { //update 更新全部字段时,需要处理defaultValueonly和onlyUpdateCols
+	} else { //update 更新全部字段时,需要处理 defaultValue 和 onlyUpdateCols
 		ctxValueMap := ctx.Value(contextDefaultValueKey)
 		if ctxValueMap != nil {
 			defaultValueMap = ctxValueMap.(map[string]interface{})
