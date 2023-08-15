@@ -51,7 +51,7 @@ func Test_getFieldTagName(t *testing.T) {
 				},
 			},
 			fn: func(field *reflect.StructField, colName string) string {
-				return fmt.Sprintf("%s", colName)
+				return colName
 			},
 			want: "described",
 		},

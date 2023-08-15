@@ -359,18 +359,13 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 
 	//Update仅更新指定列
 	var onlyUpdateColsMap map[string]bool
-	//UpdateNotZero必须更新指定列
+	//UpdateNotZeroValue 必须更新指定列
 	var mustUpdateColsMap map[string]bool
 
-	//默认值的map
-	var defaultValueMap map[string]interface{}
-	ctxValueMap := ctx.Value(contextDefaultValueKey)
-	if ctxValueMap != nil {
-		defaultValueMap = ctxValueMap.(map[string]interface{})
-	} else {
-		defaultValueMap = entity.GetDefaultValue()
-	}
-	if onlyUpdateNotZero { //只更新非零值时,需要考虑mustUpdateCols
+	//默认值的map,onlyUpdateNotZero不处理
+	var defaultValueMap map[string]interface{} = nil
+
+	if onlyUpdateNotZero { //只更新非零值时,需要考虑mustUpdateCols,不处理defaultValue
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
 		if mustUpdateCols != nil { //指定了仅更新的列
 			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
@@ -380,6 +375,14 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 			}
 		}
 	} else { //update 更新全部字段时,需要考虑onlyUpdateCols
+		//获取默认值
+		ctxValueMap := ctx.Value(contextDefaultValueKey)
+		if ctxValueMap != nil {
+			defaultValueMap = ctxValueMap.(map[string]interface{})
+		} else {
+			defaultValueMap = entity.GetDefaultValue()
+		}
+
 		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
 		if onlyUpdateCols != nil { //指定了仅更新的列
 			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
@@ -422,11 +425,11 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		}
 
 		isZero := fv.IsZero()
-		// FieldByName方法返回的是reflect.Value类型,调用Interface()方法,返回原始类型的数据值.字段不会重名,不使用FieldByIndex()函数
-		if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
-			value = defaultValue
-		} else if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
+		if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
 			continue
+			// 重点说明:UpdateNotZeroValue不会取值DefaultValue
+		} else if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
+			value = defaultValue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值
 				value = fv.Elem().Interface()

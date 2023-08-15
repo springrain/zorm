@@ -1866,6 +1866,7 @@ const contextMustUpdateColsValueKey = wrapContextStringKey("contextMustUpdateCol
 
 // BindContextMustUpdateCols 指定必须更新的数据库字段,只对UpdateNotZeroValue方法有效.cols是数据库列名切片
 // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
+// 重点说明:UpdateNotZeroValue不会取值DefaultValue
 func BindContextMustUpdateCols(parent context.Context, cols []string) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextMustUpdateCols-->context的parent不能为nil")

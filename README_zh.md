@@ -206,7 +206,7 @@ func (entity *demoStruct) GetPKColumnName() string {
 
 // GetDefaultValue 获取列的默认值Map,用于Insert和Update,UpdateNotZeroValue Struct对象,返回map的key是Struct属性名,value是默认值,value可以是nil.不能是类型的默认值,比如int类型设置默认值为0
 // BindContextDefaultValue 优先级高于 GetDefaultValue
-// 重点说明:UpdateNotZeroValue方法也会更新GetDefaultValue设定的默认值.特殊情况不想更新,使用BindContextDefaultValue废弃掉GetDefaultValue方法.全局情况可以OverrideFunc复写UpdateNotZeroValue.
+// 重点说明:UpdateNotZeroValue不会取值DefaultValue
 
 //func (entity *EntityStruct) GetDefaultValue() map[string]interface{} {
 //	return map[string]interface{}{"CreateTime": time.Now(),"Active":nil}
