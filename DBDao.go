@@ -1851,6 +1851,7 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 const contextDefaultValueKey = wrapContextStringKey("contextDefaultValueKey")
 
 // BindContextDefaultValue 设置属性的默认值. 优先级高于 GetDefaultValue
+// 默认值仅仅用于Insert Struct,对Update和UpdateNotZeroValue无效
 // defaultValueMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
 // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个方法.
 func BindContextDefaultValue(parent context.Context, defaultValueMap map[string]interface{}) (context.Context, error) {
@@ -1866,7 +1867,6 @@ const contextMustUpdateColsValueKey = wrapContextStringKey("contextMustUpdateCol
 
 // BindContextMustUpdateCols 指定必须更新的数据库字段,只对UpdateNotZeroValue方法有效.cols是数据库列名切片
 // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个UpdateNotZeroValue方法.
-// 重点说明:UpdateNotZeroValue不会取值DefaultValue
 func BindContextMustUpdateCols(parent context.Context, cols []string) (context.Context, error) {
 	if parent == nil {
 		return nil, errors.New("->BindContextMustUpdateCols-->context的parent不能为nil")

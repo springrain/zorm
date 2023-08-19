@@ -1,5 +1,5 @@
 v1.7.1
- - UpdateNotZeroValue不会取值DefaultValue
+ - DefaultValue默认值仅仅用于Insert Struct,对Update和UpdateNotZeroValue无效
  - 完善文档,注释
 
 v1.7.0

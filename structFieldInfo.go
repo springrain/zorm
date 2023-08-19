@@ -363,7 +363,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	var mustUpdateColsMap map[string]bool
 
 	//默认值的map,onlyUpdateNotZero不处理
-	var defaultValueMap map[string]interface{} = nil
+	//var defaultValueMap map[string]interface{} = nil
 
 	if onlyUpdateNotZero { //只更新非零值时,需要处理mustUpdateCols,不处理defaultValue
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
@@ -375,13 +375,14 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 			}
 		}
 	} else { //update 更新全部字段时,需要处理 defaultValue 和 onlyUpdateCols
-		ctxValueMap := ctx.Value(contextDefaultValueKey)
-		if ctxValueMap != nil {
-			defaultValueMap = ctxValueMap.(map[string]interface{})
-		} else {
-			defaultValueMap = entity.GetDefaultValue()
-		}
-
+		/*
+			ctxValueMap := ctx.Value(contextDefaultValueKey)
+			if ctxValueMap != nil {
+				defaultValueMap = ctxValueMap.(map[string]interface{})
+			} else {
+				defaultValueMap = entity.GetDefaultValue()
+			}
+		*/
 		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
 		if onlyUpdateCols != nil { //指定了仅更新的列
 			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
@@ -411,12 +412,13 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		fv := valueOf.FieldByName(field.Name)
 
 		//默认值
-		isDefaultValue := false
-		var defaultValue interface{}
-		if defaultValueMap != nil {
-			defaultValue, isDefaultValue = defaultValueMap[field.Name]
-		}
-
+		/*
+			isDefaultValue := false
+			var defaultValue interface{}
+			if defaultValueMap != nil {
+				defaultValue, isDefaultValue = defaultValueMap[field.Name]
+			}
+		*/
 		//必须更新的字段
 		isMustUpdate := false
 		if mustUpdateColsMap != nil {
@@ -426,9 +428,9 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		isZero := fv.IsZero()
 		if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
 			continue
-			// 重点说明:UpdateNotZeroValue不会取值DefaultValue
-		} else if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
-			value = defaultValue
+			// 重点说明:仅仅用于Insert Struct,对Update和UpdateNotZeroValue无效
+			//} else if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
+			//	value = defaultValue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值
 				value = fv.Elem().Interface()
