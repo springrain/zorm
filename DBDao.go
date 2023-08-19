@@ -1150,7 +1150,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if entity == nil {
 		return affected, errors.New("->Insert-->entity对象不能为空")
 	}
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false, true)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("->Insert-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
@@ -1267,7 +1267,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	}
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	entity := entityStructSlice[0]
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false, true)
 	if columnAndValueErr != nil {
 		columnAndValueErr = fmt.Errorf("->InsertSlice-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
 		FuncLogError(ctx, columnAndValueErr)
@@ -1595,7 +1595,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
 	}
 
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, onlyUpdateNotZero)
+	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, onlyUpdateNotZero, false)
 	if columnAndValueErr != nil {
 		return nil, columnAndValueErr
 	}
