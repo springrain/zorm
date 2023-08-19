@@ -425,7 +425,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		isZero := fv.IsZero()
 		if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
 			continue
-			// 重点说明:仅仅用于Insert Struct,对Update和UpdateNotZeroValue无效
+			// 重点说明:仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
 		} else if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
