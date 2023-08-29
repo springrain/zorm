@@ -1,3 +1,7 @@
+v1.7.3
+ - 修复InsertSlice默认值bug
+ - 完善文档,注释
+
 v1.7.2
  - 废弃BindContextDefaultValue函数
  - 完善文档,注释

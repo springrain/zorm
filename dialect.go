@@ -276,9 +276,8 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		return &sqlstr, autoIncrement, e
 	}
 
-	//默认值的map
-	defaultValueMap := entity.GetDefaultValue()
 	/*
+		defaultValueMap := entity.GetDefaultValue()
 		ctxValueMap := ctx.Value(contextDefaultValueKey)
 		if ctxValueMap != nil {
 			defaultValueMap = ctxValueMap.(map[string]interface{})
@@ -286,6 +285,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 			defaultValueMap = entity.GetDefaultValue()
 		}
 	*/
+
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string
@@ -303,6 +303,8 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 		}
 
 		entityStruct := entityStructSlice[i]
+		//默认值的map,每一个对象的默认值
+		defaultValueMap := entityStruct.GetDefaultValue()
 		for j := 0; j < len(*columns); j++ {
 			// 获取实体类的反射,指针下的struct
 			// Get the reflection of the entity class, the struct under the pointer
