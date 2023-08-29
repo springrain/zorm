@@ -103,9 +103,7 @@ func (entity *EntityStruct) GetPkSequence() string {
 }
 
 // GetDefaultValue 获取列的默认值Map,仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效.返回map的key是Struct属性名,value是默认值,value可以是nil.不能是类型的默认值,比如int类型设置默认值为0
-// BindContextDefaultValue 优先级高于 GetDefaultValue
 // GetDefaultValue To get the default value of the Map, Only used for Insert Struct, invalid for Update and UpdateNotZeroValue. The key that returns map is the Struct property name, value is the default value, and value can be nil.It cannot be the default value of the type, for example, the default value of the int type is set to 0
-// BindContextDefaultValue takes precedence over GetDefaultValue
 func (entity *EntityStruct) GetDefaultValue() map[string]interface{} {
 	return nil
 }

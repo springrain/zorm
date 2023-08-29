@@ -277,14 +277,15 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 	}
 
 	//默认值的map
-	var defaultValueMap map[string]interface{}
-	ctxValueMap := ctx.Value(contextDefaultValueKey)
-	if ctxValueMap != nil {
-		defaultValueMap = ctxValueMap.(map[string]interface{})
-	} else {
-		defaultValueMap = entity.GetDefaultValue()
-	}
-
+	defaultValueMap := entity.GetDefaultValue()
+	/*
+		ctxValueMap := ctx.Value(contextDefaultValueKey)
+		if ctxValueMap != nil {
+			defaultValueMap = ctxValueMap.(map[string]interface{})
+		} else {
+			defaultValueMap = entity.GetDefaultValue()
+		}
+	*/
 	for i := 1; i < sliceLen; i++ {
 		// 拼接字符串
 		// Splicing string

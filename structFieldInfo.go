@@ -365,12 +365,15 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	//默认值的map,只对Insert Struct有效
 	var defaultValueMap map[string]interface{} = nil
 	if useDefaultValue {
-		ctxValueMap := ctx.Value(contextDefaultValueKey)
-		if ctxValueMap != nil {
-			defaultValueMap = ctxValueMap.(map[string]interface{})
-		} else {
-			defaultValueMap = entity.GetDefaultValue()
-		}
+		/*
+			ctxValueMap := ctx.Value(contextDefaultValueKey)
+			if ctxValueMap != nil {
+				defaultValueMap = ctxValueMap.(map[string]interface{})
+			} else {
+				defaultValueMap = entity.GetDefaultValue()
+			}
+		*/
+		defaultValueMap = entity.GetDefaultValue()
 	}
 	if onlyUpdateNotZero { //只更新非零值时,需要处理mustUpdateCols,不处理defaultValue
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)

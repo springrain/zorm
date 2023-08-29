@@ -1,3 +1,7 @@
+v1.7.2
+ - 废弃BindContextDefaultValue函数
+ - 完善文档,注释
+
 v1.7.1
  - DefaultValue默认值仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
  - 完善文档,注释

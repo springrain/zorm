@@ -203,7 +203,7 @@ func (entity *demoStruct) GetPKColumnName() string {
 }
 
 // GetDefaultValue To get the default value of the Map, Only used for Insert Struct, invalid for Update and UpdateNotZeroValue. The key that returns map is the Struct property name, value is the default value, and value can be nil.It cannot be the default value of the type, for example, the default value of the int type is set to 0
-// BindContextDefaultValue takes precedence over GetDefaultValue
+
 //func (entity *EntityStruct) GetDefaultValue() map[string]interface{} {
 //	return map[string]interface{}{"CreateTime": time.Now(),"Active":nil}
 //}

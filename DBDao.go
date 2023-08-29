@@ -1847,6 +1847,7 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 	return ctx, nil
 }
 
+/*
 // contextDefaultValueKey 把属性的默认值放到context里使用的key
 const contextDefaultValueKey = wrapContextStringKey("contextDefaultValueKey")
 
@@ -1861,7 +1862,7 @@ func BindContextDefaultValue(parent context.Context, defaultValueMap map[string]
 	ctx := context.WithValue(parent, contextDefaultValueKey, defaultValueMap)
 	return ctx, nil
 }
-
+*/
 // contextMustUpdateColsValueKey 把仅更新的数据库字段放到context里使用的key
 const contextMustUpdateColsValueKey = wrapContextStringKey("contextMustUpdateColsValueKey")
 
