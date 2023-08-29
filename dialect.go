@@ -332,7 +332,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 			//默认值
 			isDefaultValue := false
 			var defaultValue interface{}
-			if defaultValueMap != nil { //如果只更新不是零值的字段,零值时不能更新为默认值,这次多判断了一次,方便理解阅读.
+			if defaultValueMap != nil { //如果只更新不是零值的字段,零值时不能更新为默认值.Map取值性能一般高于反射
 				defaultValue, isDefaultValue = defaultValueMap[field.Name]
 			}
 			// 给字段赋值
