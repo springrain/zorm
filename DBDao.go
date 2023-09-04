@@ -78,7 +78,7 @@ type DataSourceConfig struct {
 	// Deprecated
 	// DBType 即将废弃,请使用Dialect属性
 	// DBType is about to be deprecated, please use the Dialect property
-	DBType string
+	// DBType string
 	// SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 	SlowSQLMillis int
 	// MaxOpenConns 数据库最大连接数,默认50
