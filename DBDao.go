@@ -69,24 +69,31 @@ type DataSourceConfig struct {
 	// DSN dataSourceName 连接字符串
 	// DSN DataSourceName Database connection string
 	DSN string
+
 	// DriverName 数据库驱动名称:mysql,postgres,oracle(go-ora),sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
 	// DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
 	DriverName string
+
 	// Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
 	// Dialect:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
 	Dialect string
+
 	// Deprecated
 	// DBType 即将废弃,请使用Dialect属性
 	// DBType is about to be deprecated, please use the Dialect property
 	// DBType string
+
 	// SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 	SlowSQLMillis int
+
 	// MaxOpenConns 数据库最大连接数,默认50
 	// MaxOpenConns Maximum number of database connections, Default 50
 	MaxOpenConns int
+
 	// MaxIdleConns 数据库最大空闲连接数,默认50
 	// MaxIdleConns The maximum number of free connections to the database default 50
 	MaxIdleConns int
+
 	// ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 	// ConnMaxLifetimeSecond (Connection survival time in seconds)Destroy and rebuild the connection after the default 600 seconds (10 minutes)
 	// Prevent the database from actively disconnecting and causing dead connections. MySQL Default wait_timeout 28800 seconds
