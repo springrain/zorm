@@ -109,9 +109,7 @@ func init() {
 - Configure zorm.DataSourceConfig ```DriverName:kingbase ,Dialect:kingbase```
 - Golden warehouse official drive: https://www.kingbase.com.cn/qd/index.htmhttps://bbs.kingbase.com.cn/thread-14457-1-1.html?_dsign=87f12756
 - The Kingbase 8 core is based on PostgreSQL 9.6 and can be tested using https://github.com/lib/pq, and the official driver is recommended for production environments
-- Note that ora_input_emptystr_isnull = false or ora_input_emptystr_isnull = on in the data/kingbase.conf of the database (according to the version), because golang does not have a null value, the general database is not null, golang's string defaults to '', if this is set to true, The database will set the value to null, which conflicts with the field property not null, so an error is reported.
-  After the configuration file is modified, restart the database.
-- Thanks to [@Jin](https://gitee.com/GOODJIN) for testing and suggestions.
+- Note that ora_input_emptystr_isnull = false or ora_input_emptystr_isnull = on in the data/kingbase.conf of the database (according to the version), because golang does not have a null value, the general database is not null, golang's string defaults to '', if this is set to true, The database will set the value to null, which conflicts with the field property not null, so an error is reported.After the configuration file is modified, restart the database.
 
 ### Shentong (shentong)
 It is recommended to use official driver, configure zorm.DataSourceConfig ```DriverName:aci ,Dialect:shentong```  
@@ -275,19 +273,26 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN database connection string. parseTime=true is automatically converted to time format. The default query is the []byte array
 		DSN: "root:root@tcp(127.0.0.1:3306)/zorm?charset=utf8&parseTime=true&loc=Local",
+
 		// DriverName database driver name: mysql, postgres, oracle(go-ora), essentially, sqlite3, go_ibm_db, clickhouse, dm, kingbase, aci, taosSql | taosRestful Correspond to Dialect
 		// sql.Open(DriverName,DSN) DriverName is the first string parameter of the sql.Open of the driver. The value can be obtained according to the actual conditions of the driver
 		DriverName: "mysql",
+
 		// the Dialect database Dialect: mysql, postgresql, oracle, MSSQL, sqlite, db2, clickhouse, dm, kingbase, shentong, tdengine and DriverName corresponding
 		Dialect: "mysql",
+
 		// MaxOpenConns The default maximum number of database connections is 50
 		MaxOpenConns: 50,
+
 		// MaxIdleConns The default maximum number of idle connections is 50
 		MaxIdleConns: 50,
+
 		// ConnMaxLifetimeSecond Connection survival seconds. Default 600(10 minutes) after the connection is destroyed and rebuilt. Prevent the database from voluntarily disconnecting, resulting in dead connections. MySQL default wait_timeout 28800 seconds (8 hours)
 		ConnMaxLifetimeSecond: 600,
+
 		// SlowSQLMillis slow sql time threshold, in milliseconds. A value less than 0 disables SQL statement output. If the value is equal to 0, only SQL statements are output and the execution time is not calculated. A value greater than 0 is used to calculate the SQL execution time and >=SlowSQLMillis value
 		SlowSQLMillis: 0,
+
 		// DefaultTxOptions Default configuration of transaction isolation level, which defaults to nil
 		// DefaultTxOptions: nil,
 		// If distributed transactions are used, the default configuration is recommended

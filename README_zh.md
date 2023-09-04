@@ -111,9 +111,7 @@ func init() {
 - 配置zorm.DataSourceConfig的 ```DriverName:kingbase ,Dialect:kingbase```	
 - 金仓官方驱动: https://www.kingbase.com.cn/qd/index.htm   https://bbs.kingbase.com.cn/thread-14457-1-1.html?_dsign=87f12756	  
 - 金仓kingbase 8核心是基于postgresql 9.6,可以使用 https://github.com/lib/pq 进行测试,生产环境建议使用官方驱动.	
-- 注意修改数据库的 data/kingbase.conf中 ora_input_emptystr_isnull = false 或者是ora_input_emptystr_isnull = on (根据版本进行区分),因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.
-  配置文件修改后,进行数据库的重启.
-- 感谢[@Jin](https://gitee.com/GOODJIN) 的测试与建议。
+- 注意修改数据库的 data/kingbase.conf中 ora_input_emptystr_isnull = false 或者是ora_input_emptystr_isnull = on (根据版本进行区分),因为golang没有null值,一般数据库都是not null,golang的string默认是'',如果这个设置为true,数据库就会把值设置为null,和字段属性not null 冲突,因此报错.配置文件修改后,进行数据库的重启.
 
 ### 神通(shentong)  
 建议使用官方驱动,配置zorm.DataSourceConfig的 ```DriverName:aci ,Dialect:shentong```  
@@ -280,19 +278,26 @@ func init() {
 	dbDaoConfig := zorm.DataSourceConfig{
 		// DSN 数据库的连接字符串,parseTime=true会自动转换为time格式,默认查询出来的是[]byte数组.&loc=Local用于设置时区
 		DSN: "root:root@tcp(127.0.0.1:3306)/zorm?charset=utf8&parseTime=true&loc=Local",
+
 		// DriverName 数据库驱动名称:mysql,postgres,oracle(go-ora),sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
 		// sql.Open(DriverName,DSN) DriverName就是驱动的sql.Open第一个字符串参数,根据驱动实际情况获取
 		DriverName: "mysql",
+
 		// Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
 		Dialect: "mysql",
+
 		// MaxOpenConns 数据库最大连接数 默认50
 		MaxOpenConns: 50,
+
 		// MaxIdleConns 数据库最大空闲连接数 默认50
 		MaxIdleConns: 50,
+
 		// ConnMaxLifetimeSecond 连接存活秒时间. 默认600(10分钟)后连接被销毁重建.避免数据库主动断开连接,造成死连接.MySQL默认wait_timeout 28800秒(8小时)
 		ConnMaxLifetimeSecond: 600,
+		
 		// SlowSQLMillis 慢sql的时间阈值,单位毫秒.小于0是禁用SQL语句输出;等于0是只输出SQL语句,不计算执行时间;大于0是计算SQL执行时间,并且>=SlowSQLMillis值
 		SlowSQLMillis: 0,
+
 		// DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 		// DefaultTxOptions: nil,
 		// 如果是使用分布式事务,建议使用默认配置
