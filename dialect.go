@@ -86,7 +86,7 @@ var wrapPageSQL = func(dialect string, sqlstr *string, page *Page) error {
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
+var wrapInsertSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
 	if err != nil {
@@ -232,7 +232,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error) {
+var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error) {
 	sliceLen := len(entityStructSlice)
 	sqlstr := ""
 	if entityStructSlice == nil || sliceLen < 1 {
@@ -353,7 +353,7 @@ func wrapInsertSliceSQL(ctx context.Context, config *DataSourceConfig, typeOf *r
 }
 
 // wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
-func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, entityMapSlice []IEntityMap) (*string, *[]interface{}, error) {
+var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceConfig, entityMapSlice []IEntityMap) (*string, *[]interface{}, error) {
 	sliceLen := len(entityMapSlice)
 	sqlstr := ""
 	if entityMapSlice == nil || sliceLen < 1 {
@@ -414,7 +414,7 @@ func wrapInsertEntityMapSliceSQL(ctx context.Context, config *DataSourceConfig, 
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
+var wrapUpdateSQL = func(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -488,7 +488,7 @@ func wrapUpdateSQL(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflec
 
 // wrapDeleteSQL 包装删除Struct语句
 // wrapDeleteSQL Package delete Struct statement
-func wrapDeleteSQL(entity IEntityStruct) (string, error) {
+var wrapDeleteSQL = func(entity IEntityStruct) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -506,7 +506,7 @@ func wrapDeleteSQL(entity IEntityStruct) (string, error) {
 // wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapInsertEntityMapSQL(entity IEntityMap) (string, *[]interface{}, bool, error) {
+var wrapInsertEntityMapSQL = func(entity IEntityMap) (string, *[]interface{}, bool, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
@@ -1024,7 +1024,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
-func wrapAutoIncrementInsertSQL(pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
+var wrapAutoIncrementInsertSQL = func(pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
 	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64

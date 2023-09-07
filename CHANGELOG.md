@@ -1,5 +1,5 @@
 v1.7.3
- - 增加OverrideFunc复写selectCount和wrapPageSQL函数,全局替换实现
+ - 增加OverrideFunc复写增删改查的SQL语句函数,用于全局替换扩展
  - 优化匹配from正则表达式
  - 废弃DBType属性
  - 修复InsertSlice默认值bug
