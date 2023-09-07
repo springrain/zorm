@@ -34,7 +34,7 @@ import (
 
 // wrapPageSQL 包装分页的SQL语句
 // wrapPageSQL SQL statement for wrapping paging
-func wrapPageSQL(dialect string, sqlstr *string, page *Page) error {
+var wrapPageSQL = func(dialect string, sqlstr *string, page *Page) error {
 	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}

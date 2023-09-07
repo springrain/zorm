@@ -128,11 +128,17 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			oldFunc = updateEntityMap
 			updateEntityMap = newFunc
 		}
-	case "selectCount":
+	case "selectCount": //全局替换总条数查询
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
 		if ok {
 			oldFunc = selectCount
 			selectCount = newFunc
+		}
+	case "wrapPageSQL": //全局替换分页语句实现
+		newFunc, ok := funcObject.(func(dialect string, sqlstr *string, page *Page) error)
+		if ok {
+			oldFunc = wrapPageSQL
+			wrapPageSQL = newFunc
 		}
 	default:
 		return false, oldFunc, errors.New("->OverrideFunc-->函数" + funcName + "暂不支持重写或不存在")
