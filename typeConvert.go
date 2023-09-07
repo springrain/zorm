@@ -128,6 +128,12 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			oldFunc = updateEntityMap
 			updateEntityMap = newFunc
 		}
+	case "selectCount":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
+		if ok {
+			oldFunc = selectCount
+			selectCount = newFunc
+		}
 	default:
 		return false, oldFunc, errors.New("->OverrideFunc-->函数" + funcName + "暂不支持重写或不存在")
 	}

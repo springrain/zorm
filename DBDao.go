@@ -1625,7 +1625,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 // context必须传入,不能为空
 // selectCount Query the total number of items according to finder
 // context must be passed in and cannot be empty
-func selectCount(ctx context.Context, finder *Finder) (int, error) {
+var selectCount = func(ctx context.Context, finder *Finder) (int, error) {
 	if finder == nil {
 		return -1, errors.New("->selectCount-->finder参数为nil")
 	}

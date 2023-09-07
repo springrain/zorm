@@ -1,4 +1,5 @@
 v1.7.3
+ - 增加OverrideFunc复写selectCount函数,全局替换实现
  - 优化匹配from正则表达式
  - 废弃DBType属性
  - 修复InsertSlice默认值bug
