@@ -703,7 +703,7 @@ func findGroupByIndex(strsql *string) []int {
 // countFinder.Append(") tempcountfinder")
 // finder.CountFinder = countFinder
 var (
-	fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?(from)"
+	fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
 	fromRegexp, _ = regexp.Compile(fromExpr)
 )
 
@@ -715,8 +715,8 @@ func findSelectFromIndex(strsql *string) []int {
 	if len(loc) < 2 {
 		return loc
 	}
-	// 最后的FROM前推4位字符串
-	loc[0] = loc[1] - 4
+	// 最后的FROM前推5位字符串,没有空格
+	loc[0] = loc[1] - 5
 	return loc
 }
 
