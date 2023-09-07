@@ -126,7 +126,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			updateEntityMap = newFunc
 		}
 
-	case "wrapQuerySQL": //查询 IEntityStruct 的SQL
+	case "wrapQuerySQL": //查询的SQL
 		newFunc, ok := funcObject.(func(ctx context.Context, dialect string, finder *Finder, page *Page) (string, error))
 		if ok {
 			oldFunc = wrapQuerySQL
