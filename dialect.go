@@ -598,7 +598,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (*string, *string, *[]interf
 // wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-func wrapUpdateEntityMapSQL(entity IEntityMap) (*string, *[]interface{}, error) {
+var wrapUpdateEntityMapSQL = func(entity IEntityMap) (*string, *[]interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
 	if len(dbFieldMap) < 1 {

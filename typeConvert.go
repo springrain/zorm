@@ -211,6 +211,13 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			wrapUpdateSQL = newFunc
 		}
 
+	case "wrapUpdateEntityMapSQL": //更新 IEntityMap 的SQL
+		newFunc, ok := funcObject.(func(entity IEntityMap) (*string, *[]interface{}, error))
+		if ok {
+			oldFunc = wrapUpdateEntityMapSQL
+			wrapUpdateEntityMapSQL = newFunc
+		}
+
 	default:
 		return false, oldFunc, errors.New("->OverrideFunc-->函数" + funcName + "暂不支持重写或不存在")
 	}
