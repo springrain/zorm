@@ -34,7 +34,7 @@ import (
 
 // wrapPageSQL 包装分页的SQL语句
 // wrapPageSQL SQL statement for wrapping paging
-var wrapPageSQL = func(dialect string, sqlstr *string, page *Page) error {
+var wrapPageSQL = func(ctx context.Context, dialect string, sqlstr *string, page *Page) error {
 	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}
@@ -414,7 +414,7 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapUpdateSQL = func(typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
+var wrapUpdateSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -488,7 +488,7 @@ var wrapUpdateSQL = func(typeOf *reflect.Type, entity IEntityStruct, columns *[]
 
 // wrapDeleteSQL 包装删除Struct语句
 // wrapDeleteSQL Package delete Struct statement
-var wrapDeleteSQL = func(entity IEntityStruct) (string, error) {
+var wrapDeleteSQL = func(ctx context.Context, entity IEntityStruct) (string, error) {
 	// SQL语句的构造器
 	// SQL statement constructor
 	var sqlBuilder strings.Builder
@@ -506,7 +506,7 @@ var wrapDeleteSQL = func(entity IEntityStruct) (string, error) {
 // wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-var wrapInsertEntityMapSQL = func(entity IEntityMap) (string, *[]interface{}, bool, error) {
+var wrapInsertEntityMapSQL = func(ctx context.Context, entity IEntityMap) (string, *[]interface{}, bool, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
@@ -598,7 +598,7 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (*string, *string, *[]interf
 // wrapUpdateEntityMapSQL 包装Map更新语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapUpdateEntityMapSQL Wrap the Map update statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-var wrapUpdateEntityMapSQL = func(entity IEntityMap) (*string, *[]interface{}, error) {
+var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*string, *[]interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
 	if len(dbFieldMap) < 1 {
@@ -649,7 +649,7 @@ var wrapUpdateEntityMapSQL = func(entity IEntityMap) (*string, *[]interface{}, e
 
 // wrapQuerySQL 封装查询语句
 // wrapQuerySQL Encapsulated query statement
-func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
+var wrapQuerySQL = func(ctx context.Context, dialect string, finder *Finder, page *Page) (string, error) {
 	// 获取到没有page的sql的语句
 	// Get the SQL statement without page.
 	sqlstr, err := finder.GetSQL()
@@ -657,7 +657,7 @@ func wrapQuerySQL(dialect string, finder *Finder, page *Page) (string, error) {
 		return "", err
 	}
 	if page != nil {
-		err = wrapPageSQL(dialect, &sqlstr, page)
+		err = wrapPageSQL(ctx, dialect, &sqlstr, page)
 	}
 	if err != nil {
 		return "", err
@@ -1024,7 +1024,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
-var wrapAutoIncrementInsertSQL = func(pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
+var wrapAutoIncrementInsertSQL = func(ctx context.Context, pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
 	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64

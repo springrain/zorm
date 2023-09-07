@@ -505,7 +505,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 
 	// 获取到sql语句
 	// Get the sql statement
-	sqlstr, errSQL := wrapQuerySQL(dialect, finder, nil)
+	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, nil)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -691,7 +691,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}
 	dialect := config.Dialect
 
-	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
+	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, page)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->Query-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -896,7 +896,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		return nil, errConfig
 	}
 	dialect := config.Dialect
-	sqlstr, errSQL := wrapQuerySQL(dialect, finder, page)
+	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, page)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -1198,7 +1198,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), sqlstr, dialect, values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, entity.GetPKColumnName(), sqlstr, dialect, values)
 
 	}
 
@@ -1375,7 +1375,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	}
 
 	// SQL语句
-	sqlstr, err := wrapDeleteSQL(entity)
+	sqlstr, err := wrapDeleteSQL(ctx, entity)
 	if err != nil {
 		err = fmt.Errorf("->Delete-->wrapDeleteSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1420,7 +1420,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	// SQL语句
-	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(ctx, entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1436,7 +1436,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 			return affected, errConfig
 		}
 		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(entity.GetPKColumnName(), &sqlstr, dialect, values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, entity.GetPKColumnName(), &sqlstr, dialect, values)
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1550,7 +1550,7 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 
 	// SQL语句
 	// SQL statement
-	sqlstr, values, err := wrapUpdateEntityMapSQL(entity)
+	sqlstr, values, err := wrapUpdateEntityMapSQL(ctx, entity)
 	if err != nil {
 		err = fmt.Errorf("->UpdateEntityMap-->wrapUpdateEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1609,7 +1609,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 
 	// SQL语句
 	// SQL statement
-	sqlstr, err := wrapUpdateSQL(typeOf, entity, columns, values)
+	sqlstr, err := wrapUpdateSQL(ctx, typeOf, entity, columns, values)
 	if err != nil {
 		return nil, err
 	}
