@@ -807,7 +807,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// 查询总条数
 	// Query total number
 	if finder.SelectTotalCount && page != nil {
-		count, errCount := selectCount(ctx, config, finder)
+		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", errCount)
 			FuncLogError(ctx, errCount)
@@ -1093,7 +1093,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	// 查询总条数
 	// Query total number
 	if finder.SelectTotalCount && page != nil {
-		count, errCount := selectCount(ctx, config, finder)
+		count, errCount := selectCount(ctx, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->QueryMap-->selectCount查询总条数错误:%w", errCount)
 			FuncLogError(ctx, errCount)
@@ -1618,7 +1618,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 // context必须传入,不能为空
 // selectCount Query the total number of items according to finder
 // context must be passed in and cannot be empty
-var selectCount = func(ctx context.Context, config *DataSourceConfig, finder *Finder) (int, error) {
+func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	if finder == nil {
 		return -1, errors.New("->selectCount-->finder参数为nil")
 	}

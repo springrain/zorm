@@ -132,13 +132,6 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			oldFunc = wrapQuerySQL
 			wrapQuerySQL = newFunc
 		}
-
-	case "selectCount": //查询总条数
-		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, finder *Finder) (int, error))
-		if ok {
-			oldFunc = selectCount
-			selectCount = newFunc
-		}
 	case "wrapPageSQL": //分页SQL
 		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error)
 		if ok {
