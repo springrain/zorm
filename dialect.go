@@ -912,7 +912,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 		}
 		if !isValid { // 如果是无效值,设值为nil
 			newValues = append(newValues, nil)
-		} else if !(kind == reflect.Array || kind == reflect.Slice) { // 如果不是数组或者slice
+		} else if kind != reflect.Array && kind != reflect.Slice { // 如果不是数组或者slice
 			// 记录新值
 			// Record new value.
 			newValues = append(newValues, v)
