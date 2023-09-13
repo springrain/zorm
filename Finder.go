@@ -35,7 +35,7 @@ type Finder struct {
 	values []interface{}
 	// 注入检查,默认true 不允许SQL注入的 ' 单引号
 	// Injection check, default true does not allow SQL injection  single quote
-	InjectionCheck bool `json:"injectionCheck,omitempty"`
+	InjectionCheck bool `json:"injectionCheck"`
 	// CountFinder 自定义的查询总条数'Finder',使用指针默认为nil.主要是为了在'group by'等复杂情况下,为了性能,手动编写总条数语句
 	// CountFinder The total number of custom queries is'Finder', and the pointer is nil by default. It is mainly used to manually write the total number of statements for performance in complex situations such as'group by'
 	CountFinder *Finder `json:"countFinder,omitempty"`
