@@ -649,7 +649,7 @@ var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*stri
 
 // wrapQuerySQL 封装查询语句
 // wrapQuerySQL Encapsulated query statement
-var wrapQuerySQL = func(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error) {
+func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error) {
 	// 获取到没有page的sql的语句
 	// Get the SQL statement without page.
 	sqlstr, err := finder.GetSQL()
