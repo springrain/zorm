@@ -26,7 +26,7 @@ import (
 )
 
 // FuncDecimalValue 设置decimal类型接收值,复写函数自定义decimal实现,例如github.com/shopspring/decimal,返回的是指针
-var FuncDecimalValue = func(ctx context.Context, dialect string) interface{} {
+var FuncDecimalValue = func(ctx context.Context, config *DataSourceConfig) interface{} {
 	return &decimal.Decimal{}
 }
 

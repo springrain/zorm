@@ -34,14 +34,14 @@ import (
 
 // wrapPageSQL 包装分页的SQL语句
 // wrapPageSQL SQL statement for wrapping paging
-var wrapPageSQL = func(ctx context.Context, dialect string, sqlstr *string, page *Page) error {
+var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error {
 	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.Grow(stringBuilderGrowLen)
 	sqlbuilder.WriteString(*sqlstr)
-	switch dialect {
+	switch config.Dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": // MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
@@ -74,7 +74,7 @@ var wrapPageSQL = func(ctx context.Context, dialect string, sqlstr *string, page
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	default:
-		return errors.New("->wrapPageSQL-->不支持的数据库类型:" + dialect)
+		return errors.New("->wrapPageSQL-->不支持的数据库类型:" + config.Dialect)
 
 	}
 	*sqlstr = sqlbuilder.String()
@@ -86,7 +86,7 @@ var wrapPageSQL = func(ctx context.Context, dialect string, sqlstr *string, page
 // 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
 // wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapInsertSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
+var wrapInsertSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
 	if err != nil {
@@ -506,7 +506,7 @@ var wrapDeleteSQL = func(ctx context.Context, entity IEntityStruct) (string, err
 // wrapInsertEntityMapSQL 包装保存Map语句,Map因为没有字段属性,无法完成Id的类型判断和赋值,需要确保Map的值是完整的
 // wrapInsertEntityMapSQL Pack and save the Map statement. Because Map does not have field attributes,
 // it cannot complete the type judgment and assignment of Id. It is necessary to ensure that the value of Map is complete
-var wrapInsertEntityMapSQL = func(ctx context.Context, entity IEntityMap) (string, *[]interface{}, bool, error) {
+var wrapInsertEntityMapSQL = func(ctx context.Context, config *DataSourceConfig, entity IEntityMap) (string, *[]interface{}, bool, error) {
 	sqlstr := ""
 	inserColumnName, valuesql, values, autoIncrement, err := wrapInsertValueEntityMapSQL(entity)
 	if err != nil {
@@ -649,7 +649,7 @@ var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*stri
 
 // wrapQuerySQL 封装查询语句
 // wrapQuerySQL Encapsulated query statement
-var wrapQuerySQL = func(ctx context.Context, dialect string, finder *Finder, page *Page) (string, error) {
+var wrapQuerySQL = func(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error) {
 	// 获取到没有page的sql的语句
 	// Get the SQL statement without page.
 	sqlstr, err := finder.GetSQL()
@@ -657,7 +657,7 @@ var wrapQuerySQL = func(ctx context.Context, dialect string, finder *Finder, pag
 		return "", err
 	}
 	if page != nil {
-		err = wrapPageSQL(ctx, dialect, &sqlstr, page)
+		err = wrapPageSQL(ctx, config, &sqlstr, page)
 	}
 	if err != nil {
 		return "", err
@@ -1024,7 +1024,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 }
 
 // wrapAutoIncrementInsertSQL 包装自增的自增主键的插入sql
-var wrapAutoIncrementInsertSQL = func(ctx context.Context, pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64) {
+var wrapAutoIncrementInsertSQL = func(ctx context.Context, config *DataSourceConfig, pkColumnName string, sqlstr *string, values *[]interface{}) (*int64, *int64) {
 	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	var lastInsertID, zormSQLOutReturningID *int64
@@ -1032,7 +1032,7 @@ var wrapAutoIncrementInsertSQL = func(ctx context.Context, pkColumnName string, 
 	// sqlBuilder.Grow(len(*sqlstr) + len(pkColumnName) + 40)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString(*sqlstr)
-	switch dialect {
+	switch config.Dialect {
 	case "postgresql", "kingbase":
 		var p int64 = 0
 		lastInsertID = &p

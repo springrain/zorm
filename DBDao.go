@@ -501,11 +501,9 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		FuncLogError(ctx, errConfig)
 		return has, errConfig
 	}
-	dialect := config.Dialect
-
 	// 获取到sql语句
 	// Get the sql statement
-	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, nil)
+	sqlstr, errSQL := wrapQuerySQL(ctx, config, finder, nil)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryRow-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -601,10 +599,10 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, dialect, nil, typeOf, rows, &driverValue, columnTypes, entity, dbColumnFieldMap, exportFieldMap)
+			err = sqlRowsValues(ctx, config, nil, typeOf, rows, &driverValue, columnTypes, entity, dbColumnFieldMap, exportFieldMap)
 		} else {
 			pv := reflect.ValueOf(entity)
-			err = sqlRowsValues(ctx, dialect, &pv, typeOf, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
+			err = sqlRowsValues(ctx, config, &pv, typeOf, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
 		}
 
 		// pv = pv.Elem()
@@ -689,9 +687,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, errConfig)
 		return errConfig
 	}
-	dialect := config.Dialect
-
-	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, page)
+	sqlstr, errSQL := wrapQuerySQL(ctx, config, finder, page)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->Query-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -781,9 +777,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, dialect, nil, &sliceElementType, rows, &driverValue, columnTypes, pv.Interface(), dbColumnFieldMap, exportFieldMap)
+			err = sqlRowsValues(ctx, config, nil, &sliceElementType, rows, &driverValue, columnTypes, pv.Interface(), dbColumnFieldMap, exportFieldMap)
 		} else {
-			err = sqlRowsValues(ctx, dialect, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
+			err = sqlRowsValues(ctx, config, &pv, &sliceElementType, rows, &driverValue, columnTypes, nil, dbColumnFieldMap, exportFieldMap)
 		}
 
 		// err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
@@ -811,7 +807,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// 查询总条数
 	// Query total number
 	if finder.SelectTotalCount && page != nil {
-		count, errCount := selectCount(ctx, finder)
+		count, errCount := selectCount(ctx, config, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->Query-->selectCount查询总条数错误:%w", errCount)
 			FuncLogError(ctx, errCount)
@@ -895,8 +891,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		FuncLogError(ctx, errConfig)
 		return nil, errConfig
 	}
-	dialect := config.Dialect
-	sqlstr, errSQL := wrapQuerySQL(ctx, dialect, finder, page)
+	sqlstr, errSQL := wrapQuerySQL(ctx, config, finder, page)
 	if errSQL != nil {
 		errSQL = fmt.Errorf("->QueryMap -->wrapQuerySQL查询SQL语句错误:%w", errSQL)
 		FuncLogError(ctx, errSQL)
@@ -984,7 +979,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			// 判断是否有自定义扩展,避免无意义的反射
 			if iscdvm {
-				customDriverValueConver, converOK = customDriverValueMap[dialect+"."+databaseTypeName]
+				customDriverValueConver, converOK = customDriverValueMap[config.Dialect+"."+databaseTypeName]
 				if !converOK {
 					customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 				}
@@ -1031,7 +1026,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			case "NUMBER":
 				precision, scale, isDecimal := columnType.DecimalSize()
 				if isDecimal || precision > 18 || precision-scale > 18 { // 如果是Decimal类型
-					values[i] = FuncDecimalValue(ctx, dialect)
+					values[i] = FuncDecimalValue(ctx, config)
 				} else if scale > 0 { // 有小数位,默认使用float64接收
 					values[i] = new(float64)
 				} else if precision-scale > 9 { // 超过9位,使用int64
@@ -1041,7 +1036,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 				}
 
 			case "DECIMAL", "NUMERIC", "DEC":
-				values[i] = FuncDecimalValue(ctx, dialect)
+				values[i] = FuncDecimalValue(ctx, config)
 			case "BOOLEAN", "BOOL", "BIT":
 				values[i] = new(bool)
 			default:
@@ -1098,7 +1093,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	// 查询总条数
 	// Query total number
 	if finder.SelectTotalCount && page != nil {
-		count, errCount := selectCount(ctx, finder)
+		count, errCount := selectCount(ctx, config, finder)
 		if errCount != nil {
 			errCount = fmt.Errorf("->QueryMap-->selectCount查询总条数错误:%w", errCount)
 			FuncLogError(ctx, errCount)
@@ -1180,7 +1175,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	// SQL语句
 	// SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, typeOf, entity, columns, values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dbConnection.config, typeOf, entity, columns, values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1197,8 +1192,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		if errConfig != nil {
 			return affected, errConfig
 		}
-		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, entity.GetPKColumnName(), sqlstr, dialect, values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), sqlstr, values)
 
 	}
 
@@ -1420,7 +1414,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	}
 
 	// SQL语句
-	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(ctx, entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(ctx, dbConnection.config, entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1435,8 +1429,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		if errConfig != nil {
 			return affected, errConfig
 		}
-		dialect := config.Dialect
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, entity.GetPKColumnName(), &sqlstr, dialect, values)
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), &sqlstr, values)
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
@@ -1625,7 +1618,7 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 // context必须传入,不能为空
 // selectCount Query the total number of items according to finder
 // context must be passed in and cannot be empty
-var selectCount = func(ctx context.Context, finder *Finder) (int, error) {
+var selectCount = func(ctx context.Context, config *DataSourceConfig, finder *Finder) (int, error) {
 	if finder == nil {
 		return -1, errors.New("->selectCount-->finder参数为nil")
 	}

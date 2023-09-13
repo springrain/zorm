@@ -491,7 +491,7 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
-func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, entity interface{}, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField) error {
+func sqlRowsValues(ctx context.Context, config *DataSourceConfig, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, entity interface{}, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField) error {
 	if entity == nil && valueOf == nil {
 		return errors.New("->sqlRowsValues-->valueOfElem为nil")
 	}
@@ -518,7 +518,7 @@ func sqlRowsValues(ctx context.Context, dialect string, valueOf *reflect.Value, 
 		if iscdvm {
 			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 			// 根据接收的类型,获取到类型转换的接口实现,优先匹配指定的数据库类型
-			customDriverValueConver, converOK = customDriverValueMap[dialect+"."+databaseTypeName]
+			customDriverValueConver, converOK = customDriverValueMap[config.Dialect+"."+databaseTypeName]
 			if !converOK {
 				customDriverValueConver, converOK = customDriverValueMap[databaseTypeName]
 			}

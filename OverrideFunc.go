@@ -127,33 +127,34 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 		}
 
 	case "wrapQuerySQL": //查询的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, dialect string, finder *Finder, page *Page) (string, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error))
 		if ok {
 			oldFunc = wrapQuerySQL
 			wrapQuerySQL = newFunc
 		}
 
 	case "selectCount": //查询总条数
-		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, finder *Finder) (int, error))
 		if ok {
 			oldFunc = selectCount
 			selectCount = newFunc
 		}
 	case "wrapPageSQL": //分页SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, dialect string, sqlstr *string, page *Page) error)
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error)
 		if ok {
 			oldFunc = wrapPageSQL
 			wrapPageSQL = newFunc
 		}
 
 	case "wrapInsertSQL": //Insert IEntityStruct SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error))
 		if ok {
 			oldFunc = wrapInsertSQL
 			wrapInsertSQL = newFunc
 		}
-	case "wrapAutoIncrementInsertSQL": //IEntityStruct 主键自增值的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, pkColumnName string, sqlstr *string, dialect string, values *[]interface{}) (*int64, *int64))
+
+	case "wrapAutoIncrementInsertSQL": //Insert IEntityStruct 主键自增值的SQL
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, pkColumnName string, sqlstr *string, values *[]interface{}) (*int64, *int64))
 		if ok {
 			oldFunc = wrapAutoIncrementInsertSQL
 			wrapAutoIncrementInsertSQL = newFunc
@@ -166,7 +167,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			wrapInsertSliceSQL = newFunc
 		}
 	case "wrapInsertEntityMapSQL": //插入 IEntityMap 的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityMap) (string, *[]interface{}, bool, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, entity IEntityMap) (string, *[]interface{}, bool, error))
 		if ok {
 			oldFunc = wrapInsertEntityMapSQL
 			wrapInsertEntityMapSQL = newFunc
