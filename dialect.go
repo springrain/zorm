@@ -78,7 +78,7 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *st
 
 	}
 	*sqlstr = sqlbuilder.String()
-	// return reBindSQL(dialect, sqlstr)
+	// return reBuildSQL(dialect, sqlstr)
 	return nil
 }
 
@@ -854,9 +854,9 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	return nil
 }
 
-// reBindSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
-// reBindSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
-func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
+// reBuildSQL 包装基础的SQL语句,根据数据库类型,调整SQL变量符号,例如?,? $1,$2这样的
+// reBuildSQL Pack basic SQL statements, adjust the SQL variable symbols according to the database type, such as?,? $1,$2
+var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error) {
 	argsNum := len(*args)
 	if argsNum < 1 { // 没有参数,不需要处理,也不判断参数数量了,数据库会报错提示
 		return sqlstr, args, nil
@@ -931,7 +931,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 			// 数组类型的参数长度小于1,认为是有异常的参数
 			// The parameter length of the array type is less than 1, which is considered to be an abnormal parameter
 			if valueLen < 1 {
-				// return nil, nil, errors.New("->reBindSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
+				// return nil, nil, errors.New("->reBuildSQL()语句:" + *sqlstr + ",第" + strconv.Itoa(i+1) + "个参数,类型是Array或者Slice,值的长度为0,请检查sql参数有效性")
 				valueLen = 1
 				newValues = append(newValues, nil)
 			} else if valueLen == 1 { // 如果数组里只有一个参数,认为是单个参数
@@ -941,7 +941,7 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 
 		}
 
-		switch dialect {
+		switch config.Dialect {
 		case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
 			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false, false)
 		case "postgresql", "kingbase": // postgresql,kingbase
@@ -967,8 +967,8 @@ func reBindSQL(dialect string, sqlstr *string, args *[]interface{}) (*string, *[
 }
 
 // reUpdateFinderSQL 根据数据类型更新 手动编写的 UpdateFinder的语句,用于处理数据库兼容,例如 clickhouse的 UPDATE 和 DELETE
-func reUpdateSQL(dialect string, sqlstr *string) error {
-	if dialect != "clickhouse" { // 目前只处理clickhouse
+var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *string) error {
+	if config.Dialect != "clickhouse" { // 目前只处理clickhouse
 		return nil
 	}
 	// 处理clickhouse的特殊更新语法
@@ -1012,7 +1012,7 @@ func reUpdateSQL(dialect string, sqlstr *string) error {
 		return err
 	}
 	if start == -1 || end == -1 { // 获取的位置异常
-		return errors.New("->reUpdateSQL中clickhouse语法异常,请检查sql语句是否标准,-->zormErrorExecSQL:" + *sqlstr)
+		return errors.New("->reBuildUpdateSQL中clickhouse语法异常,请检查sql语句是否标准,-->zormErrorExecSQL:" + *sqlstr)
 	}
 	sqlBuilder.WriteString(tableName)
 	sqlBuilder.WriteByte(' ')

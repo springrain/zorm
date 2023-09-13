@@ -180,13 +180,13 @@ func (dbConnection *dataBaseConnection) commit() error {
 // execContext 执行sql语句,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // execContext Execute sql statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Result, error) {
-	// reBindSQL 重新处理参数代入方式
-	execsql, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
+	// reBuildSQL 重新处理参数代入方式
+	execsql, args, err := reBuildSQL(ctx, dbConnection.config, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}
 	// 更新语句处理ClickHouse特殊语法
-	err = reUpdateSQL(dbConnection.config.Dialect, execsql)
+	err = reBuildUpdateSQL(ctx, dbConnection.config, execsql)
 	if err != nil {
 		return nil, err
 	}
@@ -224,8 +224,8 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr 
 
 // queryRowContext 如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Row, error) {
-	// reBindSQL 重新处理参数代入方式
-	query, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
+	// reBuildSQL 重新处理参数代入方式
+	query, args, err := reBuildSQL(ctx, dbConnection.config, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}
@@ -262,8 +262,8 @@ func (dbConnection *dataBaseConnection) queryRowContext(ctx context.Context, sql
 // queryContext 查询数据,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
 // queryRowContext Execute sql  row statement,If the transaction has been opened,it will be executed in transaction mode, if the transaction is not opened,it will be executed in non-transactional mode
 func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, sqlstr *string, argsValues *[]interface{}) (*sql.Rows, error) {
-	// reBindSQL 重新处理参数代入方式
-	query, args, err := reBindSQL(dbConnection.config.Dialect, sqlstr, argsValues)
+	// reBuildSQL 重新处理参数代入方式
+	query, args, err := reBuildSQL(ctx, dbConnection.config, sqlstr, argsValues)
 	if err != nil {
 		return nil, err
 	}

@@ -125,7 +125,18 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			oldFunc = updateEntityMap
 			updateEntityMap = newFunc
 		}
-
+	case "reBuildSQL": //重建语句,用于占位符替换等
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string, args *[]interface{}) (*string, *[]interface{}, error))
+		if ok {
+			oldFunc = reBuildSQL
+			reBuildSQL = newFunc
+		}
+	case "reBuildUpdateSQL": //重建更新语句,处理特殊场景,例如 clickhouse的 UPDATE 和 DELETE 等
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string) error)
+		if ok {
+			oldFunc = reBuildUpdateSQL
+			reBuildUpdateSQL = newFunc
+		}
 	case "wrapPageSQL": //分页SQL
 		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error)
 		if ok {
