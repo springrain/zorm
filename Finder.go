@@ -41,7 +41,7 @@ type Finder struct {
 	CountFinder *Finder `json:"countFinder,omitempty"`
 	// 是否自动查询总条数,默认true.同时需要Page不为nil,才查询总条数
 	// Whether to automatically query the total number of entries, the default is true. At the same time, the Page is not nil to query the total number of entries
-	SelectTotalCount bool `json:"selectTotalCount,omitempty"`
+	SelectTotalCount bool `json:"selectTotalCount"`
 	// SQL语句
 	// SQL statement
 	sqlstr string
@@ -54,7 +54,7 @@ func NewFinder() *Finder {
 	finder.sqlBuilder.Grow(stringBuilderGrowLen)
 	finder.SelectTotalCount = true
 	finder.InjectionCheck = true
-	// slice扩容会生成新的slice,最后要值复制接收.问:为什么cap是3?答:经验
+	// slice扩容会生成新的slice,最后要值复制接收
 	finder.values = make([]interface{}, 0, 3)
 	return &finder
 }
