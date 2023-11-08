@@ -1583,6 +1583,18 @@ func IsBindDBConnection(ctx context.Context) (bool, error) {
 	return false, err
 }
 
+// GetContextDataSourceConfig 从ctx中获取DataSourceConfig对象
+func GetContextDataSourceConfig(ctx context.Context) (*DataSourceConfig, error) {
+	dbConnection, err := getDBConnectionFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if dbConnection != nil {
+		return dbConnection.config, err
+	}
+	return nil, err
+}
+
 // WrapUpdateStructFinder 返回更新IEntityStruct的Finder对象
 // ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 // Finder为更新执行的Finder,更新语句统一使用Finder执行

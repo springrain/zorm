@@ -1,4 +1,5 @@
 v1.7.4
+ - 增加 GetContextDataSourceConfig 方法,获取ctx绑定的数据源配置
  - 完善文档,注释
 
 v1.7.3
