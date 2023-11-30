@@ -1173,9 +1173,16 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		return affected, errDBConnection
 	}
 
+	//获取Config
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return affected, errConfig
+	}
+
 	// SQL语句
 	// SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, dbConnection.config, typeOf, entity, columns, values)
+	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, config, typeOf, entity, columns, values)
 	if err != nil {
 		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
@@ -1412,9 +1419,12 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	if dbConnection != nil && dbConnection.db == nil {
 		return affected, errDBConnection
 	}
-
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		return affected, errConfig
+	}
 	// SQL语句
-	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(ctx, dbConnection.config, entity)
+	sqlstr, values, autoIncrement, err := wrapInsertEntityMapSQL(ctx, config, entity)
 	if err != nil {
 		err = fmt.Errorf("->InsertEntityMap-->wrapInsertEntityMapSQL获取SQL语句错误:%w", err)
 		FuncLogError(ctx, err)
