@@ -64,7 +64,9 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		return errors.New("->structFieldInfo数据为空")
 	}
 
-	entityName := (*typeOf).String()
+	pkgPath := (*typeOf).PkgPath()
+	entityName := pkgPath + "_" + (*typeOf).String()
+	// entityName := (*typeOf).String()
 
 	// 缓存的key
 	// 所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
@@ -76,12 +78,14 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	// 所有数据库字段名称的slice,经过排序,不区分大小写
 	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
 
+	fmt.Println(dbColumnCacheKey)
+
 	structFieldTagCacheKey := structFieldTagPrefix + entityName
 	// dbPKNameCacheKey := dbPKNamePrefix + entityName
 	// 缓存的数据库主键值
 	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
-	//_, exportOk := cacheStructFieldInfoMap[exportCacheKey]
-	//如果存在值,认为缓存中有所有的信息,不再处理
+	// _, exportOk := cacheStructFieldInfoMap[exportCacheKey]
+	// 如果存在值,认为缓存中有所有的信息,不再处理
 	if exportOk {
 		return nil
 	}
@@ -290,7 +294,8 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (*interface
 	if typeOf == nil {
 		return nil, errors.New("->getCacheStructFieldInfo-->typeOf不能为空")
 	}
-	key := keyPrefix + (*typeOf).String()
+	// key := keyPrefix + (*typeOf).String()
+	key := fmt.Sprintf("%s%s_%s", keyPrefix, (*typeOf).PkgPath(), (*typeOf).String())
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
 	// dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
 	if !dbOk { // 缓存不存在
@@ -357,12 +362,12 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 	// 接收值的数组
 	values := make([]interface{}, 0, fLen)
 
-	//Update仅更新指定列
+	// Update仅更新指定列
 	var onlyUpdateColsMap map[string]bool
-	//UpdateNotZeroValue 必须更新指定列
+	// UpdateNotZeroValue 必须更新指定列
 	var mustUpdateColsMap map[string]bool
 
-	//默认值的map,只对Insert Struct有效
+	// 默认值的map,只对Insert Struct有效
 	var defaultValueMap map[string]interface{} = nil
 	if useDefaultValue {
 		/*
@@ -375,21 +380,21 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		*/
 		defaultValueMap = entity.GetDefaultValue()
 	}
-	if onlyUpdateNotZero { //只更新非零值时,需要处理mustUpdateCols,不处理defaultValue
+	if onlyUpdateNotZero { // 只更新非零值时,需要处理mustUpdateCols,不处理defaultValue
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
-		if mustUpdateCols != nil { //指定了仅更新的列
+		if mustUpdateCols != nil { // 指定了仅更新的列
 			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
 			if mustUpdateColsMap != nil {
-				//添加主键
+				// 添加主键
 				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
 			}
 		}
-	} else { //update 更新全部字段时,需要处理onlyUpdateCols
+	} else { // update 更新全部字段时,需要处理onlyUpdateCols
 		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
-		if onlyUpdateCols != nil { //指定了仅更新的列
+		if onlyUpdateCols != nil { // 指定了仅更新的列
 			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
 			if onlyUpdateColsMap != nil {
-				//添加主键
+				// 添加主键
 				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
 			}
 		}
@@ -397,13 +402,13 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 
 	// 遍历所有数据库字段名,小写的
 	for _, columnNameLower := range *dbColumnFieldNameSlice {
-		//获取字段类型的Kind
+		// 获取字段类型的Kind
 		//	fieldKind := field.Type.Kind()
-		//if !allowTypeMap[fieldKind] { //不允许的类型
+		// if !allowTypeMap[fieldKind] { //不允许的类型
 		//	continue
-		//}
+		// }
 
-		//指定仅更新的列,当前列不用更新
+		// 指定仅更新的列,当前列不用更新
 		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[columnNameLower]) {
 			continue
 		}
@@ -413,23 +418,23 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 		var value interface{}
 		fv := valueOf.FieldByName(field.Name)
 
-		//默认值
+		// 默认值
 		isDefaultValue := false
 		var defaultValue interface{}
 		if defaultValueMap != nil {
 			defaultValue, isDefaultValue = defaultValueMap[field.Name]
 		}
 
-		//必须更新的字段
+		// 必须更新的字段
 		isMustUpdate := false
 		if mustUpdateColsMap != nil {
 			isMustUpdate = mustUpdateColsMap[columnNameLower]
 		}
 		isZero := fv.IsZero()
-		if onlyUpdateNotZero && !isMustUpdate && isZero { //如果只更新不为零值的,并且不是mustUpdateCols
+		if onlyUpdateNotZero && !isMustUpdate && isZero { // 如果只更新不为零值的,并且不是mustUpdateCols
 			continue
 			// 重点说明:仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
-		} else if isDefaultValue && isZero { //如果有默认值,并且fv是零值,等于默认值
+		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
 		} else if field.Type.Kind() == reflect.Ptr { // 如果是指针类型
 			if !fv.IsNil() { // 如果不是nil值
@@ -441,7 +446,7 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 			value = fv.Interface()
 		}
 
-		//添加列
+		// 添加列
 		columns = append(columns, field)
 		// 添加到记录值的数组
 		values = append(values, value)
@@ -453,11 +458,11 @@ func columnAndValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero
 
 // entityPKFieldName 获取实体类主键属性名称
 func entityPKFieldName(entity IEntityStruct, typeOf *reflect.Type) (string, error) {
-	//检查是否是指针对象
-	//typeOf, checkerr := checkEntityKind(entity)
-	//if checkerr != nil {
+	// 检查是否是指针对象
+	// typeOf, checkerr := checkEntityKind(entity)
+	// if checkerr != nil {
 	//	return "", checkerr
-	//}
+	// }
 
 	// 缓存的key,TypeOf和ValueOf的String()方法,返回值不一样
 	// typeOf := reflect.TypeOf(entity).Elem()
@@ -480,9 +485,9 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
-	//if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
+	// if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
 	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
-	//}
+	// }
 	return &typeOf, nil
 }
 
