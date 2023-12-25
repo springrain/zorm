@@ -3,9 +3,6 @@ package zorm
 import (
 	"reflect"
 	"testing"
-
-	models1 "gitee.com/chunanyong/zorm/mydir"
-	models2 "gitee.com/chunanyong/zorm/myfoo"
 )
 
 func Test_structFieldInfo(t *testing.T) {
@@ -13,8 +10,9 @@ func Test_structFieldInfo(t *testing.T) {
 		typeOf *reflect.Type
 	}
 
-	typeOf1 := reflect.TypeOf(models1.MyModel{})
-	typeOf2 := reflect.TypeOf(models2.MyModel{})
+	typeOf1 := reflect.TypeOf(struct {
+		UserName string `column:"user_name"`
+	}{})
 
 	tests := []struct {
 		name    string
@@ -28,18 +26,30 @@ func Test_structFieldInfo(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "",
-			args: args{
-				typeOf: &typeOf2,
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := structFieldInfo(tt.args.typeOf); (err != nil) != tt.wantErr {
 				t.Errorf("structFieldInfo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// 获取缓存, 这里只测试 dbColumnNamePrefix
+			info, err := getCacheStructFieldInfo(&typeOf1, dbColumnNamePrefix)
+			if err != nil {
+				t.Errorf("getCacheStructFieldInfo() error = %v", err)
+			}
+
+			// 转换类型
+			mp, ok := (*info).(map[string]reflect.StructField)
+			if !ok {
+				t.Errorf("not of reflect.StructFile")
+			}
+
+			// 缓存的field是否和上面定义的一样
+			for _, field := range mp {
+				if field.Name != "UserName" {
+					t.Errorf("get cache error, field.Name = %s, want = UserName", field.Name)
+				}
 			}
 		})
 	}

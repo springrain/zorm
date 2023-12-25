@@ -64,9 +64,8 @@ func structFieldInfo(typeOf *reflect.Type) error {
 		return errors.New("->structFieldInfo数据为空")
 	}
 
-	pkgPath := (*typeOf).PkgPath()
-	entityName := pkgPath + "_" + (*typeOf).String()
-	// entityName := (*typeOf).String()
+	// PkgPath + _ + PkgName(因为单独用这个不保证唯一)
+	entityName := (*typeOf).PkgPath() + "_" + (*typeOf).String()
 
 	// 缓存的key
 	// 所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
@@ -77,8 +76,6 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	dbColumnCacheKey := dbColumnNamePrefix + entityName
 	// 所有数据库字段名称的slice,经过排序,不区分大小写
 	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
-
-	fmt.Println(dbColumnCacheKey)
 
 	structFieldTagCacheKey := structFieldTagPrefix + entityName
 	// dbPKNameCacheKey := dbPKNamePrefix + entityName
@@ -295,6 +292,8 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (*interface
 		return nil, errors.New("->getCacheStructFieldInfo-->typeOf不能为空")
 	}
 	// key := keyPrefix + (*typeOf).String()
+
+	// pkgPath + _ + pkgName(因为单独用这个不保证唯一)
 	key := fmt.Sprintf("%s%s_%s", keyPrefix, (*typeOf).PkgPath(), (*typeOf).String())
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
 	// dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
