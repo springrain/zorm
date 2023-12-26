@@ -1,3 +1,7 @@
+v1.7.5
+ - 感谢 @encircles 的[pr](https://gitee.com/chunanyong/zorm/pulls/5),修复缓存key存在不唯一的可能性  
+ - 完善文档,注释
+
 v1.7.4
  - 增加 GetContextDataSourceConfig 方法,获取ctx绑定的数据源配置
  - 感谢@CDS的反馈,修复Config取值错误

@@ -65,19 +65,19 @@ func structFieldInfo(typeOf *reflect.Type) error {
 	}
 
 	// PkgPath + _ + PkgName(因为单独用这个不保证唯一)
-	entityName := (*typeOf).PkgPath() + "_" + (*typeOf).String()
+	entityPkgPath := (*typeOf).PkgPath() + "_" + (*typeOf).String()
 
 	// 缓存的key
 	// 所有输出的属性,包含数据库字段,key是struct属性的名称,不区分大小写
-	exportCacheKey := exportPrefix + entityName
+	exportCacheKey := exportPrefix + entityPkgPath
 	// 所有私有变量的属性,key是struct属性的名称,不区分大小写
-	privateCacheKey := privatePrefix + entityName
+	privateCacheKey := privatePrefix + entityPkgPath
 	// 所有数据库的属性,key是数据库的字段名称,不区分大小写
-	dbColumnCacheKey := dbColumnNamePrefix + entityName
+	dbColumnCacheKey := dbColumnNamePrefix + entityPkgPath
 	// 所有数据库字段名称的slice,经过排序,不区分大小写
-	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityName
+	dbColumnNameSliceCacheKey := dbColumnNameSlicePrefix + entityPkgPath
 
-	structFieldTagCacheKey := structFieldTagPrefix + entityName
+	structFieldTagCacheKey := structFieldTagPrefix + entityPkgPath
 	// dbPKNameCacheKey := dbPKNamePrefix + entityName
 	// 缓存的数据库主键值
 	_, exportOk := cacheStructFieldInfoMap.Load(exportCacheKey)
