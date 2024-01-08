@@ -923,9 +923,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 			// Record new value
 			newValues = append(newValues, v)
 		} else {
-			// 如果不是字符串类型的值,无法取长度,这个是个bug,先注释了
 			// 获取数组类型参数值的长度
-			// If it is not a string type value, the length cannot be taken, this is a bug, first comment
 			// Get the length of the array type parameter value
 			valueLen = valueOf.Len()
 			// 数组类型的参数长度小于1,认为是有异常的参数
