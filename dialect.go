@@ -797,8 +797,8 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 var FuncWrapFieldTagName func(field *reflect.StructField, colName string) string = nil
 
 /*
-var FuncWrapFieldTagName = func(colName string) string {
-	// custom: return fmt.Sprintf("`%s`", colName)
+var FuncWrapFieldTagName = func(field *reflect.StructField, colName string) string {
+	// return fmt.Sprintf("`%s`", colName)
 	return colName
 }
 */
