@@ -272,7 +272,7 @@ func init() {
 	// 自定义decimal类型实现,例如github.com/shopspring/decimal
 	// zorm.FuncDecimalValue=funcmyDecimal
 
-	// Go数据库驱动列表:https://github.com/golang/go/wiki/SQLDrivers
+	// Go数据库驱动列表:https://go.dev/wiki/SQLDrivers
 
 	// dbDaoConfig 数据库的配置.这里只是模拟,生产应该是读取配置配置文件,构造DataSourceConfig
 	dbDaoConfig := zorm.DataSourceConfig{
