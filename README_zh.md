@@ -39,7 +39,6 @@ zorm对国产数据库的适配不遗余力,遇到没有适配或者有问题的
 - 配置zorm.DataSourceConfig的 ```DriverName:dm ,Dialect:dm```  
 - 达梦数据库驱动: gitee.com/chunanyong/dm	
 - 达梦的TEXT类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
-- 达梦开启等保参数 COMM_ENCRYPT_NAME = AES128_ECB , 会导致驱动连接异常
 ```go
 import (
 	// 00.引入数据库驱动
@@ -124,7 +123,7 @@ func init() {
 - 因TDengine驱动不支持事务,需要设置```DisableTransaction=true```
 - 配置zorm.DataSourceConfig的 ```DriverName:taosSql或者taosRestful, Dialect:tdengine``` 
 - zorm.DataSourceConfig的```TDengineInsertsColumnName ```TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
-- 测试用例: https://www.yuque.com/u27016943/nrgi00/dnru3f 
+- 测试用例: https://zorm.cn/post/zorm_tdengine_3.0_test   
 - TDengine已收录: https://github.com/taosdata/awesome-tdengine/#orm   
 
 ## 数据库脚本和实体类
