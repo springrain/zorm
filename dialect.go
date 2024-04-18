@@ -668,7 +668,7 @@ func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder,
 // 查询'order by'在sql中出现的开始位置和结束位置
 // Query the start position and end position of'order by' in SQL
 var (
-	orderByExpr      = "(?i)\\s(order)\\s+by\\s"
+	orderByExpr      = `(?i)\s(order)\s+by\s`
 	orderByRegexp, _ = regexp.Compile(orderByExpr)
 )
 
@@ -682,7 +682,7 @@ func findOrderByIndex(strsql *string) []int {
 // 查询'group by'在sql中出现的开始位置和结束位置
 // Query the start position and end position of'group by' in sql。
 var (
-	groupByExpr      = "(?i)\\s(group)\\s+by\\s"
+	groupByExpr      = `(?i)\s(group)\s+by\s`
 	groupByRegexp, _ = regexp.Compile(groupByExpr)
 )
 
