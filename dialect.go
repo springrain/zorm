@@ -703,7 +703,9 @@ func findGroupByIndex(strsql *string) []int {
 // countFinder.Append(") tempcountfinder")
 // finder.CountFinder = countFinder
 var (
-	fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
+	//fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
+	// 处理sql中from格式化换行的正则问题
+	fromExpr      = `(?i)(^\s*select)(\(.*?\)|[^()]+)*?(\s+from\s)`
 	fromRegexp, _ = regexp.Compile(fromExpr)
 )
 

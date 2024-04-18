@@ -1,3 +1,7 @@
+v1.7.6
+ - 感谢 @lerity 的[issue](https://gitee.com/chunanyong/zorm/issues/I9HPXQ),处理sql中from格式化换行的正则Bug 
+ - 完善文档,注释
+
 v1.7.5
  - 感谢 @encircles 的[pr](https://gitee.com/chunanyong/zorm/pulls/5),修复缓存key存在不唯一的可能性  
  - 完善文档,注释
