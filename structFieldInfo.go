@@ -528,7 +528,8 @@ func sqlRowsValues(ctx context.Context, config *DataSourceConfig, valueOf *refle
 			}
 		}
 		dv := driverValue.Index(i)
-		if dv.IsValid() && dv.InterfaceData()[0] == 0 { // 该字段的数据库值是null,取默认值
+		// if dv.IsValid() && dv.InterfaceData()[0] == 0 {
+		if dv.IsValid() && dv.IsNil() { // 该字段的数据库值是null,取默认值
 			values[i] = new(interface{})
 			continue
 		} else if converOK { // 如果是需要转换的字段

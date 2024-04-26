@@ -1,3 +1,7 @@
+v1.7.7
+- dv.InterfaceData已过时,修改为dv.IsNil()
+- 完善文档,注释
+
 v1.7.6
  - 感谢 @lerity 的[issue](https://gitee.com/chunanyong/zorm/issues/I9HPXQ),处理sql中from格式化换行的正则Bug 
  - 完善文档,注释
