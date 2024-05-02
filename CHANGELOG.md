@@ -1,4 +1,5 @@
 v1.7.7
+- 接收值的entity参数为nil,抛出错误
 - dv.InterfaceData已过时,修改为dv.IsNil()
 - 完善文档,注释
 

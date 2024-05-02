@@ -467,7 +467,6 @@ var errQueryRow = errors.New("->QueryRow查询出多条数据")
 // 只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
 // 根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 // context必须传入,不能为空
-// 如果数据库是null,基本类型不支持,会返回异常,不做默认值处理,Query因为是列表,会设置为默认值
 // QueryRow Don't be lazy to call Query to return the first one
 // Question 1. A selice needs to be constructed, and question 2. Other values ​​of the object passed by the caller will be discarded or overwritten
 // context must be passed in and cannot be empty

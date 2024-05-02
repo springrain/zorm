@@ -496,8 +496,8 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 // 感谢@fastabler提交的pr
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
 func sqlRowsValues(ctx context.Context, config *DataSourceConfig, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, columnTypes []*sql.ColumnType, entity interface{}, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField) error {
-	if entity == nil && valueOf == nil {
-		return errors.New("->sqlRowsValues-->valueOfElem为nil")
+	if entity == nil && (valueOf == nil || valueOf.IsNil()) {
+		return errors.New("->sqlRowsValues-->接收值的entity参数为nil")
 	}
 
 	var valueOfElem reflect.Value
