@@ -38,7 +38,8 @@ zorm对国产数据库的适配不遗余力,遇到没有适配或者有问题的
 ### 达梦(dm)  
 - 配置zorm.DataSourceConfig的 ```DriverName:dm ,Dialect:dm```  
 - 达梦数据库驱动: gitee.com/chunanyong/dm	
-- 达梦的TEXT类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理  
+- ~~达梦的TEXT类型会映射为dm.DmClob,string不能接收,需要实现zorm.ICustomDriverValueConver接口,自定义扩展处理~~  
+- 达梦最新驱动已经支持TEXT类型使用string接收,不需要自定义扩展了  
 ```go
 import (
 	// 00.引入数据库驱动
@@ -98,7 +99,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 
 	return &str, errReadString
 }
-// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景.
 // 一般是放到init方法里进行注册
 func init() {
 	// dialectColumnType 值是 Dialect.字段类型 ,例如 dm.TEXT

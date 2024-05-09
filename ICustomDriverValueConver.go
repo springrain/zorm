@@ -45,7 +45,7 @@ type ICustomDriverValueConver interface {
 	ConverDriverValue(ctx context.Context, columnType *sql.ColumnType, tempDriverValue driver.Value, structFieldType *reflect.Type) (interface{}, error)
 }
 
-// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景.
 // dialectColumnType 值是 Dialect.字段类型,例如: dm.TEXT
 // 一般是放到init方法里进行注册
 func RegisterCustomDriverValueConver(dialectColumnType string, customDriverValueConver ICustomDriverValueConver) error {
@@ -131,7 +131,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 
 	return &str, errReadString
 }
-// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景,例如达梦的 TEXT 无法直接转化成 string
+// RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景.
 // 一般是放到init方法里进行注册
 func init() {
 	// dialectColumnType 值是 Dialect.字段类型 ,例如 dm.TEXT

@@ -1,4 +1,5 @@
 v1.7.7
+- 更新文档:达梦最新驱动已经支持TEXT类型使用string接收
 - 升级decimal到1.4.0
 - 接收值的entity参数为nil,抛出错误
 - dv.InterfaceData已过时,修改为dv.IsNil()
