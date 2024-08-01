@@ -464,7 +464,6 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 var errQueryRow = errors.New("->QueryRow查询出多条数据")
 
 // QueryRow 不要偷懒调用Query返回第一条,问题1.需要构建一个slice,问题2.调用方传递的对象其他值会被抛弃或者覆盖.
-// 只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
 // 根据Finder和封装为指定的entity类型,entity必须是*struct类型或者基础类型的指针.把查询的数据赋值给entity,所以要求指针类型
 // context必须传入,不能为空
 // QueryRow Don't be lazy to call Query to return the first one
@@ -622,7 +621,6 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 var errQuerySlice = errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
 
 // Query 不要偷懒调用QueryMap,需要处理sql驱动支持的sql.Nullxxx的数据类型,也挺麻烦的
-// 只查询一个字段,需要使用这个字段的类型进行接收,目前不支持整个struct对象接收
 // 根据Finder和封装为指定的entity类型,entity必须是*[]struct类型,已经初始化好的数组,此方法只Append元素,这样调用方就不需要强制类型转换了
 // context必须传入,不能为空.如果想不分页,查询所有数据,page传入nil
 // Query:Don't be lazy to call QueryMap, you need to deal with the sql,Nullxxx data type supported by the sql driver, which is also very troublesome
