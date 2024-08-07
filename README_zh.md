@@ -120,6 +120,10 @@ func init() {
 ~~暂时还未找到官方Go驱动,配置zorm.DataSourceConfig的 DriverName:gbase ,Dialect:gbase~~  
 暂时先使用odbc驱动,```DriverName:odbc ,Dialect:gbase```
 
+### 高斯(openGauss)  
+官方驱动:https://gitee.com/opengauss/openGauss-connector-go-pq    
+配置zorm.DataSourceConfig的 ```DriverName:opengauss ,Dialect:postgresql```  
+
 ### TDengine  
 - 因TDengine驱动不支持事务,需要设置```DisableTransaction=true```
 - 配置zorm.DataSourceConfig的 ```DriverName:taosSql或者taosRestful, Dialect:tdengine``` 
