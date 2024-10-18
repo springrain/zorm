@@ -1,6 +1,6 @@
 ## 介绍
 ![zorm logo](zorm-logo.png)  
-Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse... 
+Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase),神通(shentong),南通(gbase),高斯(openGauss),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse... 
 
 官网: https://zorm.cn    
 源码地址: https://gitee.com/chunanyong/zorm  
