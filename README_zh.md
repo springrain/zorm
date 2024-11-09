@@ -17,7 +17,7 @@ go get gitee.com/chunanyong/zorm
 * [代码生成器](https://gitee.com/zhou-a-xing/zorm-generate-struct)	
 * 代码精简,主体3000行,零依赖5000行,注释详细,方便定制修改   
 * <font color=red>支持事务传播,这是zorm诞生的主要原因</font>
-* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
+* 支持dm(达梦),kingbase(金仓),shentong(神通),gbase(南通),高斯(openGauss),TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 * 支持多库和读写分离
 * 不支持联合主键,变通认为无主键,业务控制实现(艰难取舍)  
 * 支持seata,hptx,dbpack分布式事务,支持全局事务托管,不修改业务代码,零侵入分布式事务
