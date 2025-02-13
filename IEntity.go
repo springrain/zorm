@@ -96,7 +96,7 @@ func (entity *EntityStruct) GetPKColumnName() string {
 
 // var defaultPkSequence = make(map[string]string, 0)
 
-// GetPkSequence 主键序列
+// GetPkSequence 主键序列,返回主键名称加 .NEXTVAL,例如 SEQ.NEXTVAL
 // GetPkSequence Primary key sequence
 func (entity *EntityStruct) GetPkSequence() string {
 	return ""

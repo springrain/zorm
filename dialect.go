@@ -171,15 +171,18 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				// Remove this column and will not process it later.
 				*columns = append((*columns)[:i], (*columns)[i+1:]...)
 				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-					sqlBuilder.WriteByte(',')
-					valueSQLBuilder.WriteByte(',')
-				}
+
+				// 先拼接到SQL语句中,这样避免被截掉的风险
 				colName := getFieldTagName(&field, tagMap)
 				sqlBuilder.WriteString(colName)
 				valueSQLBuilder.WriteString(sequence)
 
+				i = i - 1
+				//if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
+				if i < len(*columns)-1 { //不是最后一个
+					sqlBuilder.WriteByte(',')
+					valueSQLBuilder.WriteByte(',')
+				}
 				continue
 			}
 
@@ -1042,11 +1045,12 @@ var wrapAutoIncrementInsertSQL = func(ctx context.Context, config *DataSourceCon
 	case "oracle", "shentong":
 		var p int64 = 0
 		zormSQLOutReturningID = &p
+		// 不要使用命名参数,统一使用占位符
 		// sqlstr = sqlstr + " RETURNING " + pkColumnName + " INTO :zormSQLOutReturningID "
 		sqlBuilder.WriteString(" RETURNING ")
 		sqlBuilder.WriteString(pkColumnName)
-		sqlBuilder.WriteString(" INTO :zormSQLOutReturningID ")
-		v := sql.Named("zormSQLOutReturningID", sql.Out{Dest: zormSQLOutReturningID})
+		sqlBuilder.WriteString(" INTO ? ")
+		v := sql.Out{Dest: zormSQLOutReturningID}
 		*values = append(*values, v)
 	}
 
