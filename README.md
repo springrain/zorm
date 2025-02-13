@@ -122,7 +122,7 @@ Use odbc driver for the time being, ```DriverName:odbc ,Dialect:gbase```
 - Since the TDengine driver does not support transactions, you need to set this setting ```DisableTransaction=true```
 - Configure zorm.DataSourceConfig ```DriverName:taosSql/taosRestful, Dialect:tdengine```
 - zorm.DataSourceConfig```TDengineInsertsColumnName```TDengine batch insert statement whether there is a column name. The default false has no column name, and the insertion value and database column order are consistent, reducing the length of the statement
-- Test case: https://zorm.cn/post/zorm_tdengine_3.0_test  
+- Test case: https://zorm.cn/docs/zorm_tdengine_3.0_test  
 - TDengine is included: https://github.com/taosdata/awesome-tdengine/#orm
 
 ## Database scripts and entity classes  
