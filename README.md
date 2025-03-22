@@ -3,7 +3,7 @@
 This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 
 Official website:https://zorm.cn  
-source code address:https://gitee.com/chunanyong/zorm  
+source code address:https://gitee.com/chunanyong/zorm  || https://gitcode.com/springrain/zorm   
 test case: https://gitee.com/wuxiangege/zorm-examples/  
 Video tutorial: https://www.bilibili.com/video/BV1L24y1976U/
 
