@@ -6,8 +6,7 @@ Go轻量ORM,零依赖,零侵入分布式事务,支持达梦(dm),金仓(kingbase)
 源码地址: https://gitee.com/chunanyong/zorm || https://gitcode.com/springrain/zorm  
 测试用例: https://gitee.com/wuxiangege/zorm-examples/  	  
 视频教程: https://www.bilibili.com/video/BV1L24y1976U/     
-
-交流QQ群：[727723736]() 添加进入社区群聊,问题交流,技术探讨  
+ 
 社区微信: [LAUV927]()   
 
 ``` 
