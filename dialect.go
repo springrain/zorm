@@ -173,13 +173,13 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 				*values = append((*values)[:i], (*values)[i+1:]...)
 
 				// 先拼接到SQL语句中,这样避免被截掉的风险
-				colName := getFieldTagName(&field, tagMap)
+				colName := getFieldTagName(ctx, &field, tagMap)
 				sqlBuilder.WriteString(colName)
 				valueSQLBuilder.WriteString(sequence)
 
 				i = i - 1
-				//if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-				if i < len(*columns)-1 { //不是最后一个
+				// if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
+				if i < len(*columns)-1 { // 不是最后一个
 					sqlBuilder.WriteByte(',')
 					valueSQLBuilder.WriteByte(',')
 				}
@@ -218,7 +218,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 			valueSQLBuilder.WriteByte(',')
 		}
 
-		colName := getFieldTagName(&field, tagMap)
+		colName := getFieldTagName(ctx, &field, tagMap)
 		sqlBuilder.WriteString(colName)
 		valueSQLBuilder.WriteByte('?')
 
@@ -306,7 +306,7 @@ var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typ
 		}
 
 		entityStruct := entityStructSlice[i]
-		//默认值的map,每一个对象的默认值
+		// 默认值的map,每一个对象的默认值
 		defaultValueMap := entityStruct.GetDefaultValue()
 		for j := 0; j < len(*columns); j++ {
 			// 获取实体类的反射,指针下的struct
@@ -334,10 +334,10 @@ var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typ
 					continue
 				}
 			}
-			//默认值
+			// 默认值
 			isDefaultValue := false
 			var defaultValue interface{}
-			if defaultValueMap != nil { //如果只更新不是零值的字段,零值时不能更新为默认值.Map取值性能一般高于反射
+			if defaultValueMap != nil { // 如果只更新不是零值的字段,零值时不能更新为默认值.Map取值性能一般高于反射
 				defaultValue, isDefaultValue = defaultValueMap[field.Name]
 			}
 			// 给字段赋值
@@ -471,7 +471,7 @@ var wrapUpdateSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEnti
 		if i > 0 {
 			sqlBuilder.WriteByte(',')
 		}
-		colName := getFieldTagName(&field, tagMap)
+		colName := getFieldTagName(ctx, &field, tagMap)
 		sqlBuilder.WriteString(colName)
 		sqlBuilder.WriteString("=?")
 
@@ -706,7 +706,7 @@ func findGroupByIndex(strsql *string) []int {
 // countFinder.Append(") tempcountfinder")
 // finder.CountFinder = countFinder
 var (
-	//fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
+	// fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
 	// 处理sql中from格式化换行的正则问题
 	fromExpr      = `(?i)(^\s*select)(\(.*?\)|[^()]+)*?(\s+from\s)`
 	fromRegexp, _ = regexp.Compile(fromExpr)
@@ -798,8 +798,27 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 	return pk
 }
 
-// FuncWrapFieldTagName 用于包裹字段名, eg. `describe`
-var FuncWrapFieldTagName func(field *reflect.StructField, colName string) string = nil
+// FuncWrapFieldTagName 用于包裹字段名, e.g. `describe` "describe" 等等, 例如mysql的`describe`和postgres的"describe"
+//
+//	example: 	FuncWrapFieldTagName = func(ctx context.Context, field *reflect.StructField, colName string) string {
+//		config, err := GetContextDataSourceConfig(ctx)
+//		if err != nil {
+//			return ""
+//		}
+//
+//		if config != nil && config.Dialect != "" {
+//			switch config.Dialect {
+//			case "mysql":
+//				return fmt.Sprintf("`%s`", colName)
+//			case "postgres":
+//				return fmt.Sprintf(`"%s"`, colName)
+//				// case ...
+//			}
+//		}
+//
+//		return colName
+//	}
+var FuncWrapFieldTagName func(ctx context.Context, field *reflect.StructField, colName string) string = nil
 
 /*
 var FuncWrapFieldTagName = func(field *reflect.StructField, colName string) string {
@@ -809,11 +828,11 @@ var FuncWrapFieldTagName = func(field *reflect.StructField, colName string) stri
 */
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
-func getFieldTagName(field *reflect.StructField, structFieldTagMap *map[string]string) string {
+func getFieldTagName(ctx context.Context, field *reflect.StructField, structFieldTagMap *map[string]string) string {
 	// colName := field.Tag.Get(tagColumnName)
 	colName := (*structFieldTagMap)[field.Name]
 	if FuncWrapFieldTagName != nil {
-		colName = FuncWrapFieldTagName(field, colName)
+		colName = FuncWrapFieldTagName(ctx, field, colName)
 	}
 
 	/*
@@ -907,7 +926,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 			if kind == reflect.Ptr { // 如果是指针 ｜ If it is a pointer
 				valueOf = valueOf.Elem()
 				kind = valueOf.Kind()
-				//(Type=*int,Value=nil)/(Type=nil,Value=nil)  https://golang.org/doc/faq#nil_error
+				// (Type=*int,Value=nil)/(Type=nil,Value=nil)  https://golang.org/doc/faq#nil_error
 				isValid = valueOf.IsValid()
 			}
 		}
@@ -921,9 +940,9 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 			// 记录新值
 			// Record new value.
 			newValues = append(newValues, v)
-			//} else if _, ok := v.([]byte); ok { //字节数组
+			// } else if _, ok := v.([]byte); ok { //字节数组
 			//	newValues = append(newValues, v)
-		} else if kind == reflect.Slice && typeOf.Elem().Kind() == reflect.Uint8 { //[]byte字节数组或派生类型
+		} else if kind == reflect.Slice && typeOf.Elem().Kind() == reflect.Uint8 { // []byte字节数组或派生类型
 			// 记录新值
 			// Record new value
 			newValues = append(newValues, v)
@@ -961,7 +980,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 
 	}
 
-	//?号占位符的数量和参数不一致,不使用 strings.Count函数,避免多次操作字符串
+	// ?号占位符的数量和参数不一致,不使用 strings.Count函数,避免多次操作字符串
 	if (i + 1) != argsNum {
 		return nil, nil, fmt.Errorf("sql语句中参数和值数量不一致,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%s", *sqlstr, sqlErrorValues2String(*args))
 	}
