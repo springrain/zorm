@@ -269,7 +269,7 @@ func init() {
 	// 自定义主键生成
 	// zorm.FuncGenerateStringID=funcmyId
 
-	// 自定义Tag列名
+	// 自定义Tag列名,多种数据库使用GetContextDataSourceConfig获取config.Dialect进行处理
 	// zorm.FuncWrapFieldTagName=funcmyTagName
 
 	// 自定义decimal类型实现,例如github.com/shopspring/decimal

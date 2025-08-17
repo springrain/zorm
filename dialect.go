@@ -280,13 +280,13 @@ var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typ
 	}
 
 	/*
-		defaultValueMap := entity.GetDefaultValue()
-		ctxValueMap := ctx.Value(contextDefaultValueKey)
-		if ctxValueMap != nil {
-			defaultValueMap = ctxValueMap.(map[string]interface{})
-		} else {
-			defaultValueMap = entity.GetDefaultValue()
-		}
+					defaultValueMap := entity.GetDefaultValue()
+					ctxValueMap := ctx.Value(contextDefaultValueKey)
+					if ctxValueMap != nil {
+		         defaultValueMap = ctxValueMap.(map[string]interface{})
+					} else {
+		         defaultValueMap = entity.GetDefaultValue()
+					}
 	*/
 
 	for i := 1; i < sliceLen; i++ {
@@ -457,16 +457,16 @@ var wrapUpdateSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEnti
 		}
 
 		/*
-			// 如果是默认值字段,删除掉,不更新
-			// If it is the default value field, delete it and do not update
-			if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
-				// 去掉这一列,不再处理
-				// Remove this column and no longer process
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				continue
-			}
+		   // 如果是默认值字段,删除掉,不更新
+		   // If it is the default value field, delete it and do not update
+		   if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
+		   	// 去掉这一列,不再处理
+		   	// Remove this column and no longer process
+		   	*columns = append((*columns)[:i], (*columns)[i+1:]...)
+		   	*values = append((*values)[:i], (*values)[i+1:]...)
+		   	i = i - 1
+		   	continue
+		   }
 		*/
 		if i > 0 {
 			sqlBuilder.WriteByte(',')
@@ -800,7 +800,8 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 
 // FuncWrapFieldTagName 用于包裹字段名, e.g. `describe` "describe" 等等, 例如mysql的`describe`和postgres的"describe"
 //
-//	example: 	FuncWrapFieldTagName = func(ctx context.Context, field *reflect.StructField, colName string) string {
+//	example:
+//	zorm.FuncWrapFieldTagName = func(ctx context.Context, field *reflect.StructField, colName string) string {
 //		config, err := GetContextDataSourceConfig(ctx)
 //		if err != nil {
 //			return ""
@@ -812,20 +813,16 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 //				return fmt.Sprintf("`%s`", colName)
 //			case "postgres":
 //				return fmt.Sprintf(`"%s"`, colName)
-//				// case ...
+//			case "kingbase": // kingbase R3 驱动大小写敏感,通常是大写.数据库全的列名部换成双引号括住的大写字符,避免与数据库内置关键词冲突时报错
+//				colName = strings.ReplaceAll(colName, "\"", "")
+//				return fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
+//			// case ...
 //			}
 //		}
 //
 //		return colName
 //	}
 var FuncWrapFieldTagName func(ctx context.Context, field *reflect.StructField, colName string) string = nil
-
-/*
-var FuncWrapFieldTagName = func(field *reflect.StructField, colName string) string {
-	// return fmt.Sprintf("`%s`", colName)
-	return colName
-}
-*/
 
 // getFieldTagName 获取模型中定义的数据库的 column tag
 func getFieldTagName(ctx context.Context, field *reflect.StructField, structFieldTagMap *map[string]string) string {
@@ -835,13 +832,6 @@ func getFieldTagName(ctx context.Context, field *reflect.StructField, structFiel
 		colName = FuncWrapFieldTagName(ctx, field, colName)
 	}
 
-	/*
-		if dialect == "kingbase" {
-			// kingbase R3 驱动大小写敏感，通常是大写。数据库全的列名部换成双引号括住的大写字符，避免与数据库内置关键词冲突时报错
-			colName = strings.ReplaceAll(colName, "\"", "")
-			colName = fmt.Sprintf(`"%s"`, strings.ToUpper(colName))
-		}
-	*/
 	return colName
 }
 
