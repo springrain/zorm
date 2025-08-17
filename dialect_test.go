@@ -19,10 +19,102 @@
 package zorm
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 )
+
+func Test_getFiieldTagName_dialectFromConfig(t *testing.T) {
+	type args struct {
+		dialect string
+		field   *reflect.StructField
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test mysql dialect from config",
+			args: args{
+				dialect: "mysql",
+				field: &reflect.StructField{
+					Name: "Described",
+					Tag:  `column:"described" json:"desc,omitempty"`,
+				},
+			},
+			want: "`described`",
+		},
+		{
+			name: "test postgres dialect from config",
+			args: args{
+				dialect: "postgres",
+				field: &reflect.StructField{
+					Name: "Described",
+					Tag:  `column:"described" json:"desc,omitempty"`,
+				},
+			},
+			want: `"described"`,
+		},
+		{
+			name: "test default",
+			args: args{
+				field: &reflect.StructField{
+					Name: "Described",
+					Tag:  `column:"described" json:"desc,omitempty"`,
+				},
+			},
+			want: "described",
+		},
+	}
+
+	// 全局包裹函数
+	FuncWrapFieldTagName = func(ctx context.Context, field *reflect.StructField, colName string) string {
+		config, err := GetContextDataSourceConfig(ctx)
+		if err != nil {
+			return ""
+		}
+
+		if config != nil && config.Dialect != "" {
+			switch config.Dialect {
+			case "mysql":
+				return fmt.Sprintf("`%s`", colName)
+			case "postgres":
+				return fmt.Sprintf(`"%s"`, colName)
+				// case ...
+			}
+		}
+
+		return colName
+	}
+
+	emptyCtx := context.Background()
+	tagMap := make(map[string]string)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			defaultDao = &DBDao{
+				config: &DataSourceConfig{
+					Dialect: tt.args.dialect,
+				},
+				dataSource: &dataSource{},
+			}
+			dbConnection, errGetDBConnection := defaultDao.newDBConnection()
+			if errGetDBConnection != nil {
+				t.Fatalf("errGetDBConnection: %v", errGetDBConnection)
+			}
+
+			// 把dbConnection放入context
+			ctx := context.WithValue(emptyCtx, contextDBConnectionValueKey, dbConnection)
+
+			tagMap[tt.args.field.Name] = tt.args.field.Tag.Get("column")
+			if got := getFieldTagName(ctx, tt.args.field, &tagMap); got != tt.want {
+				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func Test_getFieldTagName(t *testing.T) {
 	type args struct {
@@ -31,9 +123,37 @@ func Test_getFieldTagName(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		fn   func(*reflect.StructField, string) string
+		fn   func(context.Context, *reflect.StructField, string) string
 		want string
 	}{
+		{
+			name: "test dialect from config",
+			args: args{
+				field: &reflect.StructField{
+					Name: "Described",
+					Tag:  `column:"described" json:"desc,omitempty"`,
+				},
+			},
+			fn: func(ctx context.Context, field *reflect.StructField, colName string) string {
+				config, err := GetContextDataSourceConfig(ctx)
+				if err != nil {
+					return ""
+				}
+
+				if config != nil && config.Dialect != "" {
+					switch config.Dialect {
+					case "mysql":
+						return fmt.Sprintf("`%s`", colName)
+					case "postgres":
+						return fmt.Sprintf(`"%s"`, colName)
+						// case ...
+					}
+				}
+
+				return colName
+			},
+			want: "`described`",
+		},
 		{
 			name: "test `",
 			args: args{
@@ -42,7 +162,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(field *reflect.StructField, colName string) string {
+			fn: func(ctx context.Context, field *reflect.StructField, colName string) string {
 				return fmt.Sprintf("`%s`", colName)
 			},
 			want: "`described`",
@@ -55,7 +175,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(field *reflect.StructField, colName string) string {
+			fn: func(ctx context.Context, field *reflect.StructField, colName string) string {
 				return fmt.Sprintf("'%s'", colName)
 			},
 			want: "'described'",
@@ -68,7 +188,7 @@ func Test_getFieldTagName(t *testing.T) {
 					Tag:  `column:"described" json:"desc,omitempty"`,
 				},
 			},
-			fn: func(field *reflect.StructField, colName string) string {
+			fn: func(ctx context.Context, field *reflect.StructField, colName string) string {
 				return colName
 			},
 			want: "described",
@@ -85,6 +205,8 @@ func Test_getFieldTagName(t *testing.T) {
 			want: "described",
 		},
 	}
+
+	ctx := context.Background()
 	tagMap := make(map[string]string)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,7 +214,7 @@ func Test_getFieldTagName(t *testing.T) {
 				FuncWrapFieldTagName = tt.fn
 			}
 			tagMap[tt.args.field.Name] = tt.args.field.Tag.Get("column")
-			if got := getFieldTagName(tt.args.field, &tagMap); got != tt.want {
+			if got := getFieldTagName(ctx, tt.args.field, &tagMap); got != tt.want {
 				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
 			}
 		})
