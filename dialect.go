@@ -802,7 +802,7 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 //
 //	example:
 //	zorm.FuncWrapFieldTagName = func(ctx context.Context, field *reflect.StructField, colName string) string {
-//		config, err := GetContextDataSourceConfig(ctx)
+//		config, err := zorm.GetContextDataSourceConfig(ctx)
 //		if err != nil {
 //			return ""
 //		}
