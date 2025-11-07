@@ -33,6 +33,22 @@ type dataSource struct {
 	// config *DataSourceConfig
 }
 
+// dbDialectMap 数据库方言的map,用来检查Dialect设置是否正确
+// dbDialectMap is a map of database dialects, used to check whether the Dialect setting is correct
+var dbDialectMap = map[string]string{
+	"mysql":      "mysql",
+	"postgresql": "postgres",
+	"oracle":     "oracle",
+	"mssql":      "sqlserver",
+	"sqlite":     "sqlite3",
+	"db2":        "go_ibm_db",
+	"clickhouse": "clickhouse",
+	"dm":         "dm",
+	"kingbase":   "kingbase",
+	"shentong":   "aci",
+	"tdengine":   "taosSql",
+}
+
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
 // newDAtaSource Create a new datasource and call it internally to avoid direct external use of the datasource
 func newDataSource(config *DataSourceConfig) (*dataSource, error) {
@@ -53,6 +69,12 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if config.Dialect == "" {
 		return nil, errors.New("->newDataSource-->Dialect cannot be empty")
 	}
+
+	_, has := dbDialectMap[config.Dialect]
+	if !has {
+		return nil, errors.New("->newDataSource-->Dialect not supported, please check the Dialect configuration. Supported Dialect include mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine ")
+	}
+
 	var db *sql.DB
 	var errSQLOpen error
 
@@ -63,7 +85,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 		db, errSQLOpen = sql.Open(config.DriverName, config.DSN)
 		if errSQLOpen != nil {
 			errSQLOpen = fmt.Errorf("->newDataSource-->open数据库打开失败:%w", errSQLOpen)
-			FuncLogError(nil, errSQLOpen)
+			//FuncLogError(nil, errSQLOpen)
 			return nil, errSQLOpen
 		}
 	} else { // 使用已经存在的数据库连接
@@ -93,11 +115,11 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	db.SetConnMaxLifetime(time.Second * time.Duration(config.ConnMaxLifetimeSecond))
 
 	// 验证连接
-	if pingerr := db.Ping(); pingerr != nil {
-		pingerr = fmt.Errorf("->newDataSource-->ping数据库失败:%w", pingerr)
-		FuncLogError(nil, pingerr)
+	if err := db.Ping(); err != nil {
+		err = fmt.Errorf("->newDataSource-->ping数据库失败:%w", err)
+		//FuncLogError(nil, err)
 		db.Close()
-		return nil, pingerr
+		return nil, err
 	}
 
 	return &dataSource{db}, nil

@@ -1,3 +1,7 @@
+v1.8.0
+- 检查Dialect设置是否正确
+- 完善文档,注释
+
 v1.7.9
 - 感谢 @encircles 的pr,优化FuncWrapFieldTagName方法,添加context参数,解决多类型数据库时Tag列名的bug
 - 完善文档,注释
