@@ -291,10 +291,16 @@ func getCacheStructFieldInfo(typeOf *reflect.Type, keyPrefix string) (*interface
 	if typeOf == nil {
 		return nil, errors.New("->getCacheStructFieldInfo-->typeOf不能为空")
 	}
-	// key := keyPrefix + (*typeOf).String()
-
 	// pkgPath + _ + pkgName(因为单独用这个不保证唯一)
-	key := fmt.Sprintf("%s%s_%s", keyPrefix, (*typeOf).PkgPath(), (*typeOf).String())
+	//key := fmt.Sprintf("%s%s_%s", keyPrefix, (*typeOf).PkgPath(), (*typeOf).String())
+	// 优化: 使用strings.Builder代替fmt.Sprintf,减少内存分配
+	var keyBuilder strings.Builder
+	keyBuilder.Grow(len(keyPrefix) + len((*typeOf).PkgPath()) + len((*typeOf).String()) + 2)
+	keyBuilder.WriteString(keyPrefix)
+	keyBuilder.WriteString((*typeOf).PkgPath())
+	keyBuilder.WriteByte('_')
+	keyBuilder.WriteString((*typeOf).String())
+	key := keyBuilder.String()
 	dbColumnFieldMap, dbOk := cacheStructFieldInfoMap.Load(key)
 	// dbColumnFieldMap, dbOk := cacheStructFieldInfoMap[key]
 	if !dbOk { // 缓存不存在
@@ -641,22 +647,24 @@ func sqlRowsValues(ctx context.Context, config *DataSourceConfig, valueOf *refle
 // getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰
 func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*reflect.StructField, error) {
 	columnName := strings.ToLower(columnType.Name())
-	// columnName := "test"
 	// 从缓存中获取列名的field字段
 	// Get the field field of the column name from the cache
 	field, fok := (*dbColumnFieldMap)[columnName]
-	if !fok {
-		field, fok = (*exportFieldMap)[columnName]
-		if !fok {
-			// 尝试驼峰
-			cname := strings.ReplaceAll(columnName, "_", "")
-			field, fok = (*exportFieldMap)[cname]
-
-		}
-
-	}
 	if fok {
 		return &field, nil
+	}
+	// 优化: 减少map查找次数
+	field, fok = (*exportFieldMap)[columnName]
+	if fok {
+		return &field, nil
+	}
+	// 尝试驼峰命名转换(去除下划线)
+	if strings.IndexByte(columnName, '_') >= 0 {
+		cname := strings.ReplaceAll(columnName, "_", "")
+		field, fok = (*exportFieldMap)[cname]
+		if fok {
+			return &field, nil
+		}
 	}
 	return nil, nil
 }

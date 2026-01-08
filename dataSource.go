@@ -150,12 +150,12 @@ func (dbConnection *dataBaseConnection) beginTx(ctx context.Context) error {
 		return nil
 	}
 	// 设置事务配置,主要是隔离级别
-	var txOptions *sql.TxOptions
+	txOptions := dbConnection.config.DefaultTxOptions
 	contextTxOptions := ctx.Value(contextTxOptionsKey)
 	if contextTxOptions != nil {
-		txOptions, _ = contextTxOptions.(*sql.TxOptions)
-	} else {
-		txOptions = dbConnection.config.DefaultTxOptions
+		if opts, ok := contextTxOptions.(*sql.TxOptions); ok {
+			txOptions = opts
+		}
 	}
 
 	tx, err := dbConnection.db.BeginTx(ctx, txOptions)
