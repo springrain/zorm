@@ -952,6 +952,12 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	}
 	resultMapList = make([]map[string]interface{}, 0, initialCapacity)
 	columnTypeLen := len(columnTypes)
+
+	// 预计算数据库类型名称,避免在循环中重复调用strings.ToUpper
+	databaseTypeNames := make([]string, columnTypeLen)
+	for i, columnType := range columnTypes {
+		databaseTypeNames[i] = strings.ToUpper(columnType.DatabaseTypeName())
+	}
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
@@ -984,7 +990,8 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			// 类型转换的临时值
 			var tempDriverValue driver.Value
 			// 根据接收的类型,获取到类型转换的接口实现,优先匹配指定的数据库类型
-			databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
+			// 使用预计算的数据库类型名称,提高性能
+			databaseTypeName := databaseTypeNames[i]
 			// 判断是否有自定义扩展,避免无意义的反射
 			if iscdvm {
 				customDriverValueConver, converOK = customDriverValueMap[config.Dialect+"."+databaseTypeName]
@@ -1677,7 +1684,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	if len(locOrderBy) > 0 {
 		countsql = countsql[:locOrderBy[0]]
 	}
-	s := strings.ToLower(countsql)
+	countsqlLower := strings.ToLower(countsql)
 	gbi := -1
 	locGroupBy := findGroupByIndex(&countsql)
 	if len(locGroupBy) > 0 {
@@ -1687,7 +1694,7 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	// 特殊关键字,包装SQL
 	// Special keywords, wrap SQL
-	if strings.Contains(s, " distinct ") || strings.Contains(s, " union ") || gbi > -1 {
+	if strings.Contains(countsqlLower, " distinct ") || strings.Contains(countsqlLower, " union ") || gbi > -1 {
 		// countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
 		sqlBuilder.WriteString("SELECT COUNT(*)  frame_row_count FROM (")
 		sqlBuilder.WriteString(countsql)
