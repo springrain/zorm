@@ -940,7 +940,17 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	// 反射获取 []driver.Value的值
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
-	resultMapList = make([]map[string]interface{}, 0)
+
+	// 预分配resultMapList容量,提高性能
+	// 如果有分页参数,根据每页大小预分配容量
+	initialCapacity := 0
+	if page != nil && page.PageSize > 0 {
+		initialCapacity = page.PageSize
+	} else {
+		// 默认预分配20个元素的容量,减少扩容开销
+		initialCapacity = 20
+	}
+	resultMapList = make([]map[string]interface{}, 0, initialCapacity)
 	columnTypeLen := len(columnTypes)
 	// 循环遍历结果集
 	// Loop through the result set
@@ -950,7 +960,8 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		values := make([]interface{}, columnTypeLen)
 		// 使用指针类型接收字段值,需要使用interface{}包装一下
 		// To use the pointer type to receive the field value, you need to use interface() to wrap it
-		result := make(map[string]interface{})
+		// 预分配map容量,提高性能
+		result := make(map[string]interface{}, columnTypeLen)
 
 		// 记录需要类型转换的字段信息
 		var fieldTempDriverValueMap map[int]*driverValueInfo
@@ -1234,14 +1245,15 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			return affected, nil
 		}
 		pkName := entity.GetPKColumnName()
-		if pktype == "int" {
+		switch pktype {
+		case "int":
 			// int64 转 int
 			// int64 to int
 			autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
 			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
-		} else if pktype == "int64" {
+		case "int64":
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
 			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
@@ -1267,7 +1279,7 @@ func InsertSlice(ctx context.Context, entityStructSlice []IEntityStruct) (int, e
 
 var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error) {
 	affected := -1
-	if entityStructSlice == nil || len(entityStructSlice) < 1 {
+	if len(entityStructSlice) < 1 {
 		return affected, errors.New("->InsertSlice-->entityStructSlice对象数组不能为空")
 	}
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值

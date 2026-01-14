@@ -83,7 +83,7 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *st
 }
 
 // wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
-// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
 // wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 var wrapInsertSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
@@ -232,7 +232,7 @@ func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntit
 }
 
 // wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
-// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
 // wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error) {
@@ -414,7 +414,7 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 }
 
 // wrapUpdateSQL 包装更新Struct语句
-// 数组传递,如果外部方法有调用append的逻辑，append会破坏指针引用，所以传递指针
+// 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
 var wrapUpdateSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
@@ -787,7 +787,17 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 		return ""
 	}
 	// 获取9位数,前置补0,确保9位数
-	rand9 := fmt.Sprintf("%09d", randNum)
+	// 使用更高效的方式代替fmt.Sprintf
+	//rand9 := fmt.Sprintf("%09d", randNum)
+	var rand9Builder strings.Builder
+	rand9Builder.Grow(9)
+	randStr := randNum.String()
+	// 补0到9位
+	for i := len(randStr); i < 9; i++ {
+		rand9Builder.WriteByte('0')
+	}
+	rand9Builder.WriteString(randStr)
+	rand9 := rand9Builder.String()
 
 	// 获取纳秒 按照 年月日时分秒毫秒微秒纳秒 拼接为长度23位的字符串
 	pk := time.Now().Format("2006.01.02.15.04.05.000000000")
@@ -1001,7 +1011,8 @@ var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlst
 	sqlBuilder.WriteString("ALTER TABLE ")
 	firstWord = strings.ToUpper(firstWord)
 	tableName := ""
-	if firstWord == "UPDATE" { // 更新  update tableName set
+	switch firstWord {
+	case "UPDATE": // 更新  update tableName set
 		tableName, _, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
 			return err
@@ -1009,7 +1020,7 @@ var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlst
 		// 拿到 set
 		_, start, end, err = firstOneWord(end, &sqlByte)
 
-	} else if firstWord == "DELETE" { // 删除 delete from tableName
+	case "DELETE": // 删除 delete from tableName
 		// 拿到from
 		_, _, end, err = firstOneWord(end, &sqlByte)
 		if err != nil {
@@ -1017,7 +1028,7 @@ var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlst
 		}
 		// 拿到 tableName
 		tableName, start, end, err = firstOneWord(end, &sqlByte)
-	} else { // 只处理UPDATE 和 DELETE 语法
+	default: // 只处理UPDATE 和 DELETE 语法
 		return nil
 	}
 	if err != nil {

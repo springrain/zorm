@@ -5,6 +5,7 @@
 *.iws
 
 .vscode/
+.claude/
 
 *.swp
 
