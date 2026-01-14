@@ -54,8 +54,9 @@ func NewFinder() *Finder {
 	finder.sqlBuilder.Grow(stringBuilderGrowLen)
 	finder.SelectTotalCount = true
 	finder.InjectionCheck = true
+	// 优化: 预分配8个参数的容量,减少扩容次数,大多数查询有多个参数
 	// slice扩容会生成新的slice,最后要值复制接收
-	finder.values = make([]interface{}, 0, 3)
+	finder.values = make([]interface{}, 0, 10)
 	return &finder
 }
 

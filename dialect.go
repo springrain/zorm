@@ -539,12 +539,14 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (*string, *string, *[]interf
 	// 是否自增,默认false
 	autoIncrement := false
 	dbFieldMap := entity.GetDBFieldMap()
-	if len(dbFieldMap) < 1 {
+	dbFieldLen := len(dbFieldMap)
+	if dbFieldLen < 1 {
 		return &inserColumnName, &inserColumnName, nil, autoIncrement, errors.New("->wrapInsertEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
+	// 优化: 预分配容量,减少扩容开销
 	// SQL对应的参数
 	// SQL corresponding parameters
-	values := []interface{}{}
+	values := make([]interface{}, 0, dbFieldLen)
 
 	// SQL语句的构造器
 	// SQL statement constructor
@@ -604,7 +606,8 @@ func wrapInsertValueEntityMapSQL(entity IEntityMap) (*string, *string, *[]interf
 var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*string, *[]interface{}, error) {
 	dbFieldMap := entity.GetDBFieldMap()
 	sqlstr := ""
-	if len(dbFieldMap) < 1 {
+	dbFieldLen := len(dbFieldMap)
+	if dbFieldLen < 1 {
 		return &sqlstr, nil, errors.New("->wrapUpdateEntityMapSQL-->GetDBFieldMap返回值不能为空")
 	}
 	// SQL语句的构造器
@@ -615,9 +618,10 @@ var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*stri
 	sqlBuilder.WriteString(entity.GetTableName())
 	sqlBuilder.WriteString(" SET ")
 
+	// 优化: 预分配容量,减少扩容开销
 	// SQL对应的参数
 	// SQL corresponding parameters
-	values := []interface{}{}
+	values := make([]interface{}, 0, dbFieldLen)
 	// 主键名称
 	// Primary key name
 	var pkValue interface{}
@@ -935,17 +939,18 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 	if argsNum < 1 { // 没有参数,不需要处理,也不判断参数数量了,数据库会报错提示
 		return sqlstr, args, nil
 	}
+	// 优化: 预分配容量,减少扩容开销
 	// 重新记录参数值
 	// Re-record the parameter value
-	newValues := make([]interface{}, 0)
+	newValues := make([]interface{}, 0, argsNum)
 	// 记录sql参数值的下标,例如 $1 @p1 ,从1开始
 	sqlParamIndex := 1
 
 	// 新的sql
 	// new sql
 	var newSQLStr strings.Builder
-	// newSQLStr.Grow(len(*sqlstr))
-	newSQLStr.Grow(stringBuilderGrowLen)
+	// 优化: 预估SQL长度,减少扩容
+	newSQLStr.Grow(len(*sqlstr) + argsNum*3)
 	i := -1
 	for _, vbyte := range []byte(*sqlstr) {
 		if vbyte != '?' { // 如果不是?问号
