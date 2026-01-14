@@ -786,26 +786,76 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 	if randErr != nil {
 		return ""
 	}
-	// 获取9位数,前置补0,确保9位数
-	// 使用更高效的方式代替fmt.Sprintf
-	//rand9 := fmt.Sprintf("%09d", randNum)
-	var rand9Builder strings.Builder
-	rand9Builder.Grow(9)
-	randStr := randNum.String()
-	// 补0到9位
-	for i := len(randStr); i < 9; i++ {
-		rand9Builder.WriteByte('0')
-	}
-	rand9Builder.WriteString(randStr)
-	rand9 := rand9Builder.String()
+
+	// 使用32位数组一次性处理时间戳和随机数
+	var idBuf [32]byte
+
+	// 获取当前时间
+	now := time.Now()
 
 	// 获取纳秒 按照 年月日时分秒毫秒微秒纳秒 拼接为长度23位的字符串
-	pk := time.Now().Format("2006.01.02.15.04.05.000000000")
-	pk = strings.ReplaceAll(pk, ".", "")
+	//pk := time.Now().Format("2006.01.02.15.04.05.000000000")
+	//pk = strings.ReplaceAll(pk, ".", "")
 
-	// 23位字符串+9位随机数=32位字符串,这样的好处就是可以使用ID进行排序
-	pk = pk + rand9
-	return pk
+	// 时间戳部分 (前23位)
+	// 年 (4位)
+	year := now.Year()
+	idBuf[0] = byte('0' + year/1000)
+	idBuf[1] = byte('0' + (year/100)%10)
+	idBuf[2] = byte('0' + (year/10)%10)
+	idBuf[3] = byte('0' + year%10)
+
+	// 月 (2位)
+	month := int(now.Month())
+	idBuf[4] = byte('0' + month/10)
+	idBuf[5] = byte('0' + month%10)
+
+	// 日 (2位)
+	day := now.Day()
+	idBuf[6] = byte('0' + day/10)
+	idBuf[7] = byte('0' + day%10)
+
+	// 时 (2位)
+	hour := now.Hour()
+	idBuf[8] = byte('0' + hour/10)
+	idBuf[9] = byte('0' + hour%10)
+
+	// 分 (2位)
+	minute := now.Minute()
+	idBuf[10] = byte('0' + minute/10)
+	idBuf[11] = byte('0' + minute%10)
+
+	// 秒 (2位)
+	second := now.Second()
+	idBuf[12] = byte('0' + second/10)
+	idBuf[13] = byte('0' + second%10)
+
+	// 纳秒 (9位)
+	nano := now.Nanosecond()
+	// 从后往前填充纳秒
+	for i := 22; i >= 14; i-- {
+		idBuf[i] = byte('0' + nano%10)
+		nano /= 10
+	}
+
+	// 获取9位数,前置补0,确保9位数
+	//rand9 := fmt.Sprintf("%09d", randNum)
+
+	// 随机数部分 (后9位)
+	randStr := randNum.String()
+	randStrLen := len(randStr)
+	zeroCount := 9 - randStrLen
+
+	// 填充前导0
+	for i := 0; i < zeroCount; i++ {
+		idBuf[23+i] = '0'
+	}
+	// 复制随机数
+	for i := 0; i < randStrLen; i++ {
+		idBuf[23+zeroCount+i] = randStr[i]
+	}
+
+	return string(idBuf[:])
 }
 
 // FuncWrapFieldTagName 用于包裹字段名, e.g. `describe` "describe" 等等, 例如mysql的`describe`和postgres的"describe"

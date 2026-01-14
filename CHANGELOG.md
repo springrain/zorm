@@ -1,4 +1,5 @@
 v1.8.1
+- 优化```FuncGenerateStringID```函数的实现
 - 将```strings.ToUpper(columnType.DatabaseTypeName())```移出```rows.Next()``循环
 - 优化slice声明长度
 - 优化字符串拼接和列名查找逻辑
