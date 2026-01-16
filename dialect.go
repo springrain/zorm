@@ -113,7 +113,7 @@ var wrapInsertSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *
 func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, *string, int, string, error) {
 	var inserColumnName, valuesql string
 	// 自增类型  0(不自增),1(普通自增),2(序列自增)
-	// Self-increment type： 0（Not increase）,1(Ordinary increment),2(Sequence increment)
+	// Self-increment type： 0(Not increase),1(Ordinary increment),2(Sequence increment)
 	autoIncrement := 0
 	// 主键类型
 	// Primary key type
@@ -687,7 +687,7 @@ func findOrderByIndex(strsql *string) []int {
 }
 
 // 查询'group by'在sql中出现的开始位置和结束位置
-// Query the start position and end position of'group by' in sql。
+// Query the start position and end position of'group by' in sql
 var (
 	groupByExpr      = `(?i)\s(group)\s+by\s`
 	groupByRegexp, _ = regexp.Compile(groupByExpr)

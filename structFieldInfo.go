@@ -49,23 +49,23 @@ const (
 	// dbPKNamePrefix = "_dbPKName_"
 )
 
-// selectFieldCache 查询字段缓存，包含每个字段的必要信息
+// selectFieldCache 查询字段缓存,包含每个字段的必要信息
 type selectFieldCache struct {
 	// 数据库列类型
 	columnType *sql.ColumnType
-	// 对应的结构体字段，可能为nil
+	// 对应的结构体字段,可能为nil
 	structField *reflect.StructField
 	// 字段是否为指针类型
 	isPtr bool
 	// 字段类型
 	fieldType reflect.Type
-	// 数据库类型名（大写），避免重复调用 DatabaseTypeName() 和 ToUpper()
+	// 数据库类型名(大写),避免重复调用 DatabaseTypeName() 和 ToUpper()
 	databaseTypeName string
-	// 列名（小写），避免重复调用 Name() 和 ToLower()
+	// 列名(小写),避免重复调用 Name() 和 ToLower()
 	columnNameLower string
-	// 字段名，如果structField不为nil
+	// 字段名,如果structField不为nil
 	fieldName string
-	// 带方言前缀的数据库类型名，避免重复拼接字符串
+	// 带方言前缀的数据库类型名,避免重复拼接字符串
 	dialectDatabaseTypeName string
 }
 
@@ -521,7 +521,7 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
-func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, fieldCache []*selectFieldCache, entity interface{}) error {
+func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, fieldCache []*selectFieldCache, columnTypeToCache map[*sql.ColumnType]*selectFieldCache, entity interface{}) error {
 	if entity == nil && (valueOf == nil || valueOf.IsNil()) {
 		return errors.New("->sqlRowsValues-->接收值的entity参数为nil")
 	}
@@ -547,7 +547,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 	for i, cache := range fieldCache {
 		columnType := cache.columnType
 		if iscdvm {
-			// 使用缓存的databaseTypeName，避免重复调用 DatabaseTypeName() 和 ToUpper()
+			// 使用缓存的databaseTypeName,避免重复调用 DatabaseTypeName() 和 ToUpper()
 			// 根据接收的类型,获取到类型转换的接口实现,优先匹配指定的数据库类型
 			if cache.dialectDatabaseTypeName != "" {
 				customDriverValueConver, converOK = customDriverValueMap[cache.dialectDatabaseTypeName]
@@ -642,15 +642,8 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
 		} else { // 如果是Struct类型接收
-			// 查找对应的缓存
-			var cache *selectFieldCache
-			for _, c := range fieldCache {
-				if c.columnType == columnType {
-					cache = c
-					break
-				}
-			}
-			if cache != nil && cache.structField != nil { // 如果存在这个字段
+			// 使用映射进行O(1)查找
+			if cache, ok := columnTypeToCache[columnType]; ok && cache.structField != nil {
 				// 字段的反射值
 				fieldValue := valueOfElem.FieldByName(cache.fieldName)
 				// 给字段赋值
@@ -664,16 +657,19 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 }
 
 // buildSelectFieldCache 构建查询字段缓存
-func buildSelectFieldCache(columnTypes []*sql.ColumnType, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField, dialect string) ([]*selectFieldCache, error) {
+func buildSelectFieldCache(columnTypes []*sql.ColumnType, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField, dialect string) ([]*selectFieldCache, map[*sql.ColumnType]*selectFieldCache, error) {
 	if columnTypes == nil {
-		return nil, errors.New("->buildSelectFieldCache-->columnTypes不能为nil")
+		return nil, nil, errors.New("->buildSelectFieldCache-->columnTypes不能为nil")
 	}
 
 	cache := make([]*selectFieldCache, len(columnTypes))
+	// 创建columnType到cache的映射,用于O(1)查找
+	columnTypeToCache := make(map[*sql.ColumnType]*selectFieldCache, len(columnTypes))
+
 	for i, columnType := range columnTypes {
 		field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
@@ -696,18 +692,22 @@ func buildSelectFieldCache(columnTypes []*sql.ColumnType, dbColumnFieldMap, expo
 		}
 
 		cache[i] = cacheItem
+		columnTypeToCache[columnType] = cacheItem
 	}
 
-	return cache, nil
+	return cache, columnTypeToCache, nil
 }
 
-// buildEmptySelectFieldCache 构建空的查询字段缓存（用于单字段查询）
-func buildEmptySelectFieldCache(columnTypes []*sql.ColumnType, dialect string) []*selectFieldCache {
+// buildEmptySelectFieldCache 构建空的查询字段缓存(用于单字段查询)
+func buildEmptySelectFieldCache(columnTypes []*sql.ColumnType, dialect string) ([]*selectFieldCache, map[*sql.ColumnType]*selectFieldCache) {
 	if columnTypes == nil {
-		return nil
+		return nil, nil
 	}
 
 	cache := make([]*selectFieldCache, len(columnTypes))
+	// 创建columnType到cache的映射,用于O(1)查找
+	columnTypeToCache := make(map[*sql.ColumnType]*selectFieldCache, len(columnTypes))
+
 	for i, columnType := range columnTypes {
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 		cacheItem := &selectFieldCache{
@@ -719,9 +719,10 @@ func buildEmptySelectFieldCache(columnTypes []*sql.ColumnType, dialect string) [
 			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
 		}
 		cache[i] = cacheItem
+		columnTypeToCache[columnType] = cacheItem
 	}
 
-	return cache
+	return cache, columnTypeToCache
 }
 
 // getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰

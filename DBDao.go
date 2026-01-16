@@ -575,6 +575,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	var dbColumnFieldMap *map[string]reflect.StructField
 	var exportFieldMap *map[string]reflect.StructField
 	var fieldCache []*selectFieldCache
+	var columnTypeToCache map[*sql.ColumnType]*selectFieldCache
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
@@ -584,21 +585,21 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, err
 		}
 		// 构建查询字段缓存
-		fieldCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
+		fieldCache, columnTypeToCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
 		if err != nil {
 			err = fmt.Errorf("->QueryRow-->buildSelectFieldCache构建字段缓存错误:%w", err)
 			return has, err
 		}
 	} else {
-		// 对于单字段查询，创建一个空的fieldCache，但包含columnTypes信息
-		fieldCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
+		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
+		fieldCache, columnTypeToCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
 	}
 
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	// 预计算entity的反射值，避免在循环中重复计算
+	// 预计算entity的反射值,避免在循环中重复计算
 	var pv reflect.Value
 	if !oneColumnScanner {
 		pv = reflect.ValueOf(entity)
@@ -613,9 +614,9 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, nil, typeOf, rows, &driverValue, fieldCache, entity)
+			err = sqlRowsValues(ctx, nil, typeOf, rows, &driverValue, fieldCache, columnTypeToCache, entity)
 		} else {
-			err = sqlRowsValues(ctx, &pv, typeOf, rows, &driverValue, fieldCache, nil)
+			err = sqlRowsValues(ctx, &pv, typeOf, rows, &driverValue, fieldCache, columnTypeToCache, nil)
 		}
 
 		// pv = pv.Elem()
@@ -772,6 +773,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	var dbColumnFieldMap *map[string]reflect.StructField
 	var exportFieldMap *map[string]reflect.StructField
 	var fieldCache []*selectFieldCache
+	var columnTypeToCache map[*sql.ColumnType]*selectFieldCache
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
@@ -781,14 +783,14 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 			return err
 		}
 		// 构建查询字段缓存
-		fieldCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
+		fieldCache, columnTypeToCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
 		if err != nil {
 			err = fmt.Errorf("->Query-->buildSelectFieldCache构建字段缓存错误:%w", err)
 			return err
 		}
 	} else {
-		// 对于单字段查询，创建一个空的fieldCache，但包含columnTypes信息
-		fieldCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
+		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
+		fieldCache, columnTypeToCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
 	}
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
@@ -799,9 +801,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, nil, &sliceElementType, rows, &driverValue, fieldCache, pv.Interface())
+			err = sqlRowsValues(ctx, nil, &sliceElementType, rows, &driverValue, fieldCache, columnTypeToCache, pv.Interface())
 		} else {
-			err = sqlRowsValues(ctx, &pv, &sliceElementType, rows, &driverValue, fieldCache, nil)
+			err = sqlRowsValues(ctx, &pv, &sliceElementType, rows, &driverValue, fieldCache, columnTypeToCache, nil)
 		}
 
 		// err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
