@@ -65,6 +65,19 @@ var PowPrecisionNegativeExponent = 16
 // silently lose precision.
 var MarshalJSONWithoutQuotes = false
 
+// TrimTrailingZeros specifies whether trailing zeroes should be trimmed from a string representation of decimal.
+// If set to true, trailing zeroes will be truncated (2.00 -> 2, 3.11 -> 3.11, 13.000 -> 13),
+// otherwise trailing zeroes will be preserved (2.00 -> 2.00, 3.11 -> 3.11, 13.000 -> 13.000).
+// Setting this value to false can be useful for APIs where exact decimal string representation matters.
+var TrimTrailingZeros = true
+
+// AvoidScientificNotation specifies whether scientific notation should be used when decimal is turned
+// into a string that has a "negative" precision.
+//
+// For example, 1200 rounded to the nearest 100 cannot accurately be shown as "1200" because the last two
+// digits are unknown. With this set to false, that number would be expressed as "1.2E3" instead.
+var AvoidScientificNotation = true
+
 // ExpMaxIterations specifies the maximum number of iterations needed to calculate
 // precise natural exponent value using ExpHullAbrham method.
 var ExpMaxIterations = 1000
@@ -182,8 +195,26 @@ func NewFromString(value string) (Decimal, error) {
 	var intString string
 	var exp int64
 
-	// Check if number is using scientific notation
-	eIndex := strings.IndexAny(value, "Ee")
+	// Check if number is using scientific notation and find dots
+	eIndex := -1
+	pIndex := -1
+	for i, r := range value {
+		if r == 'E' || r == 'e' {
+			if eIndex > -1 {
+				return Decimal{}, fmt.Errorf("can't convert %s to decimal: multiple 'E' characters found", value)
+			}
+			eIndex = i
+			continue
+		}
+
+		if r == '.' {
+			if pIndex > -1 {
+				return Decimal{}, fmt.Errorf("can't convert %s to decimal: too many .s", value)
+			}
+			pIndex = i
+		}
+	}
+
 	if eIndex != -1 {
 		expInt, err := strconv.ParseInt(value[eIndex+1:], 10, 32)
 		if err != nil {
@@ -196,23 +227,12 @@ func NewFromString(value string) (Decimal, error) {
 		exp = expInt
 	}
 
-	pIndex := -1
-	vLen := len(value)
-	for i := 0; i < vLen; i++ {
-		if value[i] == '.' {
-			if pIndex > -1 {
-				return Decimal{}, fmt.Errorf("can't convert %s to decimal: too many .s", value)
-			}
-			pIndex = i
-		}
-	}
-
 	if pIndex == -1 {
 		// There is no decimal point, we can just parse the original string as
 		// an int
 		intString = value
 	} else {
-		if pIndex+1 < vLen {
+		if pIndex+1 < len(value) {
 			intString = value[:pIndex] + value[pIndex+1:]
 		} else {
 			intString = value[:pIndex]
@@ -1469,7 +1489,7 @@ func (d Decimal) InexactFloat64() float64 {
 //
 //	-12.345
 func (d Decimal) String() string {
-	return d.string(true)
+	return d.string(TrimTrailingZeros, AvoidScientificNotation)
 }
 
 // StringFixed returns a rounded fixed-point string with places digits after
@@ -1483,10 +1503,12 @@ func (d Decimal) String() string {
 //	NewFromFloat(5.45).StringFixed(1) // output: "5.5"
 //	NewFromFloat(5.45).StringFixed(2) // output: "5.45"
 //	NewFromFloat(5.45).StringFixed(3) // output: "5.450"
-//	NewFromFloat(545).StringFixed(-1) // output: "550"
+//	NewFromFloat(545).StringFixed(-1) // output: "540"
+//
+// Regardless of the `AvoidScientificNotation` option, the returned string will never be in scientific notation.
 func (d Decimal) StringFixed(places int32) string {
 	rounded := d.Round(places)
-	return rounded.string(false)
+	return rounded.string(false, true)
 }
 
 // StringFixedBank returns a banker rounded fixed-point string with places digits
@@ -1501,16 +1523,20 @@ func (d Decimal) StringFixed(places int32) string {
 //	NewFromFloat(5.45).StringFixedBank(2) // output: "5.45"
 //	NewFromFloat(5.45).StringFixedBank(3) // output: "5.450"
 //	NewFromFloat(545).StringFixedBank(-1) // output: "540"
+//
+// Regardless of the `AvoidScientificNotation` option, the returned string will never be in scientific notation.
 func (d Decimal) StringFixedBank(places int32) string {
 	rounded := d.RoundBank(places)
-	return rounded.string(false)
+	return rounded.string(false, true)
 }
 
 // StringFixedCash returns a Swedish/Cash rounded fixed-point string. For
 // more details see the documentation at function RoundCash.
+//
+// Regardless of the `AvoidScientificNotation` option, the returned string will never be in scientific notation.
 func (d Decimal) StringFixedCash(interval uint8) string {
 	rounded := d.RoundCash(interval)
-	return rounded.string(false)
+	return rounded.string(false, true)
 }
 
 // Round rounds the decimal to places decimal places.
@@ -1519,7 +1545,7 @@ func (d Decimal) StringFixedCash(interval uint8) string {
 // Example:
 //
 //	NewFromFloat(5.45).Round(1).String() // output: "5.5"
-//	NewFromFloat(545).Round(-1).String() // output: "550"
+//	NewFromFloat(545).Round(-1).String() // output: "550" (with AvoidScientificNotation, "5.5E2" otherwise)
 func (d Decimal) Round(places int32) Decimal {
 	if d.exp == -places {
 		return d
@@ -1766,15 +1792,10 @@ func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
 		return nil
 	}
 
-	str, err := unquoteIfQuoted(decimalBytes)
-	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", decimalBytes, err)
-	}
-
-	decimal, err := NewFromString(str)
+	decimal, err := NewFromString(unquoteIfQuoted(string(decimalBytes)))
 	*d = decimal
 	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", str, err)
+		return fmt.Errorf("error decoding string '%s': %s", string(decimalBytes), err)
 	}
 	return nil
 }
@@ -1852,14 +1873,18 @@ func (d *Decimal) Scan(value interface{}) error {
 		*d = NewFromUint64(v)
 		return nil
 
-	default:
-		// default is trying to interpret value stored as string
-		str, err := unquoteIfQuoted(v)
-		if err != nil {
-			return err
-		}
-		*d, err = NewFromString(str)
+	case string:
+		var err error
+		*d, err = NewFromString(unquoteIfQuoted(v))
 		return err
+
+	case []byte:
+		var err error
+		*d, err = NewFromString(unquoteIfQuoted(string(v)))
+		return err
+
+	default:
+		return fmt.Errorf("could not convert value '%+v' to any known type", value)
 	}
 }
 
@@ -1905,9 +1930,16 @@ func (d Decimal) StringScaled(exp int32) string {
 	return d.rescale(exp).String()
 }
 
-func (d Decimal) string(trimTrailingZeros bool) string {
-	if d.exp >= 0 {
+func (d Decimal) string(trimTrailingZeros, avoidScientificNotation bool) string {
+	if d.exp == 0 {
 		return d.rescale(0).value.String()
+	}
+	if d.exp >= 0 {
+		if avoidScientificNotation {
+			return d.rescale(0).value.String()
+		} else {
+			return d.ScientificNotationString()
+		}
 	}
 
 	abs := new(big.Int).Abs(d.value)
@@ -1947,6 +1979,31 @@ func (d Decimal) string(trimTrailingZeros bool) string {
 		return "-" + number
 	}
 
+	return number
+}
+
+// ScientificNotationString serializes the decimal into standard scientific notation.
+//
+// The notation is normalized to have one non-zero digit followed by a decimal point and
+// the remaining significant digits followed by "E" and the base-10 exponent.
+//
+// A zero, which has no significant digits, is simply serialized to "0".
+func (d Decimal) ScientificNotationString() string {
+	exp := int(d.exp)
+	intStr := new(big.Int).Abs(d.value).String()
+	if intStr == "0" {
+		return intStr
+	}
+	first := intStr[0]
+	var remaining string
+	if len(intStr) > 1 {
+		remaining = "." + intStr[1:]
+		exp = exp + len(intStr) - 1
+	}
+	number := string(first) + remaining + "E" + strconv.Itoa(exp)
+	if d.value.Sign() < 0 {
+		return "-" + number
+	}
 	return number
 }
 
@@ -2021,23 +2078,13 @@ func RescalePair(d1 Decimal, d2 Decimal) (Decimal, Decimal) {
 	return d1, d2
 }
 
-func unquoteIfQuoted(value interface{}) (string, error) {
-	var bytes []byte
-
-	switch v := value.(type) {
-	case string:
-		bytes = []byte(v)
-	case []byte:
-		bytes = v
-	default:
-		return "", fmt.Errorf("could not convert value '%+v' to byte array of type '%T'", value, value)
-	}
-
+func unquoteIfQuoted(value string) string {
 	// If the amount is quoted, strip the quotes
-	if len(bytes) > 2 && bytes[0] == '"' && bytes[len(bytes)-1] == '"' {
-		bytes = bytes[1 : len(bytes)-1]
+	if len(value) > 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		return value[1 : len(value)-1]
 	}
-	return string(bytes), nil
+
+	return value
 }
 
 // NullDecimal represents a nullable decimal with compatibility for

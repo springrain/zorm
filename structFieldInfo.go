@@ -517,9 +517,8 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 }
 
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
-// fix:converting NULL to int is unsupported
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
-// 感谢@fastabler提交的pr
+// 感谢@fastabler提交的pr fix:converting NULL to int is unsupported
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
 func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, fieldCache []*selectFieldCache, columnTypeToCache map[*sql.ColumnType]*selectFieldCache, entity interface{}) error {
 	if entity == nil && (valueOf == nil || valueOf.IsNil()) {
@@ -558,7 +557,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		}
 		dv := driverValue.Index(i)
 		// if dv.IsValid() && dv.InterfaceData()[0] == 0 {
-		if dv.IsValid() && dv.IsNil() { // 该字段的数据库值是null,取默认值
+		if dv.IsValid() && dv.IsNil() { // 该字段的数据库值是null,取默认值 | The database value of this field is null, no further processing is required, use the default value
 			values[i] = new(interface{})
 			continue
 		} else if converOK { // 如果是需要转换的字段
@@ -657,6 +656,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 }
 
 // buildSelectFieldCache 构建查询字段缓存
+// buildSelectFieldCache builds a cache of query fields
 func buildSelectFieldCache(columnTypes []*sql.ColumnType, dbColumnFieldMap, exportFieldMap *map[string]reflect.StructField, dialect string) ([]*selectFieldCache, map[*sql.ColumnType]*selectFieldCache, error) {
 	if columnTypes == nil {
 		return nil, nil, errors.New("->buildSelectFieldCache-->columnTypes不能为nil")
@@ -699,6 +699,7 @@ func buildSelectFieldCache(columnTypes []*sql.ColumnType, dbColumnFieldMap, expo
 }
 
 // buildEmptySelectFieldCache 构建空的查询字段缓存(用于单字段查询)
+// buildEmptySelectFieldCache builds an empty query field cache (used for single field queries)
 func buildEmptySelectFieldCache(columnTypes []*sql.ColumnType, dialect string) ([]*selectFieldCache, map[*sql.ColumnType]*selectFieldCache) {
 	if columnTypes == nil {
 		return nil, nil
@@ -726,6 +727,7 @@ func buildEmptySelectFieldCache(columnTypes []*sql.ColumnType, dialect string) (
 }
 
 // getStructFieldByColumnType 根据ColumnType获取StructField对象,兼容驼峰
+// getStructFieldByColumnType gets the StructField object according to the ColumnType, compatible with camel case
 func getStructFieldByColumnType(columnType *sql.ColumnType, dbColumnFieldMap *map[string]reflect.StructField, exportFieldMap *map[string]reflect.StructField) (*reflect.StructField, error) {
 	columnName := strings.ToLower(columnType.Name())
 	// 从缓存中获取列名的field字段

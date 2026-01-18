@@ -1,4 +1,5 @@
 v1.8.1
+- 完全AI Coding的性能优化
 - 优化```sqlRowsValues```实现
 - 优化slice初始化长度
 - 优化字符串拼接和列名查找逻辑
