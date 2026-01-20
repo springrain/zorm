@@ -1796,7 +1796,11 @@ func GetContextDataSourceConfig(ctx context.Context) (*DataSourceConfig, error) 
 // WrapUpdateSQLValue returns the Finder object that updates IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 // Finder is the Finder that executes the update, and the update statement is executed uniformly using the Finder
-var WrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
+func WrapUpdateSQLValue(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
+	return wrapUpdateSQLValue(ctx, entity, onlyUpdateNotZero)
+}
+
+var wrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
 	// affected := -1
 	if entity == nil {
 		return nil, nil, errors.New("->WrapUpdateSQLValue-->entity对象不能为空")
