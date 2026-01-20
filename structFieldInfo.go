@@ -23,7 +23,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"go/ast"
 	"reflect"
 	"strings"
 	"sync"
@@ -305,7 +304,7 @@ func buildEmptySelectFieldColumnCache(columnTypes []*sql.ColumnType, dialect str
 // funcCreateEntityStructCache 创建实体类字段缓存
 func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructCache, field reflect.StructField) bool {
 	fieldName := field.Name
-	if !ast.IsExported(fieldName) { // 私有字段不处理
+	if !field.IsExported() { // 私有字段不处理
 		return true
 	}
 	fieldNameLower := strings.ToLower(fieldName)
@@ -388,11 +387,12 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 	} else {
 		return nil, errors.New("->getEntityStructCache entity必须是指针类型")
 	}
+	// 反射类型
 	typeOf := valueOf.Type()
-
+	// 获取Struct类型的缓存
 	entityCache, err := getStructTypeOfCache(ctx, typeOf, config)
 	if err != nil {
-		return nil, fmt.Errorf("->getEntityStructCache-->getStructTypeOfCache错误:%w", err)
+		return nil, err
 	}
 	if entityCache == nil {
 		return nil, errors.New("->getEntityStructCache-->getStructTypeOfCache返回nil")
