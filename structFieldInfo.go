@@ -29,10 +29,8 @@ import (
 	"sync"
 )
 
-const (
-	// tag标签的名称
-	tagColumnName = "column"
-)
+// tagColumnName tag标签的名称
+const tagColumnName = "column"
 
 // fieldColumnCache 查询字段缓存,包含每个字段的必要信息
 type fieldColumnCache struct {
@@ -171,8 +169,6 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			if cache.structField == nil { // 如果不存在这个字段
 				values[i] = new(interface{})
 			} else {
-				// fieldType := refPV.FieldByName(field.Name).Type()
-				// v := reflect.New(field.Type).Interface()
 				var v interface{}
 				// 字段的反射值
 				fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
@@ -328,15 +324,23 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	if columnTag != "" {
 		// dbColumnFieldMap[tagColumnValue] = field
 		// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
-		selectFieldCache.columnName = columnTag
+		columnName := columnTag
+		//去掉可能的包裹符号
+		columnName = strings.Trim(columnName, "`")
+		columnName = strings.Trim(columnName, "\"")
+		columnName = strings.TrimLeft(columnName, "[")
+		columnName = strings.TrimRight(columnName, "]")
+		selectFieldCache.columnName = columnName
+		selectFieldCache.columnNameLower = strings.ToLower(columnName)
+
 		selectFieldCache.columnTag = columnTag
-		selectFieldCache.columnNameLower = strings.ToLower(columnTag)
-		entityCache.columns = append(entityCache.columns, selectFieldCache)
-		entityCache.columnMap[selectFieldCache.columnNameLower] = selectFieldCache
 		// @TODO 这里需要考虑已经在column tag中添加了包裹符,最好是把包裹符号放到Config中,取消FuncWrapFieldTagName函数
 		if FuncWrapFieldTagName != nil {
 			selectFieldCache.columnTag = FuncWrapFieldTagName(ctx, selectFieldCache.structField, columnTag)
 		}
+
+		entityCache.columns = append(entityCache.columns, selectFieldCache)
+		entityCache.columnMap[selectFieldCache.columnNameLower] = selectFieldCache
 	}
 
 	return true
@@ -393,12 +397,13 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 	if entityCache == nil {
 		return nil, errors.New("->getEntityStructCache-->getStructTypeOfCache返回nil")
 	}
+	if len(entityCache.columns) < 1 {
+		return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
+	}
 	if entityCache.insertSQL != "" { // 已经处理过了
 		return entityCache, nil
-
 	}
-
-	// 处理主键
+	// 处理主键自增
 	sequence := entity.GetPkSequence()
 	if sequence != "" { // 序列自增 Sequence increment
 		entityCache.pkSequence = sequence
@@ -487,9 +492,6 @@ func getStructTypeOfCache(ctx context.Context, typeOf reflect.Type, config *Data
 		}
 	}
 
-	if len(entityCache.columns) < 1 {
-		return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
-	}
 	// 记录到缓存中
 	cacheEntityStructMap.Store(key, entityCache)
 	return entityCache, nil

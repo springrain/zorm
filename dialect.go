@@ -602,6 +602,8 @@ var FuncGenerateStringID = func(ctx context.Context) string {
 //	}
 var FuncWrapFieldTagName func(ctx context.Context, field *reflect.StructField, colName string) string = nil
 
+/*
+// Deprecated: 移除```getFieldTagName```函数,直接使用```FuncWrapFieldTagName```
 // getFieldTagName 获取模型中定义的数据库的 column tag
 func getFieldTagName(ctx context.Context, field *reflect.StructField, structFieldTagMap *map[string]string) string {
 	// colName := field.Tag.Get(tagColumnName)
@@ -609,9 +611,9 @@ func getFieldTagName(ctx context.Context, field *reflect.StructField, structFiel
 	if FuncWrapFieldTagName != nil {
 		colName = FuncWrapFieldTagName(ctx, field, colName)
 	}
-
 	return colName
 }
+*/
 
 // wrapSQLHint 在sql语句中增加hint
 func wrapSQLHint(ctx context.Context, sqlstr *string) error {
@@ -847,7 +849,7 @@ var wrapAutoIncrementInsertSQL = func(ctx context.Context, config *DataSourceCon
 	return lastInsertID, zormSQLOutReturningID
 }
 
-// getConfigFromConnection 从dbConnection中获取数据库方言,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config.Dialect
+// getConfigFromConnection 从dbConnection中获取数据库config,如果没有,从FuncReadWriteStrategy获取dbDao,获取dbdao.config
 func getConfigFromConnection(ctx context.Context, dbConnection *dataBaseConnection, rwType int) (*DataSourceConfig, error) {
 	var config *DataSourceConfig
 	// dbConnection为nil,使用defaultDao

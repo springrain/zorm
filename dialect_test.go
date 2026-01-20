@@ -90,7 +90,6 @@ func Test_getFiieldTagName_dialectFromConfig(t *testing.T) {
 	}
 
 	emptyCtx := context.Background()
-	tagMap := make(map[string]string)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -108,9 +107,8 @@ func Test_getFiieldTagName_dialectFromConfig(t *testing.T) {
 			// 把dbConnection放入context
 			ctx := context.WithValue(emptyCtx, contextDBConnectionValueKey, dbConnection)
 
-			tagMap[tt.args.field.Name] = tt.args.field.Tag.Get("column")
-			if got := getFieldTagName(ctx, tt.args.field, &tagMap); got != tt.want {
-				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
+			if got := FuncWrapFieldTagName(ctx, tt.args.field, tt.args.field.Tag.Get("column")); got != tt.want {
+				t.Errorf("FuncWrapFieldTagName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -207,15 +205,13 @@ func Test_getFieldTagName(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tagMap := make(map[string]string)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fn != nil {
 				FuncWrapFieldTagName = tt.fn
 			}
-			tagMap[tt.args.field.Name] = tt.args.field.Tag.Get("column")
-			if got := getFieldTagName(ctx, tt.args.field, &tagMap); got != tt.want {
-				t.Errorf("getFieldTagName() = %v, want %v", got, tt.want)
+			if got := FuncWrapFieldTagName(ctx, tt.args.field, tt.args.field.Tag.Get("column")); got != tt.want {
+				t.Errorf("FuncWrapFieldTagName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
