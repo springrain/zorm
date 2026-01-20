@@ -621,7 +621,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			updateSQLBuilder.WriteByte(',')
 		}
 		j++
-		updateSQLBuilder.WriteString(column.columnName)
+		updateSQLBuilder.WriteString(column.columnTag)
 		updateSQLBuilder.WriteString("=?")
 		// 添加到记录值的数组
 		values = append(values, value)
