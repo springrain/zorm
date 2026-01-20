@@ -196,11 +196,11 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			wrapDeleteSQL = newFunc
 		}
 
-	case "wrapUpdateSQL": //更新 IEntityStruct 的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error)
+	case "WrapUpdateSQLValue": //更新 IEntityStruct 的SQL
+		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*string, *[]interface{}, error))
 		if ok {
-			oldFunc = wrapUpdateSQL
-			wrapUpdateSQL = newFunc
+			oldFunc = WrapUpdateSQLValue
+			WrapUpdateSQLValue = newFunc
 		}
 
 	case "wrapUpdateEntityMapSQL": //更新 IEntityMap 的SQL

@@ -1462,13 +1462,25 @@ func Update(ctx context.Context, entity IEntityStruct) (int, error) {
 }
 
 var update = func(ctx context.Context, entity IEntityStruct) (int, error) {
-	finder, err := WrapUpdateStructFinder(ctx, entity, false)
+	sqlstr, values, err := WrapUpdateSQLValue(ctx, entity, false)
 	if err != nil {
-		err = fmt.Errorf("->Update-->WrapUpdateStructFinder包装Finder错误:%w", err)
+		err = fmt.Errorf("->Update-->WrapUpdateSQLValue包装Finder错误:%w", err)
 		FuncLogError(ctx, err)
 		return 0, err
 	}
-	return UpdateFinder(ctx, finder)
+	// 影响行数
+	affected := -1
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	if errexec != nil {
+		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
+		FuncLogError(ctx, errexec)
+	}
+
+	return affected, errexec
+
+	//return UpdateFinder(ctx, finder)
 }
 
 // UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
@@ -1480,13 +1492,24 @@ func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) 
 }
 
 var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, error) {
-	finder, err := WrapUpdateStructFinder(ctx, entity, true)
+	sqlstr, values, err := WrapUpdateSQLValue(ctx, entity, true)
 	if err != nil {
-		err = fmt.Errorf("->UpdateNotZeroValue-->WrapUpdateStructFinder包装Finder错误:%w", err)
+		err = fmt.Errorf("->UpdateNotZeroValue-->WrapUpdateSQLValue包装Finder错误:%w", err)
 		FuncLogError(ctx, err)
 		return 0, err
 	}
-	return UpdateFinder(ctx, finder)
+	// 影响行数
+	affected := -1
+	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
+	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	if errexec != nil {
+		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
+		FuncLogError(ctx, errexec)
+	}
+
+	return affected, errexec
+	//return UpdateFinder(ctx, finder)
 }
 
 // Delete 根据主键删除一个对象.必须是IEntityStruct类型
@@ -1767,28 +1790,28 @@ func GetContextDataSourceConfig(ctx context.Context) (*DataSourceConfig, error) 
 	return nil, err
 }
 
-// WrapUpdateStructFinder 返回更新IEntityStruct的Finder对象
+// WrapUpdateSQLValue 返回更新IEntityStruct的Finder对象
 // ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
 // Finder为更新执行的Finder,更新语句统一使用Finder执行
-// WrapUpdateStructFinder returns the Finder object that updates IEntityStruct
+// WrapUpdateSQLValue returns the Finder object that updates IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 // Finder is the Finder that executes the update, and the update statement is executed uniformly using the Finder
-func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*Finder, error) {
+var WrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
 	// affected := -1
 	if entity == nil {
-		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
+		return nil, nil, errors.New("->WrapUpdateSQLValue-->entity对象不能为空")
 	}
 
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
-		return nil, errFromContxt
+		return nil, nil, errFromContxt
 	}
 	// 自己构建的dbConnection
 	// dbConnection built by yourself
 	if dbConnection != nil && dbConnection.db == nil {
-		return nil, errDBConnection
+		return nil, nil, errDBConnection
 	}
 
 	// 获取Config
@@ -1796,24 +1819,16 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		FuncLogError(ctx, errConfig)
-		return nil, errConfig
+		return nil, nil, errConfig
 	}
 	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {
 		FuncLogError(ctx, err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	sqlstr, values, err := updateEntityFieldValues(ctx, entity, entityCache, onlyUpdateNotZero)
-	if err != nil {
-		return nil, err
-	}
-	// finder对象
-	finder := NewFinder()
-	finder.sqlstr = *sqlstr
-	finder.sqlBuilder.WriteString(*sqlstr)
-	finder.values = *values
-	return finder, nil
+	return sqlstr, values, err
 }
 
 // selectCount 根据finder查询总条数

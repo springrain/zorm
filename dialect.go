@@ -203,31 +203,6 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 	return &sqlstr, values, err
 }
 
-// wrapUpdateSQL 包装更新Struct语句
-// 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
-// wrapUpdateSQL Package update Struct statement
-// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapUpdateSQL = func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error {
-	// SQL语句的构造器
-	// SQL statement constructor
-	var updateSQLBuilder strings.Builder
-	updateSQLBuilder.Grow(stringBuilderGrowLen)
-
-	for i := 0; i < len(entityCache.columns); i++ {
-		column := entityCache.columns[i]
-		if i > 0 {
-			updateSQLBuilder.WriteByte(',')
-		}
-		updateSQLBuilder.WriteString(column.columnTag)
-		updateSQLBuilder.WriteString("=?")
-	}
-	updateSQLBuilder.WriteString(" WHERE ")
-	updateSQLBuilder.WriteString(entityCache.pkField.columnTag)
-	updateSQLBuilder.WriteString("=?")
-	//entityCache.updateSQL += updateSQLBuilder.String()
-	return nil
-}
-
 // wrapDeleteSQL 包装删除Struct语句
 // wrapDeleteSQL Package delete Struct statement
 var wrapDeleteSQL = func(ctx context.Context, entity IEntityStruct) (string, error) {
