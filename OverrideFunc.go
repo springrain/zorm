@@ -21,7 +21,6 @@ package zorm
 import (
 	"context"
 	"errors"
-	"reflect"
 )
 
 /*
@@ -163,7 +162,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 		}
 
 	case "wrapInsertSQL": //Insert IEntityStruct SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error)
 		if ok {
 			oldFunc = wrapInsertSQL
 			wrapInsertSQL = newFunc
@@ -176,12 +175,6 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			wrapAutoIncrementInsertSQL = newFunc
 		}
 
-	case "wrapInsertSliceSQL": //批量插入 IEntityStruct 的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error))
-		if ok {
-			oldFunc = wrapInsertSliceSQL
-			wrapInsertSliceSQL = newFunc
-		}
 	case "wrapInsertEntityMapSQL": //插入 IEntityMap 的SQL
 		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, entity IEntityMap) (string, *[]interface{}, bool, error))
 		if ok {
@@ -204,7 +197,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 		}
 
 	case "wrapUpdateSQL": //更新 IEntityStruct 的SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error))
+		newFunc, ok := funcObject.(func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error)
 		if ok {
 			oldFunc = wrapUpdateSQL
 			wrapUpdateSQL = newFunc

@@ -1,3 +1,7 @@
+v1.8.2
+- 重构更新逻辑,使用```entityStructCache```替代分散的map
+- 完善文档,注释
+
 v1.8.1
 - 完全AI Coding的性能优化
 - 优化```sqlRowsValues```实现

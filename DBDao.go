@@ -599,30 +599,30 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 
 	}
-	var dbColumnFieldMap *map[string]reflect.StructField
-	var exportFieldMap *map[string]reflect.StructField
-	var fieldCache []*selectFieldCache
-	var columnTypeToCache map[*sql.ColumnType]*selectFieldCache
+
+	var fieldCache []*fieldColumnCache
+	var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
 
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
-		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(typeOf)
+		entityCache, err := getStructTypeOfCache(ctx, *typeOf, config)
+		//dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(typeOf)
 		if err != nil {
 			err = fmt.Errorf("->QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return has, err
 		}
 		// 构建查询字段缓存
 		// Build query field cache
-		fieldCache, columnTypeToCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
+		fieldCache, columnTypeToCache, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
 		if err != nil {
-			err = fmt.Errorf("->QueryRow-->buildSelectFieldCache构建字段缓存错误:%w", err)
+			err = fmt.Errorf("->QueryRow-->buildSelectFieldColumnCache构建字段缓存错误:%w", err)
 			return has, err
 		}
 	} else {
 		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
 		// For single field query, create an empty field Cache, but contains column Types information
-		fieldCache, columnTypeToCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
+		fieldCache, columnTypeToCache = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
 	}
 
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
@@ -809,29 +809,29 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		}
 
 	}
-	var dbColumnFieldMap *map[string]reflect.StructField
-	var exportFieldMap *map[string]reflect.StructField
-	var fieldCache []*selectFieldCache
-	var columnTypeToCache map[*sql.ColumnType]*selectFieldCache
+
+	var fieldCache []*fieldColumnCache
+	var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
-		dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
+		entityCache, err := getStructTypeOfCache(ctx, sliceElementType, config)
+		//dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
 		if err != nil {
 			err = fmt.Errorf("->Query-->getDBColumnFieldMap获取字段缓存错误:%w", err)
 			return err
 		}
 		// 构建查询字段缓存
 		// Build query field cache
-		fieldCache, columnTypeToCache, err = buildSelectFieldCache(columnTypes, dbColumnFieldMap, exportFieldMap, config.Dialect)
+		fieldCache, columnTypeToCache, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
 		if err != nil {
-			err = fmt.Errorf("->Query-->buildSelectFieldCache构建字段缓存错误:%w", err)
+			err = fmt.Errorf("->Query-->buildSelectFieldColumnCache构建字段缓存错误:%w", err)
 			return err
 		}
 	} else {
 		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
 		// For single field query, create an empty field Cache, but contains column Types information
-		fieldCache, columnTypeToCache = buildEmptySelectFieldCache(columnTypes, config.Dialect)
+		fieldCache, columnTypeToCache = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
 	}
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	// Reflect to get the value of []driver.Value, used to deal with nil values ​​and custom types
@@ -1251,15 +1251,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if entity == nil {
 		return affected, errors.New("->Insert-->entity对象不能为空")
 	}
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false, true)
-	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("->Insert-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
-		FuncLogError(ctx, columnAndValueErr)
-		return affected, columnAndValueErr
-	}
-	if len(*columns) < 1 {
-		return affected, errors.New("->Insert-->没有tag信息,请检查struct中 column 的tag")
-	}
+
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -1279,16 +1271,21 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		FuncLogError(ctx, errConfig)
 		return affected, errConfig
 	}
-
-	// SQL语句
-	// SQL statement
-	sqlstr, autoIncrement, pktype, err := wrapInsertSQL(ctx, config, typeOf, entity, columns, values)
+	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {
-		err = fmt.Errorf("->Insert-->wrapInsertSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
-
+	fLen := len(entityCache.columns)
+	// 接收值的数组
+	values := make([]interface{}, 0, fLen)
+	err = insertEntityFieldValues(ctx, entity, entityCache, true, &values)
+	if err != nil {
+		FuncLogError(ctx, err)
+		return affected, err
+	}
+	insertSQL := entityCache.insertSQL
+	sqlstr := &insertSQL
 	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	// 处理序列产生的自增主键,例如oracle,postgresql等
 	// Oracle 12c+ supports auto-incrementing columns with IDENTITY attributes. Since paging also requires 12c+ syntax, the database creates auto-incrementing with IDENTITY.
@@ -1297,18 +1294,17 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	// var zormSQLOutReturningID *int64
 	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	// If it is postgresql's SERIAL self increment, RETURNING is used to return the value of the primary key
-	if autoIncrement > 0 {
+	if entityCache.autoIncrement > 0 {
 		config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 		if errConfig != nil {
 			return affected, errConfig
 		}
-		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), sqlstr, values)
-
+		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), sqlstr, &values)
 	}
 
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
-	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, lastInsertID)
+	res, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, &values, lastInsertID)
 	if errexec != nil {
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1317,7 +1313,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 	// 如果是自增主键
 	// If it is an auto-incrementing primary key
-	if autoIncrement > 0 {
+	if entityCache.autoIncrement > 0 {
 		// 如果是oracle,shentong 的返回自增主键
 		// If it is oracle, shentong returns self-incrementing primary keys
 		if lastInsertID == nil && zormSQLOutReturningID != nil {
@@ -1341,19 +1337,26 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			FuncLogError(ctx, err)
 			return affected, nil
 		}
-		pkName := entity.GetPKColumnName()
-		switch pktype {
+		//pkName := entity.GetPKColumnName()
+		switch entityCache.pkType {
 		case "int":
 			// int64 转 int
 			// int64 to int
-			autoIncrementIDInt, _ := typeConvertInt64toInt(autoIncrementIDInt64)
+			autoIncrementIDInt, err := typeConvertInt64toInt(autoIncrementIDInt64)
+			if err != nil {
+				return affected, err
+			}
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
-			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
+			pk := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index)
+			pk.Set(reflect.ValueOf(autoIncrementIDInt))
+			//err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		case "int64":
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
-			err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
+			pk := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index)
+			pk.Set(reflect.ValueOf(autoIncrementIDInt64))
+			//err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
 		}
 
 		if err != nil {
@@ -1386,15 +1389,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
 	// The first object, get the first Struct object, is used to get the database field, and also gets the value
 	entity := entityStructSlice[0]
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, false, true)
-	if columnAndValueErr != nil {
-		columnAndValueErr = fmt.Errorf("->InsertSlice-->columnAndValue获取实体类的列和值错误:%w", columnAndValueErr)
-		FuncLogError(ctx, columnAndValueErr)
-		return affected, columnAndValueErr
-	}
-	if len(*columns) < 1 {
-		return affected, errors.New("->InsertSlice-->columns没有tag信息,请检查struct中 column 的tag")
-	}
+
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -1410,17 +1405,46 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if errConfig != nil {
 		return affected, errConfig
 	}
-	// SQL语句
-	// SQL statement
-	sqlstr, _, err := wrapInsertSliceSQL(ctx, config, typeOf, entityStructSlice, columns, values)
+	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {
-		err = fmt.Errorf("->InsertSlice-->wrapInsertSliceSQL获取保存语句错误:%w", err)
 		FuncLogError(ctx, err)
 		return affected, err
 	}
+	values := make([]interface{}, 0, (len(entityCache.columns)+1)*len(entityStructSlice))
+	err = insertEntityFieldValues(ctx, entity, entityCache, true, &values)
+	if err != nil {
+		FuncLogError(ctx, err)
+		return affected, err
+	}
+	// SQL语句的构造器
+	// SQL statement constructor
+	var insertSliceSQLBuilder strings.Builder
+	insertSliceSQLBuilder.Grow(len(entityCache.insertSQL) + (len(entityCache.valuesSQL)+1)*len(entityStructSlice))
+	insertSliceSQLBuilder.WriteString(entityCache.insertSQL)
+
+	for i := 1; i < len(entityStructSlice); i++ {
+		entity := entityStructSlice[i]
+		err := insertEntityFieldValues(ctx, entity, entityCache, true, &values)
+		if err != nil {
+			FuncLogError(ctx, err)
+			return affected, err
+		}
+		if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+			insertSliceSQLBuilder.WriteByte(' ')
+			insertSliceSQLBuilder.WriteString(entity.GetTableName())
+			insertSliceSQLBuilder.WriteString(" VALUES")
+		} else {
+			insertSliceSQLBuilder.WriteByte(',')
+		}
+
+		insertSliceSQLBuilder.WriteString(entityCache.valuesSQL)
+	}
+
+	sqlstr := insertSliceSQLBuilder.String()
+
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
-	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
+	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, &sqlstr, &values, nil)
 	if errexec != nil {
 		errexec = fmt.Errorf("->InsertSlice-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
@@ -1475,34 +1499,31 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 
 var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
-	typeOf, checkerr := checkEntityKind(entity)
-	if checkerr != nil {
-		return affected, checkerr
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, may be nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return affected, errFromContxt
 	}
-
-	pkName, pkNameErr := entityPKFieldName(entity, typeOf)
-
-	if pkNameErr != nil {
-		pkNameErr = fmt.Errorf("->Delete-->entityPKFieldName获取主键名称错误:%w", pkNameErr)
-		FuncLogError(ctx, pkNameErr)
-		return affected, pkNameErr
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
+	if dbConnection != nil && dbConnection.db == nil {
+		return affected, errDBConnection
 	}
-
-	value, e := structFieldValue(entity, pkName)
-	if e != nil {
-		e = fmt.Errorf("->Delete-->structFieldValue获取主键值错误:%w", e)
-		FuncLogError(ctx, e)
-		return affected, e
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		return affected, errConfig
+	}
+	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
+	if err != nil {
+		FuncLogError(ctx, err)
+		return affected, err
 	}
 
 	// SQL语句
 	// SQL statement
-	sqlstr, err := wrapDeleteSQL(ctx, entity)
-	if err != nil {
-		err = fmt.Errorf("->Delete-->wrapDeleteSQL获取SQL语句错误:%w", err)
-		FuncLogError(ctx, err)
-		return affected, err
-	}
+	sqlstr := entityCache.deleteSQL
+	value := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index).Interface()
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
 	values := make([]interface{}, 1)
@@ -1758,21 +1779,39 @@ func WrapUpdateStructFinder(ctx context.Context, entity IEntityStruct, onlyUpdat
 		return nil, errors.New("->WrapUpdateStructFinder-->entity对象不能为空")
 	}
 
-	typeOf, columns, values, columnAndValueErr := columnAndValue(ctx, entity, onlyUpdateNotZero, false)
-	if columnAndValueErr != nil {
-		return nil, columnAndValueErr
+	// 从contxt中获取数据库连接,可能为nil
+	// Get database connection from contxt, may be nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return nil, errFromContxt
+	}
+	// 自己构建的dbConnection
+	// dbConnection built by yourself
+	if dbConnection != nil && dbConnection.db == nil {
+		return nil, errDBConnection
 	}
 
-	// SQL语句
-	// SQL statement
-	sqlstr, err := wrapUpdateSQL(ctx, typeOf, entity, columns, values)
+	// 获取Config
+	// Get Config
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return nil, errConfig
+	}
+	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
+	if err != nil {
+		FuncLogError(ctx, err)
+		return nil, err
+	}
+
+	sqlstr, values, err := updateEntityFieldValues(ctx, entity, entityCache, onlyUpdateNotZero)
 	if err != nil {
 		return nil, err
 	}
 	// finder对象
 	finder := NewFinder()
-	finder.sqlstr = sqlstr
-	finder.sqlBuilder.WriteString(sqlstr)
+	finder.sqlstr = *sqlstr
+	finder.sqlBuilder.WriteString(*sqlstr)
 	finder.values = *values
 	return finder, nil
 }

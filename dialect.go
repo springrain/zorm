@@ -86,273 +86,63 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *st
 // 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
 // wrapInsertSQL Pack and save 'Struct' statement. Return  SQL statement, whether it is incremented, error message
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapInsertSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, string, error) {
-	sqlstr := ""
-	inserColumnName, valuesql, autoIncrement, pktype, err := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
-	if err != nil {
-		return &sqlstr, autoIncrement, pktype, err
-	}
-
-	var sqlBuilder strings.Builder
-	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
-	sqlBuilder.Grow(stringBuilderGrowLen)
-	// sqlstr := "INSERT INTO " + insersql + " VALUES" + valuesql
-	sqlBuilder.WriteString("INSERT INTO ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(*inserColumnName)
-	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(*valuesql)
-	sqlstr = sqlBuilder.String()
-	return &sqlstr, autoIncrement, pktype, err
-}
-
-// wrapInsertValueSQL 包装保存Struct语句.返回语句,没有rebuild,返回原始的InsertSQL,ValueSQL,是否自增,主键类型,错误信息
-// 数组传递,如果外部方法有调用append的逻辑,传递指针,因为append会破坏指针引用
-// Pack and save Struct statement. Return  SQL statement, no rebuild, return original SQL, whether it is self-increment, error message
-// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-func wrapInsertValueSQL(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, *string, int, string, error) {
-	var inserColumnName, valuesql string
-	// 自增类型  0(不自增),1(普通自增),2(序列自增)
-	// Self-increment type： 0(Not increase),1(Ordinary increment),2(Sequence increment)
-	autoIncrement := 0
-	// 主键类型
-	// Primary key type
-	pktype := ""
+var wrapInsertSQL = func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error {
 	// SQL语句的构造器
 	// SQL statement constructor
-	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(stringBuilderGrowLen)
+	var insertSQLBuilder strings.Builder
+	insertSQLBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteByte('(')
+	insertSQLBuilder.WriteByte('(')
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement
 	var valueSQLBuilder strings.Builder
 	valueSQLBuilder.Grow(stringBuilderGrowLen)
-	valueSQLBuilder.WriteString(" (")
-	// 主键的名称
-	// The name of the primary key.
-	pkFieldName, err := entityPKFieldName(entity, typeOf)
-	if err != nil {
-		return &inserColumnName, &valuesql, autoIncrement, pktype, err
-	}
+	valueSQLBuilder.WriteString("(")
 
-	sequence := entity.GetPkSequence()
-	if sequence != "" {
-		// 序列自增 Sequence increment
-		autoIncrement = 2
-	}
-
-	// 获取所有字段和tag对照的Map
-	tagMap, err := getStructFieldTagMap(typeOf)
-	if err != nil {
-		return &inserColumnName, &valuesql, autoIncrement, pktype, err
-	}
-
-	for i := 0; i < len(*columns); i++ {
-		field := (*columns)[i]
-
-		if field.Name == pkFieldName { // 如果是主键 | If it is the primary key
-			// 获取主键类型 | Get the primary key type.
-			pkKind := field.Type.Kind()
-			switch pkKind {
-			case reflect.String:
-				pktype = "string"
-			case reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
-				pktype = "int"
-			case reflect.Int64:
-				pktype = "int64"
-			default:
-				return &inserColumnName, &valuesql, autoIncrement, pktype, errors.New("->wrapInsertValueSQL不支持的主键类型")
+	for i := 0; i < len(entityCache.columns); i++ {
+		column := entityCache.columns[i]
+		// 主键
+		ispk := column.columnNameLower == entityCache.pkField.columnNameLower
+		if ispk && entityCache.autoIncrement == 1 { // 普通自增
+			// 删除主键列
+			entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
+			i = i - 1
+			continue
+		} else if ispk && entityCache.autoIncrement == 2 { // 序列自增
+			// 删除主键列
+			entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
+			// 构造SQL语句
+			insertSQLBuilder.WriteString(column.columnTag)
+			valueSQLBuilder.WriteString(entityCache.pkSequence)
+			i = i - 1
+			// if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
+			if i < len(entityCache.columns)-1 { // 不是最后一个
+				insertSQLBuilder.WriteByte(',')
+				valueSQLBuilder.WriteByte(',')
 			}
-
-			if autoIncrement == 2 { // 如果是序列自增 | If it is a sequence increment
-				// 去掉这一列,后续不再处理
-				// Remove this column and will not process it later.
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-
-				// 先拼接到SQL语句中,这样避免被截掉的风险
-				colName := getFieldTagName(ctx, &field, tagMap)
-				sqlBuilder.WriteString(colName)
-				valueSQLBuilder.WriteString(sequence)
-
-				i = i - 1
-				// if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-				if i < len(*columns)-1 { // 不是最后一个
-					sqlBuilder.WriteByte(',')
-					valueSQLBuilder.WriteByte(',')
-				}
-				continue
-			}
-
-			// 主键的值
-			// The value of the primary key
-			pkValue := (*values)[i]
-			valueIsZero := reflect.ValueOf(pkValue).IsZero()
-
-			if valueIsZero && (pktype == "string") { // 主键是字符串类型,并且值为"",赋值id
-				// 生成主键字符串
-				// Generate primary key string
-				id := FuncGenerateStringID(ctx)
-				(*values)[i] = id
-				// 给对象主键赋值
-				// Assign a value to the primary key of the object
-				v := reflect.ValueOf(entity).Elem()
-				v.FieldByName(field.Name).Set(reflect.ValueOf(id))
-			} else if valueIsZero && (pktype == "int" || pktype == "int64") {
-				// 标记是自增主键
-				// Mark is auto-incrementing primary key
-				autoIncrement = 1
-				// 去掉这一列,后续不再处理
-				// Remove this column and will not process it later.
-				*columns = append((*columns)[:i], (*columns)[i+1:]...)
-				*values = append((*values)[:i], (*values)[i+1:]...)
-				i = i - 1
-				continue
-			}
+			continue
 		}
-
-		if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
-			sqlBuilder.WriteByte(',')
+		if i > 0 {
+			insertSQLBuilder.WriteByte(',')
 			valueSQLBuilder.WriteByte(',')
 		}
-
-		colName := getFieldTagName(ctx, &field, tagMap)
-		sqlBuilder.WriteString(colName)
+		// 构造SQL语句
+		insertSQLBuilder.WriteString(column.columnTag)
 		valueSQLBuilder.WriteByte('?')
-
 	}
-
-	sqlBuilder.WriteByte(')')
+	insertSQLBuilder.WriteByte(')')
 	valueSQLBuilder.WriteByte(')')
-	inserColumnName = sqlBuilder.String()
-	valuesql = valueSQLBuilder.String()
-	return &inserColumnName, &valuesql, autoIncrement, pktype, nil
-}
+	entityCache.valuesSQL += valueSQLBuilder.String()
 
-// wrapInsertSliceSQL 包装批量保存StructSlice语句.返回语句,是否自增,错误信息
-// 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
-// wrapInsertSliceSQL Package and save Struct Slice statements in batches. Return SQL statement, whether it is incremented, error message
-// Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapInsertSliceSQL = func(ctx context.Context, config *DataSourceConfig, typeOf *reflect.Type, entityStructSlice []IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (*string, int, error) {
-	sliceLen := len(entityStructSlice)
-	sqlstr := ""
-	if entityStructSlice == nil || sliceLen < 1 {
-		return &sqlstr, 0, errors.New("->wrapInsertSliceSQL对象数组不能为空")
-	}
-
-	// 第一个对象,获取第一个Struct对象,用于获取数据库字段,也获取了值
-	// The first object, get the first Struct object, used to get the database field, and also get the value
-	entity := entityStructSlice[0]
-
-	// 先生成一条语句
-	// Generate a statement first
-	inserColumnName, valuesql, autoIncrement, _, firstErr := wrapInsertValueSQL(ctx, typeOf, entity, columns, values)
-	if firstErr != nil {
-		return &sqlstr, autoIncrement, firstErr
-	}
-	var sqlBuilder strings.Builder
-	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(entity.GetTableName()) + len(valuesql) + 19)
-	sqlBuilder.Grow(stringBuilderGrowLen)
-	sqlBuilder.WriteString("INSERT INTO ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	// sqlstr := "INSERT INTO "
+	insertSQLBuilder.WriteString(" VALUES")
+	insertSQLBuilder.WriteString(entityCache.valuesSQL)
 	if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		entityCache.insertSQL += " VALUES" + entityCache.valuesSQL
 	} else {
-		// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-		sqlBuilder.WriteString(*inserColumnName)
+		entityCache.insertSQL += insertSQLBuilder.String()
 	}
-	sqlBuilder.WriteString(" VALUES")
-	sqlBuilder.WriteString(*valuesql)
-
-	sqlstr = sqlBuilder.String()
-	// 如果只有一个Struct对象
-	// If there is only one Struct object
-	if sliceLen == 1 {
-		return &sqlstr, autoIncrement, firstErr
-	}
-	// 主键的名称
-	// The name of the primary key
-	pkFieldName, e := entityPKFieldName(entity, typeOf)
-	if e != nil {
-		return &sqlstr, autoIncrement, e
-	}
-
-	/*
-		defaultValueMap := entity.GetDefaultValue()
-		ctxValueMap := ctx.Value(contextDefaultValueKey)
-		if ctxValueMap != nil {
-		    defaultValueMap = ctxValueMap.(map[string]interface{})
-		} else {
-		    defaultValueMap = entity.GetDefaultValue()
-		}
-	*/
-
-	for i := 1; i < sliceLen; i++ {
-		// 拼接字符串
-		// Splicing string
-		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-			sqlBuilder.WriteByte(' ')
-			sqlBuilder.WriteString(entityStructSlice[i].GetTableName())
-			if config.TDengineInsertsColumnName {
-				sqlBuilder.WriteString(*inserColumnName)
-			}
-			sqlBuilder.WriteString(" VALUES")
-			sqlBuilder.WriteString(*valuesql)
-		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'),('4','5')
-			sqlBuilder.WriteByte(',')
-			sqlBuilder.WriteString(*valuesql)
-		}
-
-		entityStruct := entityStructSlice[i]
-		// 默认值的map,每一个对象的默认值
-		defaultValueMap := entityStruct.GetDefaultValue()
-		for j := 0; j < len(*columns); j++ {
-			// 获取实体类的反射,指针下的struct
-			// Get the reflection of the entity class, the struct under the pointer
-			valueOf := reflect.ValueOf(entityStruct).Elem()
-			field := (*columns)[j]
-			// 字段的值
-			// The value of the primary key
-			fieldValue := valueOf.FieldByName(field.Name)
-			if field.Name == pkFieldName { // 如果是主键 ｜ If it is the primary key
-				pkKind := field.Type.Kind()
-				// pkValue := valueOf.FieldByName(field.Name).Interface()
-				// 只处理字符串类型的主键,其他类型,columns中并不包含
-				// Only handle primary keys of string type, other types, not included in columns
-				if (pkKind == reflect.String) && fieldValue.IsZero() {
-					// 主键是字符串类型,并且值为"",赋值'id'
-					// 生成主键字符串
-					// The primary key is a string type, and the value is "", assigned the value'id'
-					// Generate primary key string
-					id := FuncGenerateStringID(ctx)
-					*values = append(*values, id)
-					// 给对象主键赋值
-					// Assign a value to the primary key of the object
-					fieldValue.Set(reflect.ValueOf(id))
-					continue
-				}
-			}
-			// 默认值
-			isDefaultValue := false
-			var defaultValue interface{}
-			if defaultValueMap != nil { // 如果只更新不是零值的字段,零值时不能更新为默认值.Map取值性能一般高于反射
-				defaultValue, isDefaultValue = defaultValueMap[field.Name]
-			}
-			// 给字段赋值
-			// Assign a value to the field.
-			if isDefaultValue && fieldValue.IsZero() {
-				*values = append(*values, defaultValue)
-			} else {
-				*values = append(*values, fieldValue.Interface())
-			}
-
-		}
-	}
-
-	sqlstr = sqlBuilder.String()
-	return &sqlstr, autoIncrement, nil
+	return nil
 }
 
 // wrapInsertEntityMapSliceSQL 包装批量保存EntityMapSlice语句.返回语句,值,错误信息
@@ -417,76 +207,25 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 // 数组传递,如果外部方法有调用append的逻辑,append会破坏指针引用,所以传递指针
 // wrapUpdateSQL Package update Struct statement
 // Array transfer, if the external method has logic to call append, append will destroy the pointer reference, so the pointer is passed
-var wrapUpdateSQL = func(ctx context.Context, typeOf *reflect.Type, entity IEntityStruct, columns *[]reflect.StructField, values *[]interface{}) (string, error) {
+var wrapUpdateSQL = func(ctx context.Context, entityCache *entityStructCache, config *DataSourceConfig) error {
 	// SQL语句的构造器
 	// SQL statement constructor
-	var sqlBuilder strings.Builder
-	sqlBuilder.Grow(stringBuilderGrowLen)
-	sqlBuilder.WriteString("UPDATE ")
-	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(" SET ")
+	var updateSQLBuilder strings.Builder
+	updateSQLBuilder.Grow(stringBuilderGrowLen)
 
-	// 主键的值
-	// The value of the primary key
-	var pkValue interface{}
-	// 主键的名称
-	// The name of the primary key
-	pkFieldName, err := entityPKFieldName(entity, typeOf)
-	if err != nil {
-		return "", err
-	}
-
-	// 获取所有字段和tag对照的Map
-	tagMap, err := getStructFieldTagMap(typeOf)
-	if err != nil {
-		return "", err
-	}
-
-	for i := 0; i < len(*columns); i++ {
-		field := (*columns)[i]
-		if field.Name == pkFieldName {
-			// 如果是主键
-			// If it is the primary key.
-			pkValue = (*values)[i]
-			// 去掉这一列,最后处理主键
-			// Remove this column, and finally process the primary key
-			*columns = append((*columns)[:i], (*columns)[i+1:]...)
-			*values = append((*values)[:i], (*values)[i+1:]...)
-			i = i - 1
-			continue
-		}
-
-		/*
-		   // 如果是默认值字段,删除掉,不更新
-		   // If it is the default value field, delete it and do not update
-		   if onlyUpdateNotZero && ((*values)[i] == nil || reflect.ValueOf((*values)[i]).IsZero()) {
-		   	// 去掉这一列,不再处理
-		   	// Remove this column and no longer process
-		   	*columns = append((*columns)[:i], (*columns)[i+1:]...)
-		   	*values = append((*values)[:i], (*values)[i+1:]...)
-		   	i = i - 1
-		   	continue
-		   }
-		*/
+	for i := 0; i < len(entityCache.columns); i++ {
+		column := entityCache.columns[i]
 		if i > 0 {
-			sqlBuilder.WriteByte(',')
+			updateSQLBuilder.WriteByte(',')
 		}
-		colName := getFieldTagName(ctx, &field, tagMap)
-		sqlBuilder.WriteString(colName)
-		sqlBuilder.WriteString("=?")
-
+		updateSQLBuilder.WriteString(column.columnTag)
+		updateSQLBuilder.WriteString("=?")
 	}
-	// 主键的值是最后一个
-	// The value of the primary key is the last
-	*values = append(*values, pkValue)
-
-	// sqlstr = sqlstr + " WHERE " + entity.GetPKColumnName() + "=?"
-	sqlBuilder.WriteString(" WHERE ")
-	sqlBuilder.WriteString(entity.GetPKColumnName())
-	sqlBuilder.WriteString("=?")
-	sqlstr := sqlBuilder.String()
-
-	return sqlstr, nil
+	updateSQLBuilder.WriteString(" WHERE ")
+	updateSQLBuilder.WriteString(entityCache.pkField.columnTag)
+	updateSQLBuilder.WriteString("=?")
+	//entityCache.updateSQL += updateSQLBuilder.String()
+	return nil
 }
 
 // wrapDeleteSQL 包装删除Struct语句
