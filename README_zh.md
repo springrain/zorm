@@ -82,10 +82,9 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	}
 
 	// int64转成int类型
-	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, errAtoi := strconv.Atoi(strInt64)
-	if errAtoi != nil {
-		return dmClob, errAtoi
+	dmlenInt, errConvert := zorm.typeConvertInt64toInt(dmlen)
+	if errConvert != nil {
+		return dmClob, errConvert
 	}
 
 	// 读取字符串
@@ -101,7 +100,7 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 // RegisterCustomDriverValueConver 注册自定义的字段处理逻辑,用于驱动无法直接转换的场景.
 // 一般是放到init方法里进行注册
 func init() {
-	// dialectColumnType 值是 Dialect.字段类型 ,例如 dm.TEXT
+	// dialectColumnType 值是 Dialect.字段类型(大写) ,例如 dm.TEXT
 	zorm.RegisterCustomDriverValueConver("dm.TEXT", CustomDMText{})
 }
 ```
@@ -149,9 +148,9 @@ import (
 DROP TABLE IF EXISTS `t_demo`;
 CREATE TABLE `t_demo`  (
   `id` varchar(50)  NOT NULL COMMENT '主键',
-  `userName` varchar(30)  NOT NULL COMMENT '姓名',
+  `user_name` varchar(30)  NOT NULL COMMENT '姓名',
   `password` varchar(50)  NOT NULL COMMENT '密码',
-  `createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `active` int  COMMENT '是否有效(0否,1是)',
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4  COMMENT = '例子' ;
@@ -170,13 +169,13 @@ type demoStruct struct {
 	Id string `column:"id"`
 
 	// UserName 姓名
-	UserName string `column:"userName"`
+	UserName string `column:"user_name"`
 
 	// Password 密码
 	Password string `column:"password"`
 
 	// CreateTime <no value>
-	CreateTime time.Time `column:"createTime"`
+	CreateTime time.Time `column:"create_time"`
 
 	// Active 是否有效(0否,1是)
 	// Active int `column:"active"`
@@ -403,9 +402,9 @@ func TestInsertEntityMap(t *testing.T) {
 		// Set 设置数据库的字段值
 		// 如果主键是自增或者序列,不要entityMap.Set主键的值
 		entityMap.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap.Set("userName", "entityMap-userName")
+		entityMap.Set("user_name", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
-		entityMap.Set("createTime", time.Now())
+		entityMap.Set("create_time", time.Now())
 		entityMap.Set("active", 1)
 
 		// 执行
@@ -431,17 +430,17 @@ func TestInsertEntityMapSlice(t *testing.T) {
 		entityMap1 := NewEntityMap(demoStructTableName)
 		entityMap1.PkColumnName = "id"
 		entityMap1.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap1.Set("userName", "entityMap-userName1")
+		entityMap1.Set("user_name", "entityMap-userName1")
 		entityMap1.Set("password", "entityMap-password1")
-		entityMap1.Set("createTime", time.Now())
+		entityMap1.Set("create_time", time.Now())
 		entityMap1.Set("active", 1)
 
 		entityMap2 := NewEntityMap(demoStructTableName)
 		entityMap2.PkColumnName = "id"
 		entityMap2.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap2.Set("userName", "entityMap-userName2")
+		entityMap2.Set("user_name", "entityMap-userName2")
 		entityMap2.Set("password", "entityMap-password2")
-		entityMap2.Set("createTime", time.Now())
+		entityMap2.Set("create_time", time.Now())
 		entityMap2.Set("active", 2)
 
 		entityMapSlice = append(entityMapSlice, entityMap1 ,entityMap2)
@@ -613,7 +612,7 @@ func TestUpdate(t *testing.T) {
 
 	// BindContextOnlyUpdateCols 指定仅更新的数据库字段,只对Update方法有效.cols是数据库列名切片
     // ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个Update方法.
-	// ctx, _ = zorm.BindContextOnlyUpdateCols(ctx, []string{"userName", "active"})
+	// ctx, _ = zorm.BindContextOnlyUpdateCols(ctx, []string{"user_name", "active"})
 
 
 	// 需要手动开启事务,匿名函数返回的error如果不是nil,事务就会回滚.如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务
@@ -677,7 +676,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		entityMap.PkColumnName = "id"
 		// Set 设置数据库的字段值,主键必须有值
 		entityMap.Set("id", "20210630163227149563000042432429")
-		entityMap.Set("userName", "TestUpdateEntityMap")
+		entityMap.Set("user_name", "TestUpdateEntityMap")
 		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","20210630163227149563000042432429"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 

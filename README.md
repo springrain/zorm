@@ -82,10 +82,9 @@ func (dmtext CustomDMText) ConverDriverValue(ctx context.Context, columnType *sq
 	}
 
 	// int64 is converted to an int
-	strInt64 := strconv.FormatInt(dmlen, 10)
-	dmlenInt, errAtoi := strconv.Atoi(strInt64)
-	if errAtoi != nil {
-		return dmClob, errAtoi
+	dmlenInt, errConvert := zorm.typeConvertInt64toInt(dmlen)
+	if errConvert != nil {
+		return dmClob, errConvert
 	}
 
 	// Read the string
@@ -145,9 +144,9 @@ import (
 DROP TABLE IF EXISTS `t_demo`;
 CREATE TABLE `t_demo` (
 `id` varchar(50) NOT NULL COMMENT 'primary key ',
-`userName` varchar(30) NOT NULL COMMENT 'name ',
+`user_name` varchar(30) NOT NULL COMMENT 'name ',
 `password` varchar(50) NOT NULL COMMENT 'password ',
-`createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+`create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 `active` int COMMENT 'Whether it is valid (0 no,1 yes)',
  PRIMARY KEY (`id`)
 ENGINE = InnoDB CHARACTER SET = utf8mb4 COMMENT = 'example';
@@ -166,13 +165,13 @@ type demoStruct struct {
 	Id string `column:"id"`
 
 	// UserName Specifies the name
-	UserName string `column:"userName"`
+	UserName string `column:"user_name"`
 
 	// Password Password
 	Password string `column:"password"`
 
 	// CreateTime <no value>
-	CreateTime time.Time `column:"createTime"`
+	CreateTime time.Time `column:"create_time"`
 
 	// Active Whether it is valid (0 No,1 yes)
 	// Active int `column:"active"`
@@ -395,9 +394,9 @@ func TestInsertEntityMap(t *testing.T) {
 		// Set Sets the field values of the database
 		// If the primary key is an increment or sequence, do not set the value of the entityMap.Set primary key
 		entityMap.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap.Set("userName", "entityMap-userName")
+		entityMap.Set("user_name", "entityMap-userName")
 		entityMap.Set("password", "entityMap-password")
-		entityMap.Set("createTime", time.Now())
+		entityMap.Set("create_time", time.Now())
 		entityMap.Set("active", 1)
 
 		// Execute
@@ -423,17 +422,17 @@ func TestInsertEntityMapSlice(t *testing.T) {
 		entityMap1 := NewEntityMap(demoStructTableName)
 		entityMap1.PkColumnName = "id"
 		entityMap1.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap1.Set("userName", "entityMap-userName1")
+		entityMap1.Set("user_name", "entityMap-userName1")
 		entityMap1.Set("password", "entityMap-password1")
-		entityMap1.Set("createTime", time.Now())
+		entityMap1.Set("create_time", time.Now())
 		entityMap1.Set("active", 1)
 
 		entityMap2 := NewEntityMap(demoStructTableName)
 		entityMap2.PkColumnName = "id"
 		entityMap2.Set("id", zorm.FuncGenerateStringID(ctx))
-		entityMap2.Set("userName", "entityMap-userName2")
+		entityMap2.Set("user_name", "entityMap-userName2")
 		entityMap2.Set("password", "entityMap-password2")
-		entityMap2.Set("createTime", time.Now())
+		entityMap2.Set("create_time", time.Now())
 		entityMap2.Set("active", 2)
 
 		entityMapSlice = append(entityMapSlice, entityMap1 ,entityMap2)
@@ -598,9 +597,13 @@ func TestUpdate(t *testing.T) {
 	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
 	var ctx = context.Background()
 
+	// BindContextOnlyUpdateCols Specify the database fields to update only; only effective for the Update method. 'cols' is a slice of database column names
+    // The value bound in ctx by zorm will not be cleared. When using it, do not overwrite the original ctx or pass it to multiple Update methods
+	// ctx, _ = zorm.BindContextOnlyUpdateCols(ctx, []string{"user_name", "active"})
+
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
 	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
-	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
+	// such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 
 		// Declares a pointer to an object used to update data
@@ -625,7 +628,7 @@ func TestUpdateFinder(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
 	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
-	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
+	// such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		// finder := zorm.NewDeleteFinder(demoStructTableName) // DELETE FROM t_demo
@@ -651,7 +654,7 @@ func TestUpdateEntityMap(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
 	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
-	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
+	// such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		// To create an EntityMap, pass in the table name
 		entityMap := zorm.NewEntityMap(demoStructTableName)
@@ -659,7 +662,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		entityMap.PkColumnName = "id"
 		// Set Sets the field value of the database. The primary key must have a value
 		entityMap.Set("id", "20210630163227149563000042432429")
-		entityMap.Set("userName", "TestUpdateEntityMap")
+		entityMap.Set("user_name", "TestUpdateEntityMap")
 		// UPDATE "sql":"UPDATE t_demo SET userName=? WHERE id=?" ,"args":["TestUpdateEntityMap","20210630163227149563000042432429"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
@@ -679,7 +682,7 @@ func TestDelete(t *testing.T) {
 
 	// You need to start the transaction manually. If the error returned by the anonymous function is not nil, the transaction will be rolled back. If the DisableTransaction=true parameter is set, the Transaction method becomes invalid and no transaction is required
 	// if zorm.DataSourceConfig.DefaultTxOptions configuration does not meet the requirements, can be in zorm, Transaction before Transaction method set the Transaction isolation level
-	// such as ctx, _ := dbDao BindContextTxOptions (ctx, & SQL TxOptions {Isolation: SQL LevelDefault, ReadOnly: False}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
+	// such as ctx, _ := dbDao.BindContextTxOptions(ctx, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false}), if txOptions is nil, the use of zorm.DataSourceConfig.DefaultTxOptions
 	_, err := zorm.Transaction(ctx, func(ctx context.Context) (interface{}, error) {
 		demo := demoStruct{}
 		demo.Id = "20210630163227149563000042432429"
