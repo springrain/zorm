@@ -514,12 +514,12 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
 		if field.databaseTypeName == "" {
 			field.databaseTypeName = databaseTypeName
-		} else if field.databaseTypeName != databaseTypeName { // 如果类型不匹配,重新赋值
+		} /*else if field.databaseTypeName != databaseTypeName { // 如果类型不匹配,重新赋值.暂不处理
 			field.databaseTypeName = databaseTypeName
 			field.dialectDatabaseTypeName = ""
 			field.customDriverValueConver = nil
 			field.cdvcStatus = 0
-		}
+		}*/
 		cacheItem := &fieldColumnCache{
 			columnType:              columnType,
 			structField:             field.structField,
