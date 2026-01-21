@@ -59,7 +59,7 @@ type fieldColumnCache struct {
 	// customDriverValueConver 自定义类型转换接口,预计算避免每行每列的map查找
 	customDriverValueConver ICustomDriverValueConver
 	// cdvcStatus customDriverValueConver状态,0(未检查),1(已检查)
-	cdvcStatus int
+	//cdvcStatus int
 }
 
 // entityStructCache 实体类结构体缓存,包含实体类的字段和数据库列的映射信息
@@ -512,42 +512,36 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 		}
 
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-		if field.databaseTypeName == "" {
-			field.databaseTypeName = databaseTypeName
-		} /*else if field.databaseTypeName != databaseTypeName { // 如果类型不匹配,重新赋值.暂不处理
-			field.databaseTypeName = databaseTypeName
-			field.dialectDatabaseTypeName = ""
-			field.customDriverValueConver = nil
-			field.cdvcStatus = 0
-		}*/
 		cacheItem := &fieldColumnCache{
-			columnType:              columnType,
-			structField:             field.structField,
-			databaseTypeName:        databaseTypeName,
-			columnNameLower:         field.columnNameLower,
-			isPtr:                   field.isPtr,
-			fieldName:               field.fieldName,
-			dialectDatabaseTypeName: field.dialectDatabaseTypeName,
-			customDriverValueConver: field.customDriverValueConver,
+			columnType:       columnType,
+			structField:      field.structField,
+			databaseTypeName: databaseTypeName,
+			columnNameLower:  field.columnNameLower,
+			isPtr:            field.isPtr,
+			fieldName:        field.fieldName,
+
+			// VARCHAR 和 TEXT 可以同时映射到一个string字段上,所以每次临时获取,不能缓存到field上
+			//dialectDatabaseTypeName: field.dialectDatabaseTypeName,
+			//customDriverValueConver: field.customDriverValueConver,
 		}
 
 		// 预计算带方言前缀的数据库类型名
-		if cacheItem.dialectDatabaseTypeName == "" && dialect != "" {
+		if dialect != "" {
 			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
-			field.dialectDatabaseTypeName = cacheItem.dialectDatabaseTypeName
+			//field.dialectDatabaseTypeName = cacheItem.dialectDatabaseTypeName
 		}
 
 		// 预计算customDriverValueConver,避免每行每列的map查找
-		if iscdvm && field.cdvcStatus == 0 {
+		if iscdvm {
 			if cacheItem.customDriverValueConver == nil {
 				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.dialectDatabaseTypeName]
 			}
 			if cacheItem.customDriverValueConver == nil {
 				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.databaseTypeName]
 			}
-			field.cdvcStatus = 1     // 已检查
-			cacheItem.cdvcStatus = 1 // 已检查
-			field.customDriverValueConver = cacheItem.customDriverValueConver
+			//field.cdvcStatus = 1     // 已检查
+			//cacheItem.cdvcStatus = 1 // 已检查
+			//field.customDriverValueConver = cacheItem.customDriverValueConver
 		}
 
 		cache[i] = cacheItem
