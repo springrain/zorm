@@ -441,59 +441,6 @@ func findSelectFromIndex(strsql *string) []int {
 	return loc
 }
 
-/*
-var fromExpr = `\(([\s\S]+?)\)`
-var fromRegexp, _ = regexp.Compile(fromExpr)
-
-//查询 from 在sql中出现的开始位置
-//Query the start position of 'from' in sql
-func findSelectFromIndex(strsql string) int {
-	sql := strings.ToLower(strsql)
-	m := fromRegexp.FindAllString(sql, -1)
-	for i := 0; i < len(m); i++ {
-		str := m[i]
-		strnofrom := strings.ReplaceAll(str, " from ", " zorm ")
-		sql = strings.ReplaceAll(sql, str, strnofrom)
-	}
-	fromIndex := strings.LastIndex(sql, " from ")
-	if fromIndex < 0 {
-		return fromIndex
-	}
-	//补上一个空格
-	fromIndex = fromIndex + 1
-	return fromIndex
-}
-*/
-/*
-// 从更新语句中获取表名
-//update\\s(.+)set\\s.*
-var (
-	updateExper     = "(?i)^\\s*update\\s+(\\w+)\\s+set\\s"
-	updateRegexp, _ = regexp.Compile(updateExper)
-)
-
-// findUpdateTableName 获取语句中表名
-// 第一个是符合的整体数据,第二个是表名
-func findUpdateTableName(strsql *string) []string {
-	matchs := updateRegexp.FindStringSubmatch(*strsql)
-	return matchs
-}
-
-// 从删除语句中获取表名
-// delete\\sfrom\\s(.+)where\\s(.*)
-var (
-	deleteExper     = "(?i)^\\s*delete\\s+from\\s+(\\w+)\\s+where\\s"
-	deleteRegexp, _ = regexp.Compile(deleteExper)
-)
-
-// findDeleteTableName 获取语句中表名
-// 第一个是符合的整体数据,第二个是表名
-func findDeleteTableName(strsql *string) []string {
-	matchs := deleteRegexp.FindStringSubmatch(*strsql)
-	return matchs
-}
-*/
-
 // FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 // FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID = func(ctx context.Context) string {

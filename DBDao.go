@@ -115,12 +115,6 @@ type DataSourceConfig struct {
 	// seata-go 的ctx是统一的绑定的是struct,也不是XID字符串.  hptx是分离的,所以返回了两个ctx,兼容两个库
 	FuncGlobalTransaction func(ctx context.Context) (IGlobalTransaction, context.Context, context.Context, error)
 
-	// DisableAutoGlobalTransaction 属性已废弃,请勿使用,相关注释仅作记录备忘
-	// DisableAutoGlobalTransaction 禁用自动全局分布式事务,默认false,虽然设置了FuncGlobalTransaction,但是并不想全部业务自动开启全局事务
-	// DisableAutoGlobalTransaction = false; ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,false) 默认使用全局事务,ctx绑定为false才不开启
-	// DisableAutoGlobalTransaction = true;  ctx,_=zorm.BindContextEnableGlobalTransaction(ctx,true) 默认禁用全局事务,ctx绑定为true才开启
-	// DisableAutoGlobalTransaction bool
-
 	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 
@@ -288,20 +282,10 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	// 如果没有事务,并且事务没有被禁用,开启事务.开启本地事务前,需要拿到分布式事务对象
 	// If there is no transaction and the transaction is not disabled, start the transaction. Before starting the local transaction, you need to get the distributed transaction object
 	if dbConnection.tx == nil && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
-		// if dbConnection.tx == nil {
 		// 是否使用分布式事务
 		// Whether to use distributed transactions
 		enableGlobalTransaction := funcGlobalTx != nil
 		if enableGlobalTransaction { // 判断ctx里是否有绑定 enableGlobalTransaction | Determine whether enableGlobalTransaction is bound in ctx
-			/*
-				ctxGTXval := ctx.Value(contextEnableGlobalTransactionValueKey)
-				if ctxGTXval != nil { //如果有值
-					enableGlobalTransaction = ctxGTXval.(bool)
-				} else { //如果ctx没有值,就取值DisableAutoGlobalTransaction
-					//enableGlobalTransaction = !dbConnection.config.DisableAutoGlobalTransaction
-					enableGlobalTransaction = false
-				}
-			*/
 			enableGlobalTransaction = getContextBoolValue(ctx, contextEnableGlobalTransactionValueKey, false)
 		}
 
@@ -651,10 +635,6 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			err = sqlRowsValues(ctx, &pv, typeOf, rows, &driverValue, fieldCache, columnTypeToCache, nil)
 		}
 
-		// pv = pv.Elem()
-		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
-		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
-		// scanerr := rows.Scan(values...)
 		if err != nil {
 			err = fmt.Errorf("->Query-->sqlRowsValues错误:%w", err)
 			FuncLogError(ctx, err)
@@ -846,8 +826,6 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		} else {
 			err = sqlRowsValues(ctx, &pv, &sliceElementType, rows, &driverValue, fieldCache, columnTypeToCache, nil)
 		}
-
-		// err = sqlRowsValues(ctx, dialect, &pv, rows, &driverValue, columnTypes, oneColumnScanner, structType, &dbColumnFieldMap, &exportFieldMap)
 		pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
 		// scan assignment. It is an array of pointers that has been initialized according to the attribute type of the struct,The sql driver can perceive the parameter type,so it can be directly assigned to the pointer of the struct. In this way, the attributes of the struct have values
@@ -857,8 +835,6 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 			FuncLogError(ctx, err)
 			return err
 		}
-
-		// values[i] = f.Addr().Interface()
 		// 通过反射给slice添加元素
 		// Add elements to slice through reflection
 		if sliceElementTypePtr { // 如果数组里是指针地址,*[]*struct
@@ -2074,22 +2050,6 @@ func BindContextDisableTransaction(parent context.Context) (context.Context, err
 	return ctx, nil
 }
 
-/*
-// contextDefaultValueKey 把属性的默认值放到context里使用的key
-const contextDefaultValueKey = wrapContextStringKey("contextDefaultValueKey")
-
-// BindContextDefaultValue 设置属性的默认值. 优先级高于 GetDefaultValue
-// 默认值仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
-// defaultValueMap的key是Struct属性名,当属性值是零值时,会取值map的value,value可以是nil,不能是类型的默认值,比如int类型设置默认值为0
-// ctx里bind的值zorm不会清空,使用时不要覆盖原始的ctx或者不要传给多个方法.
-func BindContextDefaultValue(parent context.Context, defaultValueMap map[string]interface{}) (context.Context, error) {
-	if parent == nil {
-		return nil, errors.New("->BindContextDefaultValue-->context的parent不能为nil")
-	}
-	ctx := context.WithValue(parent, contextDefaultValueKey, defaultValueMap)
-	return ctx, nil
-}
-*/
 // contextMustUpdateColsValueKey 把仅更新的数据库字段放到context里使用的key
 const contextMustUpdateColsValueKey = wrapContextStringKey("contextMustUpdateColsValueKey")
 
