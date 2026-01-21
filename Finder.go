@@ -126,7 +126,7 @@ func (finder *Finder) Append(s string, values ...interface{}) *Finder {
 		finder.sqlBuilder.WriteString(s)
 
 	}
-	if values == nil || len(values) < 1 {
+	if len(values) < 1 {
 		return finder
 	}
 

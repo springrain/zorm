@@ -66,7 +66,7 @@ func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, exe
 // sqlErrorValues2String 处理values值日志记录格式
 func sqlErrorValues2String(values []interface{}) string {
 	jsonStr := "[]"
-	if values == nil || len(values) < 1 {
+	if len(values) < 1 {
 		return jsonStr
 	}
 	bytes, err := json.Marshal(values)
