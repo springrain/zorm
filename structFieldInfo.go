@@ -166,7 +166,7 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 
 	// @TODO 是否需要考虑并发?
 
-	// 处理主键自增
+	// 处理主键自增. 第一次插入手动插入(ID=0)会影响后续的autoIncrement判断,因为被缓存了,主键自增默认都是从1开始
 	sequence := entity.GetPkSequence()
 	if sequence != "" { // 序列自增 Sequence increment
 		entityCache.pkSequence = sequence
@@ -514,8 +514,9 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			cname := strings.ReplaceAll(columnName, "_", "")
 			field, ok = entityCache.fieldMap[cname]
 		}
+		// 没有找到对应的字段,继续下一个
 		if field == nil {
-			return nil, nil, errors.New("->buildSelectFieldColumnCache-->columnType.Name()找不到对应的字段")
+			continue
 		}
 
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
