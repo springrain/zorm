@@ -59,13 +59,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 	if config.DriverName == "" {
 		return nil, errors.New("->newDataSource-->DriverName cannot be empty")
 	}
-	/*
-		// 兼容处理,DBType即将废弃,请使用Dialect属性
-		if config.DBType != "" && config.Dialect == "" {
-			FuncLogError(nil, errors.New("->newDataSource-->DataSourceConfig的DBType即将废弃,请使用Dialect属性"))
-			config.Dialect = config.DBType
-		}
-	*/
+
 	if config.Dialect == "" {
 		return nil, errors.New("->newDataSource-->Dialect cannot be empty")
 	}

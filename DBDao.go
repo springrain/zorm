@@ -690,10 +690,6 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		sliceElementType = sliceElementType.Elem()
 	}
 
-	//如果不是struct
-	//if !(sliceElementType.Kind() == reflect.Struct || allowBaseTypeMap[sliceElementType.Kind()]) {
-	//	return errors.New("->Query数组必须是*[]struct类型或者*[]*struct或者基础类型数组的指针")
-	//}
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)

@@ -31,10 +31,10 @@ import (
 // tagColumnName tag标签的名称
 const tagColumnName = "column"
 
-// cacheEntityStructMap 用于缓存反射的信息,sync.Map内部处理了并发锁
-var cacheEntityStructMap *sync.Map = &sync.Map{}
+// entityStructCacheMap 用于缓存entity和struct反射的信息,sync.Map内部处理了并发锁
+var entityStructCacheMap = sync.Map{}
 
-// fieldColumnCache 查询字段缓存,包含每个字段的必要信息
+// fieldColumnCache 字段和数据库列的缓存
 type fieldColumnCache struct {
 	// columnType 数据库列类型
 	columnType *sql.ColumnType
@@ -62,7 +62,7 @@ type fieldColumnCache struct {
 	//cdvcStatus int
 }
 
-// entityStructCache 实体类结构体缓存,包含实体类的字段和数据库列的映射信息
+// entityStructCache entity和struct结构体缓存,包含实体类的字段和数据库列的映射信息
 type entityStructCache struct {
 	// fields 所有的公开字段
 	fields []*fieldColumnCache
@@ -105,10 +105,10 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 	keyBuilder.WriteString(typeOfString)
 	key := keyBuilder.String()
 
-	// 缓存的数据库主键值
-	entityCacheLoad, cacheOK := cacheEntityStructMap.Load(key)
+	// 缓存的值
+	entityCacheLoad, cacheOK := entityStructCacheMap.Load(key)
 
-	// 如果存在值,认为缓存中有所有的信息,不再处理
+	// 如果缓存存在值,不再处理
 	if cacheOK {
 		return entityCacheLoad.(*entityStructCache), nil
 	}
@@ -125,18 +125,19 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 	entityCache.columns = make([]*fieldColumnCache, 0, fieldNum)
 	entityCache.columnMap = make(map[string]*fieldColumnCache)
 
-	// 遍历所有字段,记录匿名属性
+	// 遍历所有字段,包括匿名属性
 	for i := 0; i < fieldNum; i++ {
 		field := typeOf.Field(i)
-		if field.Anonymous { // 如果是匿名的
+		if field.Anonymous { // 如果是匿名的,调用递归处理
 			funcRecursiveAnonymous(ctx, entityCache, &field)
 		} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
+			// 创建entityStruct缓存
 			funcCreateEntityStructCache(ctx, entityCache, field)
 		}
 	}
 
 	// 记录到缓存中
-	cacheEntityStructMap.Store(key, entityCache)
+	entityStructCacheMap.Store(key, entityCache)
 	return entityCache, nil
 }
 
@@ -599,9 +600,6 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
 	}
 	typeOf = typeOf.Elem()
-	// if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
-	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
-	// }
 	return &typeOf, nil
 }
 
@@ -672,9 +670,10 @@ func funcRecursiveAnonymous(ctx context.Context, entityCache *entityStructCache,
 	// 遍历所有字段
 	for i := 0; i < fieldNum; i++ {
 		anonymousField := anonymousTypeOf.Field(i)
-		if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct
+		if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct,调用递归处理
 			funcRecursiveAnonymous(ctx, entityCache, &anonymousField)
 		} else if _, ok := entityCache.fieldMap[strings.ToLower(anonymousField.Name)]; !ok { // 普通命名字段,而且没有记录过
+			// 创建entityStruct缓存
 			funcCreateEntityStructCache(ctx, entityCache, anonymousField)
 		}
 	}
