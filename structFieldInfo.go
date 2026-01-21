@@ -31,61 +31,328 @@ import (
 // tagColumnName tag标签的名称
 const tagColumnName = "column"
 
+// cacheEntityStructMap 用于缓存反射的信息,sync.Map内部处理了并发锁
+var cacheEntityStructMap *sync.Map = &sync.Map{}
+
 // fieldColumnCache 查询字段缓存,包含每个字段的必要信息
 type fieldColumnCache struct {
-	// 数据库列类型
+	// columnType 数据库列类型
 	columnType *sql.ColumnType
+	// columnName 数据库的原始列名,不带包裹符号
 	columnName string
-	columnTag  string // tag里的列名,可以用FuncWrapFieldTagName处理带方言的列名
-	// 列名(小写),避免重复调用 Name() 和 ToLower()
+	// columnTag tag里的列名,可以用FuncWrapFieldTagName处理带方言的列名
+	columnTag string
+	// columnNameLower 列名(小写),避免重复调用 Name() 和 ToLower()
 	columnNameLower string
-	// 对应的结构体字段,可能为nil
+	// structField 对应的结构体字段,可能为nil
 	structField *reflect.StructField
-	// 字段是否为指针类型
-	isPtr bool
-	// 数据库类型名(大写),避免重复调用 DatabaseTypeName() 和 ToUpper()
-	databaseTypeName string
-	// 字段名,如果structField不为nil
+	// fieldName 字段名,如果structField不为nil
 	fieldName string
-	// 带方言前缀的数据库类型名,避免重复拼接字符串
+	// isPtr 字段是否为指针类型
+	isPtr bool
+	// isPK 是否是主键字段
+	isPK bool
+	// databaseTypeName 数据库类型名(大写),避免重复调用 DatabaseTypeName() 和 ToUpper()
+	databaseTypeName string
+	// dialectDatabaseTypeName 带方言前缀的数据库类型名,避免重复拼接字符串,例如 mysql.VARCHAR
 	dialectDatabaseTypeName string
 }
 
 // entityStructCache 实体类结构体缓存,包含实体类的字段和数据库列的映射信息
 type entityStructCache struct {
+	// fields 所有的公开字段
 	fields []*fieldColumnCache
-	// struct属性小写做key
+	// fieldMap struct属性小写做key,value是字段缓存
 	fieldMap map[string]*fieldColumnCache
-	columns  []*fieldColumnCache
-	// 数据库字段小写做key
+	// columns field对应的数据库字段
+	columns []*fieldColumnCache
+	// columnMap 数据库字段小写做key
 	columnMap map[string]*fieldColumnCache
+	// insertSQL 插入的SQL语句
 	insertSQL string
+	// valuesSQL 值的SQL语句,例如 (?,?,?)
 	valuesSQL string
-	//updateSQL     string
-	deleteSQL     string
-	pkField       *fieldColumnCache // 主键字段
-	pkType        string            // 主键类型
-	pkSequence    string            // 主键序列名称
-	autoIncrement int               // 自增类型  0(不自增),1(普通自增),2(序列自增)
+	// deleteSQL 删除的SQL语句
+	deleteSQL string
+	// pkField 主键字段
+	pkField *fieldColumnCache // 主键字段
+	// pkType 主键类型: string,int,int64
+	pkType string // 主键类型
+	// pkSequence 主键序列名称
+	pkSequence string // 主键序列名称
+	// autoIncrement 自增类型  0(不自增),1(普通自增),2(序列自增)
+	autoIncrement int
 }
 
-// cacheEntityStructMap 用于缓存反射的信息,sync.Map内部处理了并发锁
-var cacheEntityStructMap *sync.Map = &sync.Map{}
+// getStructTypeOfCache 获取Struct实体类的结构体缓存,可以是普通的Struct
+func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *DataSourceConfig) (*entityStructCache, error) {
+	// pkgPath + _ + pkgName(因为单独用这个不保证唯一)
+	//key := fmt.Sprintf("%s_%s_%s", config.Dialect, (*typeOf).PkgPath(), (*typeOf).String())
+	typeOf := *typeOfPtr
+	pkgPath := typeOf.PkgPath()
+	typeOfString := typeOf.String()
+	// 不同方言的缓存分开存储
+	var keyBuilder strings.Builder
+	keyBuilder.Grow(len(config.Dialect) + len(pkgPath) + len(typeOfString) + 3)
+	keyBuilder.WriteString(config.Dialect)
+	keyBuilder.WriteByte('_')
+	keyBuilder.WriteString(pkgPath)
+	keyBuilder.WriteByte('_')
+	keyBuilder.WriteString(typeOfString)
+	key := keyBuilder.String()
 
-// checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
-func checkEntityKind(entity interface{}) (*reflect.Type, error) {
+	// 缓存的数据库主键值
+	entityCacheLoad, cacheOK := cacheEntityStructMap.Load(key)
+
+	// 如果存在值,认为缓存中有所有的信息,不再处理
+	if cacheOK {
+		return entityCacheLoad.(*entityStructCache), nil
+	}
+	// 获取字段长度
+	fieldNum := typeOf.NumField()
+	// 如果没有字段
+	if fieldNum < 1 {
+		return nil, errors.New("->getEntityStructCache-->NumField entity没有属性")
+	}
+	// 创建实体类字段缓存
+	entityCache := &entityStructCache{}
+	entityCache.fields = make([]*fieldColumnCache, 0, fieldNum)
+	entityCache.fieldMap = make(map[string]*fieldColumnCache)
+	entityCache.columns = make([]*fieldColumnCache, 0, fieldNum)
+	entityCache.columnMap = make(map[string]*fieldColumnCache)
+
+	// 遍历所有字段,记录匿名属性
+	for i := 0; i < fieldNum; i++ {
+		field := typeOf.Field(i)
+		if field.Anonymous { // 如果是匿名的
+			funcRecursiveAnonymous(ctx, entityCache, &field)
+		} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
+			funcCreateEntityStructCache(ctx, entityCache, field)
+		}
+	}
+
+	// 记录到缓存中
+	cacheEntityStructMap.Store(key, entityCache)
+	return entityCache, nil
+}
+
+// getEntityStructCache 获取Entity实体类的结构体缓存,必须是实现IEntityStruct接口
+func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *DataSourceConfig) (*entityStructCache, error) {
 	if entity == nil {
-		return nil, errors.New("->checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
+		return nil, errors.New("->getEntityStructCache entity数据为空")
 	}
-	typeOf := reflect.TypeOf(entity)
-	if typeOf.Kind() != reflect.Ptr { // 如果不是指针
-		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
+	valueOf := reflect.ValueOf(entity)
+	if valueOf.Kind() == reflect.Ptr { // 如果是指针
+		valueOf = valueOf.Elem()
+	} else {
+		return nil, errors.New("->getEntityStructCache entity必须是指针类型")
 	}
-	typeOf = typeOf.Elem()
-	// if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
-	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
-	// }
-	return &typeOf, nil
+	// 反射类型
+	typeOf := valueOf.Type()
+	// 获取Struct类型的缓存
+	entityCache, err := getStructTypeOfCache(ctx, &typeOf, config)
+	if err != nil {
+		return nil, err
+	}
+	if entityCache == nil {
+		return nil, errors.New("->getEntityStructCache-->getStructTypeOfCache返回nil")
+	}
+	if len(entityCache.columns) < 1 {
+		return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
+	}
+	if entityCache.insertSQL != "" { // 已经处理过了
+		return entityCache, nil
+	}
+
+	// @TODO 是否需要考虑并发?
+
+	// 处理主键自增
+	sequence := entity.GetPkSequence()
+	if sequence != "" { // 序列自增 Sequence increment
+		entityCache.pkSequence = sequence
+		entityCache.autoIncrement = 2
+	}
+	pkColumnName := strings.ToLower(entity.GetPKColumnName())
+	pkField, pkOK := entityCache.columnMap[pkColumnName]
+	if pkOK {
+		pkField.isPK = true
+		entityCache.pkField = pkField
+		// 获取主键类型 | Get the primary key type.
+		pkKind := entityCache.pkField.structField.Type.Kind()
+		pktype := ""
+		switch pkKind {
+		case reflect.String:
+			pktype = "string"
+		case reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
+			pktype = "int"
+		case reflect.Int64:
+			pktype = "int64"
+		default:
+			return nil, errors.New("->getEntityStructCache-->不支持的主键类型,只支持string,int,int64类型")
+		}
+		entityCache.pkType = pktype
+		pkValueIsZero := valueOf.FieldByIndex(entityCache.pkField.structField.Index).IsZero()
+		if pkValueIsZero && entityCache.autoIncrement != 2 && (pktype == "int" || pktype == "int64") { // 主键值是零值,并且不是序列自增
+			entityCache.autoIncrement = 1 // 普通自增
+		}
+	}
+
+	entityCache.insertSQL = "INSERT INTO " + entity.GetTableName()
+
+	// insert SQL语句
+	err = wrapInsertSQL(ctx, entityCache, config)
+	if err != nil {
+		return nil, err
+	}
+	// delete SQL语句
+	entityCache.deleteSQL, err = wrapDeleteSQL(ctx, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	return entityCache, nil
+}
+
+// insertEntityFieldValues 获取实体类的字段值数组
+func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCache *entityStructCache, useDefaultValue bool, values *[]interface{}) error {
+	// 获取实体类的反射,指针下的struct
+	valueOf := reflect.ValueOf(entity).Elem()
+
+	// 默认值的map,只对 Insert 和 InsertSlice 有效
+	var defaultValueMap map[string]interface{} = nil
+	if useDefaultValue {
+		defaultValueMap = entity.GetDefaultValue()
+	}
+	// 遍历所有数据库字段名,小写的
+	for _, column := range entityCache.columns {
+		var value interface{}
+		fv := valueOf.FieldByIndex(column.structField.Index)
+		// 默认值
+		isDefaultValue := false
+		var defaultValue interface{}
+		if defaultValueMap != nil {
+			defaultValue, isDefaultValue = defaultValueMap[column.fieldName]
+		}
+		// 判断零值
+		isZero := fv.IsZero()
+
+		if column.isPK && isZero && entityCache.pkType == "string" { // 主键是字符串类型,并且值为"",赋值id
+			// 生成主键字符串
+			// Generate primary key string
+			id := FuncGenerateStringID(ctx)
+			value = id
+			// 给对象主键赋值
+			// Assign a value to the primary key of the object
+			valueOf.FieldByIndex(entityCache.pkField.structField.Index).Set(reflect.ValueOf(id))
+		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
+			value = defaultValue
+		} else if column.isPtr { // 如果是指针类型
+			if !fv.IsNil() { // 如果不是nil值
+				value = fv.Elem().Interface()
+			} else {
+				value = nil
+			}
+		} else {
+			value = fv.Interface()
+		}
+		// 添加到记录值的数组
+		*values = append(*values, value)
+	}
+
+	return nil
+}
+
+// updateEntityFieldValues 获取实体类的字段值数组
+func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCache *entityStructCache, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
+	// SQL语句的构造器
+	// SQL statement constructor
+	var updateSQLBuilder strings.Builder
+	updateSQLBuilder.Grow(stringBuilderGrowLen)
+	updateSQLBuilder.WriteString("UPDATE ")
+	updateSQLBuilder.WriteString(entity.GetTableName())
+	updateSQLBuilder.WriteString(" SET ")
+
+	fLen := len(entityCache.columns)
+	// 接收值的数组
+	values := make([]interface{}, 0, fLen+1)
+
+	// 获取实体类的反射,指针下的struct
+	valueOf := reflect.ValueOf(entity).Elem()
+	// Update仅更新指定列
+	var onlyUpdateColsMap map[string]bool
+	// UpdateNotZeroValue 必须更新指定列
+	var mustUpdateColsMap map[string]bool
+
+	if onlyUpdateNotZero { // 只更新非零值时,需要处理mustUpdateCols
+		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
+		if mustUpdateCols != nil { // 指定了仅更新的列
+			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
+			if mustUpdateColsMap != nil {
+				// 添加主键
+				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+			}
+		}
+	} else { // update 更新全部字段时,需要处理onlyUpdateCols
+		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
+		if onlyUpdateCols != nil { // 指定了仅更新的列
+			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
+			if onlyUpdateColsMap != nil {
+				// 添加主键
+				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+			}
+		}
+	}
+	j := 0
+	// 遍历所有数据库字段名,小写的
+	for _, column := range entityCache.columns {
+
+		if column.isPK { // 主键不更新
+			continue
+		}
+
+		// 指定仅更新的列,当前列不用更新
+		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[column.columnNameLower]) {
+			continue
+		}
+
+		var value interface{}
+		fv := valueOf.FieldByIndex(column.structField.Index)
+		// 必须更新的字段
+		isMustUpdate := false
+		if mustUpdateColsMap != nil {
+			isMustUpdate = mustUpdateColsMap[column.columnNameLower]
+		}
+		isZero := fv.IsZero()
+		if onlyUpdateNotZero && !isMustUpdate && isZero { // 如果只更新不为零值的,并且不是mustUpdateCols
+			continue
+			// 重点说明:仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
+		} else if column.isPtr { // 如果是指针类型
+			if !fv.IsNil() { // 如果不是nil值
+				value = fv.Elem().Interface()
+			} else {
+				value = nil
+			}
+		} else {
+			value = fv.Interface()
+		}
+		if j > 0 {
+			updateSQLBuilder.WriteByte(',')
+		}
+		j++
+		updateSQLBuilder.WriteString(column.columnTag)
+		updateSQLBuilder.WriteString("=?")
+		// 添加到记录值的数组
+		values = append(values, value)
+	}
+	// 添加组件参数
+	updateSQLBuilder.WriteString(" WHERE ")
+	updateSQLBuilder.WriteString(entityCache.pkField.columnName)
+	updateSQLBuilder.WriteString("=?")
+	// 添加主键值
+	pkValue := valueOf.FieldByIndex(entityCache.pkField.structField.Index).Interface()
+	values = append(values, pkValue)
+	updateSQL := updateSQLBuilder.String()
+	return &updateSQL, &values, nil
 }
 
 // sqlRowsValues 包装接收sqlRows的Values数组,反射rows屏蔽数据库null值,兼容单个字段查询和Struct映射
@@ -301,6 +568,22 @@ func buildEmptySelectFieldColumnCache(columnTypes []*sql.ColumnType, dialect str
 	return cache, columnTypeToCache
 }
 
+// checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
+func checkEntityKind(entity interface{}) (*reflect.Type, error) {
+	if entity == nil {
+		return nil, errors.New("->checkEntityKind参数不能为空,必须是*struct类型或者基础类型的指针")
+	}
+	typeOf := reflect.TypeOf(entity)
+	if typeOf.Kind() != reflect.Ptr { // 如果不是指针
+		return nil, errors.New("->checkEntityKind必须是*struct类型或者基础类型的指针")
+	}
+	typeOf = typeOf.Elem()
+	// if !(typeOf.Kind() == reflect.Struct || allowBaseTypeMap[typeOf.Kind()]) { //如果不是指针
+	//	return nil, errors.New("checkEntityKind必须是*struct类型或者基础类型的指针")
+	// }
+	return &typeOf, nil
+}
+
 // funcCreateEntityStructCache 创建实体类字段缓存
 func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructCache, field reflect.StructField) bool {
 	fieldName := field.Name
@@ -374,265 +657,4 @@ func funcRecursiveAnonymous(ctx context.Context, entityCache *entityStructCache,
 			funcCreateEntityStructCache(ctx, entityCache, anonymousField)
 		}
 	}
-}
-
-// getEntityStructCache 获取Entity实体类的结构体缓存,必须是实现IEntityStruct接口
-func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *DataSourceConfig) (*entityStructCache, error) {
-	if entity == nil {
-		return nil, errors.New("->getEntityStructCache entity数据为空")
-	}
-	valueOf := reflect.ValueOf(entity)
-	if valueOf.Kind() == reflect.Ptr { // 如果是指针
-		valueOf = valueOf.Elem()
-	} else {
-		return nil, errors.New("->getEntityStructCache entity必须是指针类型")
-	}
-	// 反射类型
-	typeOf := valueOf.Type()
-	// 获取Struct类型的缓存
-	entityCache, err := getStructTypeOfCache(ctx, typeOf, config)
-	if err != nil {
-		return nil, err
-	}
-	if entityCache == nil {
-		return nil, errors.New("->getEntityStructCache-->getStructTypeOfCache返回nil")
-	}
-	if len(entityCache.columns) < 1 {
-		return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
-	}
-	if entityCache.insertSQL != "" { // 已经处理过了
-		return entityCache, nil
-	}
-	// 处理主键自增
-	sequence := entity.GetPkSequence()
-	if sequence != "" { // 序列自增 Sequence increment
-		entityCache.pkSequence = sequence
-		entityCache.autoIncrement = 2
-	}
-	pkColumnName := strings.ToLower(entity.GetPKColumnName())
-	pkFieldCache, pkOK := entityCache.columnMap[pkColumnName]
-	if pkOK {
-		entityCache.pkField = pkFieldCache
-		// 获取主键类型 | Get the primary key type.
-		pkKind := entityCache.pkField.structField.Type.Kind()
-		pktype := ""
-		switch pkKind {
-		case reflect.String:
-			pktype = "string"
-		case reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
-			pktype = "int"
-		case reflect.Int64:
-			pktype = "int64"
-		default:
-			return nil, errors.New("->getEntityStructCache-->不支持的主键类型,只支持string,int,int64类型")
-		}
-		entityCache.pkType = pktype
-		pkValueIsZero := valueOf.FieldByIndex(entityCache.pkField.structField.Index).IsZero()
-		if pkValueIsZero && entityCache.autoIncrement != 2 && (pktype == "int" || pktype == "int64") { // 主键值是零值,并且不是序列自增
-			entityCache.autoIncrement = 1 // 普通自增
-		}
-	}
-
-	entityCache.insertSQL = "INSERT INTO " + entity.GetTableName()
-	//entityCache.updateSQL = "UPDATE " + entity.GetTableName() + " SET "
-
-	// 包装insert SQL语句
-	err = wrapInsertSQL(ctx, entityCache, config)
-	if err != nil {
-		return nil, err
-	}
-	entityCache.deleteSQL, err = wrapDeleteSQL(ctx, entity)
-	if err != nil {
-		return nil, err
-	}
-
-	return entityCache, nil
-}
-
-// getStructTypeOfCache 获取Struct实体类的结构体缓存,可以是普通的Struct
-func getStructTypeOfCache(ctx context.Context, typeOf reflect.Type, config *DataSourceConfig) (*entityStructCache, error) {
-	// pkgPath + _ + pkgName(因为单独用这个不保证唯一)
-	//key := fmt.Sprintf("%s_%s_%s", config.Dialect, (*typeOf).PkgPath(), (*typeOf).String())
-	// 不同方言的缓存分开存储
-	var keyBuilder strings.Builder
-	keyBuilder.Grow(len(config.Dialect) + len(typeOf.PkgPath()) + len(typeOf.String()) + 3)
-	keyBuilder.WriteString(config.Dialect)
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(typeOf.PkgPath())
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(typeOf.String())
-	key := keyBuilder.String()
-
-	// 缓存的数据库主键值
-	entityCacheLoad, cacheOK := cacheEntityStructMap.Load(key)
-
-	// 如果存在值,认为缓存中有所有的信息,不再处理
-	if cacheOK {
-		return entityCacheLoad.(*entityStructCache), nil
-	}
-	// 获取字段长度
-	fieldNum := typeOf.NumField()
-	// 如果没有字段
-	if fieldNum < 1 {
-		return nil, errors.New("->getEntityStructCache-->NumField entity没有属性")
-	}
-	entityCache := &entityStructCache{}
-	entityCache.fields = make([]*fieldColumnCache, 0, fieldNum)
-	entityCache.fieldMap = make(map[string]*fieldColumnCache)
-	entityCache.columns = make([]*fieldColumnCache, 0, fieldNum)
-	entityCache.columnMap = make(map[string]*fieldColumnCache)
-
-	// 遍历所有字段,记录匿名属性
-	for i := 0; i < fieldNum; i++ {
-		field := typeOf.Field(i)
-		if field.Anonymous { // 如果是匿名的
-			funcRecursiveAnonymous(ctx, entityCache, &field)
-		} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
-			funcCreateEntityStructCache(ctx, entityCache, field)
-		}
-	}
-
-	// 记录到缓存中
-	cacheEntityStructMap.Store(key, entityCache)
-	return entityCache, nil
-}
-
-// insertEntityFieldValues 获取实体类的字段值数组
-func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCache *entityStructCache, useDefaultValue bool, values *[]interface{}) error {
-	// 获取实体类的反射,指针下的struct
-	valueOf := reflect.ValueOf(entity).Elem()
-
-	// 默认值的map,只对Insert Struct有效
-	var defaultValueMap map[string]interface{} = nil
-	if useDefaultValue {
-		defaultValueMap = entity.GetDefaultValue()
-	}
-	// 遍历所有数据库字段名,小写的
-	for _, column := range entityCache.columns {
-		var value interface{}
-		fv := valueOf.FieldByIndex(column.structField.Index)
-		// 默认值
-		isDefaultValue := false
-		var defaultValue interface{}
-		if defaultValueMap != nil {
-			defaultValue, isDefaultValue = defaultValueMap[column.fieldName]
-		}
-		isZero := fv.IsZero()
-		if column.columnNameLower == entityCache.pkField.columnNameLower && isZero && entityCache.pkType == "string" { // 主键是字符串类型,并且值为"",赋值id
-			// 生成主键字符串
-			// Generate primary key string
-			id := FuncGenerateStringID(ctx)
-			value = id
-			// 给对象主键赋值
-			// Assign a value to the primary key of the object
-			valueOf.FieldByIndex(entityCache.pkField.structField.Index).Set(reflect.ValueOf(id))
-		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
-			value = defaultValue
-		} else if column.isPtr { // 如果是指针类型
-			if !fv.IsNil() { // 如果不是nil值
-				value = fv.Elem().Interface()
-			} else {
-				value = nil
-			}
-		} else {
-			value = fv.Interface()
-		}
-		// 添加到记录值的数组
-		*values = append(*values, value)
-	}
-
-	return nil
-}
-
-// updateEntityFieldValues 获取实体类的字段值数组
-func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCache *entityStructCache, onlyUpdateNotZero bool) (*string, *[]interface{}, error) {
-	// SQL语句的构造器
-	// SQL statement constructor
-	var updateSQLBuilder strings.Builder
-	updateSQLBuilder.Grow(stringBuilderGrowLen)
-	updateSQLBuilder.WriteString("UPDATE ")
-	updateSQLBuilder.WriteString(entity.GetTableName())
-	updateSQLBuilder.WriteString(" SET ")
-
-	fLen := len(entityCache.columns)
-	// 接收值的数组
-	values := make([]interface{}, 0, fLen+1)
-
-	// 获取实体类的反射,指针下的struct
-	valueOf := reflect.ValueOf(entity).Elem()
-	// Update仅更新指定列
-	var onlyUpdateColsMap map[string]bool
-	// UpdateNotZeroValue 必须更新指定列
-	var mustUpdateColsMap map[string]bool
-
-	if onlyUpdateNotZero { // 只更新非零值时,需要处理mustUpdateCols
-		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
-		if mustUpdateCols != nil { // 指定了仅更新的列
-			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
-			if mustUpdateColsMap != nil {
-				// 添加主键
-				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
-			}
-		}
-	} else { // update 更新全部字段时,需要处理onlyUpdateCols
-		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
-		if onlyUpdateCols != nil { // 指定了仅更新的列
-			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
-			if onlyUpdateColsMap != nil {
-				// 添加主键
-				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
-			}
-		}
-	}
-	j := 0
-	// 遍历所有数据库字段名,小写的
-	for _, column := range entityCache.columns {
-
-		if column.columnNameLower == entityCache.pkField.columnNameLower { // 主键不更新
-			continue
-		}
-
-		// 指定仅更新的列,当前列不用更新
-		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[column.columnNameLower]) {
-			continue
-		}
-
-		var value interface{}
-		fv := valueOf.FieldByIndex(column.structField.Index)
-		// 必须更新的字段
-		isMustUpdate := false
-		if mustUpdateColsMap != nil {
-			isMustUpdate = mustUpdateColsMap[column.columnNameLower]
-		}
-		isZero := fv.IsZero()
-		if onlyUpdateNotZero && !isMustUpdate && isZero { // 如果只更新不为零值的,并且不是mustUpdateCols
-			continue
-			// 重点说明:仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
-		} else if column.isPtr { // 如果是指针类型
-			if !fv.IsNil() { // 如果不是nil值
-				value = fv.Elem().Interface()
-			} else {
-				value = nil
-			}
-		} else {
-			value = fv.Interface()
-		}
-		if j > 0 {
-			updateSQLBuilder.WriteByte(',')
-		}
-		j++
-		updateSQLBuilder.WriteString(column.columnTag)
-		updateSQLBuilder.WriteString("=?")
-		// 添加到记录值的数组
-		values = append(values, value)
-	}
-	// 添加组件参数
-	updateSQLBuilder.WriteString(" WHERE ")
-	updateSQLBuilder.WriteString(entityCache.pkField.columnName)
-	updateSQLBuilder.WriteString("=?")
-	// 添加主键值
-	pkValue := valueOf.FieldByIndex(entityCache.pkField.structField.Index).Interface()
-	values = append(values, pkValue)
-	updateSQL := updateSQLBuilder.String()
-	return &updateSQL, &values, nil
 }

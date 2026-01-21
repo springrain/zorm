@@ -102,14 +102,12 @@ var wrapInsertSQL = func(ctx context.Context, entityCache *entityStructCache, co
 
 	for i := 0; i < len(entityCache.columns); i++ {
 		column := entityCache.columns[i]
-		// 主键
-		ispk := column.columnNameLower == entityCache.pkField.columnNameLower
-		if ispk && entityCache.autoIncrement == 1 { // 普通自增
+		if column.isPK && entityCache.autoIncrement == 1 { // 普通自增
 			// 删除主键列
 			entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
 			i = i - 1
 			continue
-		} else if ispk && entityCache.autoIncrement == 2 { // 序列自增
+		} else if column.isPK && entityCache.autoIncrement == 2 { // 序列自增
 			// 删除主键列
 			entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
 			// 构造SQL语句

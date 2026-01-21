@@ -1,4 +1,5 @@
 v1.8.2
+- 优化主键判断
 - 移除```getFieldTagName```函数,直接使用```FuncWrapFieldTagName```
 - 移除```wrapUpdateSQL```,```wrapInsertSliceSQL```复写函数
 - ```WrapUpdateStructFinder```修改为```WrapUpdateSQLValue```变量

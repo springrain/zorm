@@ -606,7 +606,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
-		entityCache, err := getStructTypeOfCache(ctx, *typeOf, config)
+		entityCache, err := getStructTypeOfCache(ctx, typeOf, config)
 		//dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(typeOf)
 		if err != nil {
 			err = fmt.Errorf("->QueryRow-->getDBColumnFieldMap获取字段缓存错误:%w", err)
@@ -815,7 +815,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
-		entityCache, err := getStructTypeOfCache(ctx, sliceElementType, config)
+		entityCache, err := getStructTypeOfCache(ctx, &sliceElementType, config)
 		//dbColumnFieldMap, exportFieldMap, err = getDBColumnExportFieldMap(&sliceElementType)
 		if err != nil {
 			err = fmt.Errorf("->Query-->getDBColumnFieldMap获取字段缓存错误:%w", err)
