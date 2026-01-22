@@ -23,8 +23,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
+
+// stmtSQLCacheMap 缓存预编译SQL的map
+// stmtSQLCacheMap Cache precompiled SQL map
+var stmtSQLCacheMap = sync.Map{}
 
 // dataSorce对象,隔离sql原生对象
 // dataSorce  Isolate sql native objects
@@ -211,8 +216,20 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr 
 	if err != nil {
 		return nil, err
 	}
+
 	var start *time.Time
 	var res sql.Result
+	var stmt *sql.Stmt
+	stmtLoad, ok := stmtSQLCacheMap.Load(*execsql)
+	if ok {
+		stmt = stmtLoad.(*sql.Stmt)
+	} else {
+		stmt, err = dbConnection.db.PrepareContext(ctx, *execsql)
+		if err != nil {
+			err = fmt.Errorf("->execContext-->db.PrepareContext:%w,-->zormErrorExecSQL:%s,-->zormErrorSQLValues:%s", err, *execsql, sqlErrorValues2String(*args))
+		}
+		stmtSQLCacheMap.Store(*execsql, stmt)
+	}
 	// 小于0是禁用日志输出;等于0是只输出日志,不计算SQ执行时间;大于0是计算执行时间,并且大于指定值
 	slowSQLMillis := dbConnection.config.SlowSQLMillis
 	if slowSQLMillis == 0 {
@@ -221,10 +238,14 @@ func (dbConnection *dataBaseConnection) execContext(ctx context.Context, sqlstr 
 		now := time.Now() // 获取当前时间
 		start = &now
 	}
+
 	if dbConnection.tx != nil {
-		res, err = dbConnection.tx.ExecContext(ctx, *execsql, *args...)
+		txStmt := dbConnection.tx.StmtContext(ctx, stmt)
+		res, err = txStmt.ExecContext(ctx, *args...)
+		//res, err = dbConnection.tx.ExecContext(ctx, *execsql, *args...)
 	} else {
-		res, err = dbConnection.db.ExecContext(ctx, *execsql, *args...)
+		res, err = stmt.ExecContext(ctx, *args...)
+		//res, err = dbConnection.db.ExecContext(ctx, *execsql, *args...)
 	}
 	if slowSQLMillis > 0 {
 		slow := time.Since(*start).Milliseconds()

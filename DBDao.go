@@ -200,6 +200,17 @@ func (dbDao *DBDao) CloseDB() error {
 	if dbDao == nil || dbDao.dataSource == nil {
 		return errors.New("->CloseDB-->请不要自己创建dbDao,请使用NewDBDao方法进行创建")
 	}
+	// 清理预编译SQL缓存
+	stmtSQLCacheMap.Range(func(key, value interface{}) bool {
+		stmt, ok := value.(*sql.Stmt)
+		if ok {
+			(*stmt).Close()
+			stmt = nil
+		}
+		return true // 返回true继续遍历
+	})
+	stmtSQLCacheMap.Clear()
+
 	return dbDao.dataSource.Close()
 }
 
