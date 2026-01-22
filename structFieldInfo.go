@@ -396,7 +396,8 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		if dv.IsValid() && dv.IsNil() { // 该字段的数据库值是null,取默认值 | The database value of this field is null, no further processing is required, use the default value
 			values[i] = new(interface{})
 			continue
-		} else if cache.customDriverValueConver != nil { // 如果是需要转换的字段
+		}
+		if cache.customDriverValueConver != nil { // 如果是需要转换的字段
 			// 获取字段类型
 			var structFieldType *reflect.Type
 			if entity != nil { // 查询一个字段,并且可以直接接收
@@ -425,63 +426,61 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
 
-		} else if entity != nil { // 查询一个字段,并且可以直接接收
+		}
+		if entity != nil { // 查询一个字段,并且可以直接接收
 			values[i] = entity
 			continue
-		} else {
-			if cache.structField == nil { // 如果不存在这个字段
-				values[i] = new(interface{})
-			} else {
-				var v interface{}
-				// 字段的反射值
-				fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
-				if cache.isPtr { // 如果是指针类型
-					// 反射new一个对应类型的指针
-					newValue := reflect.New(cache.structField.Type.Elem())
-					// 反射赋值到字段值
-					fieldValue.Set(newValue)
-					// 获取字段值
-					v = fieldValue.Interface()
-				} else {
-					v = fieldValue.Addr().Interface()
-				}
-				// v := new(interface{})
-				values[i] = v
-			}
 		}
-
+		if cache.structField == nil { // 如果不存在这个字段
+			values[i] = new(interface{})
+			continue
+		}
+		// 记录值
+		var v interface{}
+		// 字段的反射值
+		fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
+		if cache.isPtr { // 如果是指针类型
+			// 反射new一个对应类型的指针
+			newValue := reflect.New(cache.structField.Type.Elem())
+			// 反射赋值到字段值
+			fieldValue.Set(newValue)
+			// 获取字段值
+			v = fieldValue.Interface()
+		} else {
+			v = fieldValue.Addr().Interface()
+		}
+		values[i] = v
 	}
+	// Scan赋值values数组,values长度必须和rows保持一致
 	err = rows.Scan(values...)
 	if err != nil {
 		return err
 	}
+	// 没有特殊类型替换的值
 	if len(fieldTempDriverValueMap) < 1 {
 		return err
 	}
 
-	// 循环需要替换的值
+	// 有特殊类型的替换值,循环需要替换的值
 	for columnType, driverValueInfo := range fieldTempDriverValueMap {
 		// 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		// typeOf := fieldValue.Type()
 		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, driverValueInfo.structFieldType)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
 			return errConverDriverValue
 		}
+
 		if entity != nil { // 查询一个字段,并且可以直接接收
-			// entity = rightValue
-			// valueOfElem.Set(reflect.ValueOf(rightValue).Elem())
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
-		} else { // 如果是Struct类型接收
-			// 使用映射进行O(1)查找
-			if cache, ok := columnTypeToCache[columnType]; ok && cache.structField != nil {
-				// 字段的反射值
-				fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
-				// 给字段赋值
-				fieldValue.Set(reflect.ValueOf(rightValue).Elem())
-			}
+		}
+		// 如果是Struct类型接收,使用映射进行O(1)查找
+		if cache, ok := columnTypeToCache[columnType]; ok && cache.structField != nil {
+			// 字段的反射值
+			fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
+			// 给字段赋值
+			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 		}
 
 	}
@@ -614,16 +613,17 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	if !field.IsExported() { // 私有字段不处理
 		return true
 	}
-	fieldNameLower := strings.ToLower(fieldName)
-	selectFieldCache := &fieldColumnCache{}
-	selectFieldCache.structField = &field
 
-	selectFieldCache.isPtr = field.Type.Kind() == reflect.Ptr
-	selectFieldCache.fieldName = fieldName
+	fieldCache := &fieldColumnCache{}
+	fieldCache.structField = &field
+
+	fieldCache.isPtr = field.Type.Kind() == reflect.Ptr
+	fieldCache.fieldName = fieldName
 
 	//记录FieldCache
-	entityCache.fieldMap[fieldNameLower] = selectFieldCache
-	entityCache.fields = append(entityCache.fields, selectFieldCache)
+	fieldNameLower := strings.ToLower(fieldName)
+	entityCache.fieldMap[fieldNameLower] = fieldCache
+	entityCache.fields = append(entityCache.fields, fieldCache)
 
 	// 如果是数据库字段
 	columnTag := field.Tag.Get(tagColumnName)
@@ -636,17 +636,17 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 		columnName = strings.Trim(columnName, "\"")
 		columnName = strings.TrimLeft(columnName, "[")
 		columnName = strings.TrimRight(columnName, "]")
-		selectFieldCache.columnName = columnName
-		selectFieldCache.columnNameLower = strings.ToLower(columnName)
+		fieldCache.columnName = columnName
+		fieldCache.columnNameLower = strings.ToLower(columnName)
 
-		selectFieldCache.columnTag = columnTag
+		fieldCache.columnTag = columnTag
 		// @TODO 这里需要考虑已经在column tag中添加了包裹符,最好是把包裹符号放到Config中,取消FuncWrapFieldTagName函数
 		if FuncWrapFieldTagName != nil {
-			selectFieldCache.columnTag = FuncWrapFieldTagName(ctx, selectFieldCache.structField, columnTag)
+			fieldCache.columnTag = FuncWrapFieldTagName(ctx, fieldCache.structField, columnTag)
 		}
 
-		entityCache.columns = append(entityCache.columns, selectFieldCache)
-		entityCache.columnMap[selectFieldCache.columnNameLower] = selectFieldCache
+		entityCache.columns = append(entityCache.columns, fieldCache)
+		entityCache.columnMap[fieldCache.columnNameLower] = fieldCache
 	}
 
 	return true
