@@ -386,6 +386,10 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 	var err error
 
 	for i, cache := range fieldCache {
+		if cache == nil { // 数据库字段比实体类的多,实体类无法接收,设置为默认值
+			values[i] = new(interface{})
+			continue
+		}
 		columnType := cache.columnType
 		dv := driverValue.Index(i)
 		// if dv.IsValid() && dv.InterfaceData()[0] == 0 {
@@ -492,7 +496,7 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 		return nil, nil, errors.New("->buildSelectFieldColumnCache-->columnTypes不能为nil")
 	}
 
-	cache := make([]*fieldColumnCache, len(columnTypes))
+	fieldCache := make([]*fieldColumnCache, len(columnTypes))
 	// 创建columnType到cache的映射,用于O(1)查找
 	columnTypeToCache := make(map[*sql.ColumnType]*fieldColumnCache, len(columnTypes))
 
@@ -507,8 +511,9 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			cname := strings.ReplaceAll(columnName, "_", "")
 			field, ok = entityCache.fieldMap[cname]
 		}
-		// 没有找到对应的字段,继续下一个
+		// 数据库字段可能比Struct里多, fieldCache[i] = nil
 		if field == nil {
+			fieldCache[i] = nil
 			continue
 		}
 
@@ -545,11 +550,11 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			//field.customDriverValueConver = cacheItem.customDriverValueConver
 		}
 
-		cache[i] = cacheItem
+		fieldCache[i] = cacheItem
 		columnTypeToCache[columnType] = cacheItem
 	}
 
-	return cache, columnTypeToCache, nil
+	return fieldCache, columnTypeToCache, nil
 }
 
 // buildEmptySelectFieldColumnCache 构建空的查询字段缓存(用于单字段查询)
