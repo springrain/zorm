@@ -1,5 +1,5 @@
 v1.8.2
-- 预计算customDriverValueConver,避免每行每列的map查找 
+- 缓存customDriverValueConver,避免每行每列的map查找 
 - 优化主键判断
 - 移除```getFieldTagName```函数,直接使用```FuncWrapFieldTagName```
 - 移除```wrapUpdateSQL```,```wrapInsertSliceSQL```复写函数

@@ -56,7 +56,7 @@ type fieldColumnCache struct {
 	databaseTypeName string
 	// dialectDatabaseTypeName 带方言前缀的数据库类型名,避免重复拼接字符串,例如 mysql.VARCHAR
 	dialectDatabaseTypeName string
-	// customDriverValueConver 自定义类型转换接口,预计算避免每行每列的map查找
+	// customDriverValueConver 自定义类型转换接口,缓存避免每行每列的map查找
 	customDriverValueConver ICustomDriverValueConver
 	// cdvcStatus customDriverValueConver状态,0(未检查),1(已检查)
 	//cdvcStatus int
@@ -526,13 +526,13 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			//customDriverValueConver: field.customDriverValueConver,
 		}
 
-		// 预计算带方言前缀的数据库类型名
+		// 缓存带方言前缀的数据库类型名
 		if dialect != "" {
 			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
 			//field.dialectDatabaseTypeName = cacheItem.dialectDatabaseTypeName
 		}
 
-		// 预计算customDriverValueConver,避免每行每列的map查找
+		// 缓存customDriverValueConver,避免每行每列的map查找
 		if iscdvm {
 			if cacheItem.customDriverValueConver == nil {
 				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.dialectDatabaseTypeName]
@@ -569,11 +569,11 @@ func buildEmptySelectFieldColumnCache(columnTypes []*sql.ColumnType, dialect str
 			columnType:       columnType,
 			databaseTypeName: databaseTypeName,
 		}
-		// 预计算带方言前缀的数据库类型名
+		// 缓存带方言前缀的数据库类型名
 		if dialect != "" {
 			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
 		}
-		// 预计算customDriverValueConver,避免每行每列的map查找
+		// 缓存customDriverValueConver,避免每行每列的map查找
 		if iscdvm {
 			if cacheItem.customDriverValueConver == nil {
 				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.dialectDatabaseTypeName]

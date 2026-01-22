@@ -627,7 +627,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
 
-	// 预计算entity的反射值,避免在循环中重复计算
+	// 缓存entity的反射值,避免在循环中重复计算
 	// Pre calculate the reflection value of entity to avoid repeated calculation in the loop
 	var pv reflect.Value
 	if !oneColumnScanner {
@@ -1011,7 +1011,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	resultMapList = make([]map[string]interface{}, 0, initialCapacity)
 	columnTypeLen := len(columnTypes)
 
-	// 预计算数据库类型名称,避免在循环中重复调用strings.ToUpper
+	// 缓存数据库类型名称,避免在循环中重复调用strings.ToUpper
 	// Pre calculate database type names to avoid calling strings.ToUpper repeatedly in the loop
 	databaseTypeNames := make([]string, columnTypeLen)
 	for i, columnType := range columnTypes {
@@ -1055,7 +1055,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 			// The temporary value of type conversion
 			var tempDriverValue driver.Value
 			// 根据接收的类型,获取到类型转换的接口实现,优先匹配指定的数据库类型 | Get the interface implementation of type conversion according to the received type, prioritizing the specified database type
-			// 使用预计算的数据库类型名称,提高性能 | Use pre calculated database type names to improve performance
+			// 使用缓存的数据库类型名称,提高性能 | Use pre calculated database type names to improve performance
 			databaseTypeName := databaseTypeNames[i]
 			// 判断是否有自定义扩展,避免无意义的反射
 			// Determine whether there are custom extensions to avoid meaningless reflection

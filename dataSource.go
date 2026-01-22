@@ -337,22 +337,3 @@ func (dbConnection *dataBaseConnection) queryContext(ctx context.Context, sqlstr
 	}
 	return rows, err
 }
-
-/*
-// prepareContext 预执行,如果已经开启事务,就以事务方式执行,如果没有开启事务,就以非事务方式执行
-// prepareContext Pre-execution,If the transaction has been opened,it will be executed in transaction mode,if the transaction is not opened,it will be executed in non-transactional mode
-func (dbConnection *dataBaseConnection) prepareContext(ctx context.Context, query *string) (*sql.Stmt, error) {
-	//打印SQL
-	//print SQL
-	if dbConnection.config.PrintSQL {
-		//logger.Info("printSQL", logger.String("sql", query))
-		FuncPrintSQL(ctx,*query, nil)
-	}
-
-	if dbConnection.tx != nil {
-		return dbConnection.tx.PrepareContext(ctx, *query)
-	}
-
-	return dbConnection.db.PrepareContext(ctx, *query)
-}
-*/
