@@ -24,11 +24,6 @@ import (
 	"testing"
 )
 
-// 测试用的简化配置
-type testDataSourceConfig struct {
-	Dialect string
-}
-
 // testEntity 测试用的实体结构体
 type testEntity struct {
 	// ID 主键
