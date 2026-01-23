@@ -504,12 +504,14 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		FuncLogError(ctx, errFromContxt)
 		return has, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		FuncLogError(ctx, errDBConnection)
-		return has, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			FuncLogError(ctx, errDBConnection)
+			return has, errDBConnection
+		}
+	*/
 
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
 	if errConfig != nil {
@@ -710,12 +712,14 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		FuncLogError(ctx, errFromContxt)
 		return errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		FuncLogError(ctx, errDBConnection)
-		return errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			FuncLogError(ctx, errDBConnection)
+			return errDBConnection
+		}
+	*/
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
 	if errConfig != nil {
 		FuncLogError(ctx, errConfig)
@@ -929,12 +933,14 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		FuncLogError(ctx, errFromContxt)
 		return nil, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		FuncLogError(ctx, errDBConnection)
-		return nil, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			FuncLogError(ctx, errDBConnection)
+			return nil, errDBConnection
+		}
+	*/
 
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
 	if errConfig != nil {
@@ -1189,7 +1195,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 }
 
 // UpdateFinder 更新Finder语句
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // UpdateFinder Update Finder statement
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
@@ -1222,7 +1228,7 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 }
 
 // Insert 保存Struct对象,必须是IEntityStruct类型
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // Insert saves the Struct object, which must be of type IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build dbConnection yourself
@@ -1243,11 +1249,13 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 
 	// 获取Config
 	// Get Config
@@ -1356,7 +1364,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 
 // InsertSlice 批量保存Struct Slice 数组对象,必须是[]IEntityStruct类型,使用IEntityStruct接口,兼容Struct实体类
 // 如果是自增主键,无法对Struct对象里的主键属性赋值
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // InsertSlice batch saves Struct Slice array objects, which must be of type [] IEntityStruct, using the IEntityStruct interface to be compatible with Struct entity classes
 // If it is an auto-incrementing primary key, the primary key attribute in the Struct object cannot be assigned
@@ -1381,11 +1389,13 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
@@ -1439,7 +1449,7 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 }
 
 // Update 更新struct所有属性,必须是IEntityStruct类型
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // Update updates all attributes of the struct, which must be of type IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 func Update(ctx context.Context, entity IEntityStruct) (int, error) {
@@ -1469,7 +1479,7 @@ var update = func(ctx context.Context, entity IEntityStruct) (int, error) {
 }
 
 // UpdateNotZeroValue 更新struct不为默认零值的属性,必须是IEntityStruct类型,主键必须有值
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // UpdateNotZeroValue updates the attributes of the struct that are not the default zero value. It must be of type IEntityStruct, and the primary key must have a value
 // UpdateNotZeroValue cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 func UpdateNotZeroValue(ctx context.Context, entity IEntityStruct) (int, error) {
@@ -1498,7 +1508,7 @@ var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, e
 }
 
 // Delete 根据主键删除一个对象.必须是IEntityStruct类型
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // Delete deletes an object based on the primary key. It must be of type IEntityStruct
 func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
@@ -1513,11 +1523,13 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
@@ -1546,7 +1558,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 }
 
 // InsertEntityMap 保存*IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // InsertEntityMap saves * IEntityMap objects. Use Map to save data, which is used in scenarios where struct is not convenient. If the primary key is self-incrementing or a sequence, do not entityMap.Set the value of the primary key
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
@@ -1570,12 +1582,13 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
@@ -1647,7 +1660,7 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 }
 
 // InsertEntityMapSlice 保存[]IEntityMap对象.使用Map保存数据,用于不方便使用struct的场景,如果主键是自增或者序列,不要entityMap.Set主键的值
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // InsertEntityMapSlice saves [] IEntityMap objects. Use Map to save data, which is used in scenarios where struct is not convenient. If the primary key is self-incrementing or a sequence, do not entityMap.Set the value of the primary key
 // The number of rows affected by affected, if it is abnormal or the driver does not support it, return -1
@@ -1662,10 +1675,12 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	if errFromContxt != nil {
 		return affected, errFromContxt
 	}
-	// 自己构建的dbConnection
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
@@ -1689,7 +1704,7 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 }
 
 // UpdateEntityMap 更新IEntityMap对象.用于不方便使用struct的场景,主键必须有值
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // UpdateEntityMap Update IEntityMap object. Used in scenarios where struct is not convenient, the primary key must have a value
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
@@ -1706,18 +1721,20 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	if checkerr != nil {
 		return affected, checkerr
 	}
-	// 从contxt中获取数据库连接,可能为nil
-	// Get database connection from contxt, it may be nil
-	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
-	if errFromContxt != nil {
-		return affected, errFromContxt
-	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return affected, errDBConnection
-	}
+	/*
+		// 从contxt中获取数据库连接,可能为nil
+		// Get database connection from contxt, it may be nil
+		dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+		if errFromContxt != nil {
+			return affected, errFromContxt
+		}
 
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return affected, errDBConnection
+		}
+	*/
 	// SQL语句
 	// SQL statement
 	sqlstr, values, err := wrapUpdateEntityMapSQL(ctx, entity)
@@ -1776,7 +1793,7 @@ func GetContextDataSourceConfig(ctx context.Context) (*DataSourceConfig, error) 
 }
 
 // WrapUpdateSQLValue 返回更新IEntityStruct的Finder对象
-// ctx不能为nil,参照使用zorm.Transaction方法传入ctx.也不要自己构建DBConnection
+// ctx不能为nil,参照使用zorm.Transaction方法传入ctx
 // Finder为更新执行的Finder,更新语句统一使用Finder执行
 // WrapUpdateSQLValue returns the Finder object that updates IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
@@ -1797,12 +1814,13 @@ var wrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpd
 	if errFromContxt != nil {
 		return nil, nil, errFromContxt
 	}
-	// 自己构建的dbConnection
-	// dbConnection built by yourself
-	if dbConnection != nil && dbConnection.db == nil {
-		return nil, nil, errDBConnection
-	}
-
+	/*
+		// 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+		// dbConnection built by yourself
+		if dbConnection != nil && dbConnection.db == nil {
+			return nil, nil, errDBConnection
+		}
+	*/
 	// 获取Config
 	// Get Config
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
@@ -1955,11 +1973,12 @@ func checkDBConnection(ctx context.Context, dbConnection *dataBaseConnection, ha
 		// Put db Connection into context
 		ctx = context.WithValue(ctx, contextDBConnectionValueKey, dbConnection)
 
-	} else { // 如果dbConnection存在
-		// If db Connection exists
-		if dbConnection.db == nil { // 禁止外部构建
-			return ctx, dbConnection, errDBConnection
-		}
+	} else { // 如果dbConnection存在 | If db Connection exists
+		/*
+			if dbConnection.db == nil { // 外部构建的dbConnection.dataBaseConnection是私有属性,无法外部构建,注释这个判断
+				return ctx, dbConnection, errDBConnection
+			}
+		*/
 		if dbConnection.tx == nil && hastx && (!getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction)) {
 			// if dbConnection.tx == nil && hastx { //如果要求有事务,事务需要手动zorm.Transaction显示开启.如果自动开启,就会为了偷懒,每个操作都自动开启,事务就失去意义了
 			return ctx, dbConnection, errDBConnection
