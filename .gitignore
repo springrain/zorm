@@ -20,6 +20,7 @@
 *debug.test
 debug.test
 go.sum
+.VSCodeCounter
 
 # system ignore
 .DS_Store
