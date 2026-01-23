@@ -36,8 +36,6 @@ var entityStructCacheMap = sync.Map{}
 
 // fieldColumnCache 字段和数据库列的缓存
 type fieldColumnCache struct {
-	// columnType 数据库列类型
-	columnType *sql.ColumnType
 	// columnName 数据库的原始列名,不带包裹符号
 	columnName string
 	// columnTag tag里的列名,可以用FuncWrapFieldTagName处理带方言的列名
@@ -52,14 +50,17 @@ type fieldColumnCache struct {
 	isPtr bool
 	// isPK 是否是主键字段
 	isPK bool
+
+	// 以下属性仅用在查询时的映射上,每个查询都是单独的struct对象
+
+	// columnType 数据库列类型
+	columnType *sql.ColumnType
 	// databaseTypeName 数据库类型名(大写),避免重复调用 DatabaseTypeName() 和 ToUpper()
 	databaseTypeName string
 	// dialectDatabaseTypeName 带方言前缀的数据库类型名,避免重复拼接字符串,例如 mysql.VARCHAR
 	dialectDatabaseTypeName string
 	// customDriverValueConver 自定义类型转换接口,缓存避免每行每列的map查找
 	customDriverValueConver ICustomDriverValueConver
-	// cdvcStatus customDriverValueConver状态,0(未检查),1(已检查)
-	//cdvcStatus int
 }
 
 // entityStructCache entity和struct结构体缓存,包含实体类的字段和数据库列的映射信息
@@ -294,7 +295,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
 			if mustUpdateColsMap != nil {
 				// 添加主键
-				mustUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+				mustUpdateColsMap[entityCache.pkField.columnNameLower] = true
 			}
 		}
 	} else { // update 更新全部字段时,需要处理onlyUpdateCols
@@ -303,10 +304,11 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
 			if onlyUpdateColsMap != nil {
 				// 添加主键
-				onlyUpdateColsMap[strings.ToLower(entity.GetPKColumnName())] = true
+				onlyUpdateColsMap[entityCache.pkField.columnNameLower] = true
 			}
 		}
 	}
+	// 记录需要更新字段的索引,因为有些字段会跳过,所以不用 i
 	j := 0
 	// 遍历所有数据库字段名,小写的
 	for _, column := range entityCache.columns {
@@ -315,31 +317,33 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			continue
 		}
 
-		// 指定仅更新的列,当前列不用更新
+		// UpdateNotZeroValue,指定仅更新的列,当前列不用更新
 		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[column.columnNameLower]) {
 			continue
 		}
-
+		// 记录值
 		var value interface{}
-		fv := valueOf.FieldByIndex(column.structField.Index)
-		// 必须更新的字段
+		// 反射获取字段的值
+		fieldValue := valueOf.FieldByIndex(column.structField.Index)
+		// 是否必须更新的字段
 		isMustUpdate := false
 		if mustUpdateColsMap != nil {
 			isMustUpdate = mustUpdateColsMap[column.columnNameLower]
 		}
-		isZero := fv.IsZero()
+		isZero := fieldValue.IsZero()
 		if onlyUpdateNotZero && !isMustUpdate && isZero { // 如果只更新不为零值的,并且不是mustUpdateCols
 			continue
-			// 重点说明:仅用于Insert和InsertSlice Struct,对Update和UpdateNotZeroValue无效
-		} else if column.isPtr { // 如果是指针类型
-			if !fv.IsNil() { // 如果不是nil值
-				value = fv.Elem().Interface()
-			} else {
-				value = nil
-			}
-		} else {
-			value = fv.Interface()
 		}
+		if column.isPtr { // 如果是指针类型
+			if fieldValue.IsNil() { // 如果是nil值
+				value = nil
+			} else {
+				value = fieldValue.Elem().Interface()
+			}
+		} else { // 不是指针
+			value = fieldValue.Interface()
+		}
+		// 添加 , 逗号
 		if j > 0 {
 			updateSQLBuilder.WriteByte(',')
 		}
@@ -383,8 +387,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 	if iscdvm {
 		fieldTempDriverValueMap = make(map[*sql.ColumnType]*driverValueInfo)
 	}
-	var err error
-
+	// 循环字段
 	for i, cache := range fieldCache {
 		if cache == nil { // 数据库字段比实体类的多,实体类无法接收,设置为默认值
 			values[i] = new(interface{})
@@ -402,11 +405,9 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			var structFieldType *reflect.Type
 			if entity != nil { // 查询一个字段,并且可以直接接收
 				structFieldType = typeOf
-			} else { // 如果是struct类型
-				if cache.structField != nil { // 存在这个字段
-					vtype := cache.structField.Type
-					structFieldType = &vtype
-				}
+			} else if cache.structField != nil { // struct类型,存在这个字段
+				vtype := cache.structField.Type
+				structFieldType = &vtype
 			}
 			tempDriverValue, err := cache.customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
 			if err != nil {
@@ -417,7 +418,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			}
 			values[i] = tempDriverValue
 
-			// 如果需要类型转换
+			// 需要类型转换
 			dvinfo := driverValueInfo{}
 			dvinfo.customDriverValueConver = cache.customDriverValueConver
 			// dvinfo.columnType = columnType
@@ -425,8 +426,9 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			dvinfo.tempDriverValue = tempDriverValue
 			fieldTempDriverValueMap[columnType] = &dvinfo
 			continue
-
 		}
+
+		// 不需要customDriverValueConver特殊转换
 		if entity != nil { // 查询一个字段,并且可以直接接收
 			values[i] = entity
 			continue
@@ -452,13 +454,13 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		values[i] = v
 	}
 	// Scan赋值values数组,values长度必须和rows保持一致
-	err = rows.Scan(values...)
+	err := rows.Scan(values...)
 	if err != nil {
 		return err
 	}
 	// 没有特殊类型替换的值
 	if len(fieldTempDriverValueMap) < 1 {
-		return err
+		return nil
 	}
 
 	// 有特殊类型的替换值,循环需要替换的值
@@ -485,7 +487,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 
 	}
 
-	return err
+	return nil
 }
 
 // buildSelectFieldColumnCache 构建查询字段缓存
@@ -533,7 +535,6 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 		// 缓存带方言前缀的数据库类型名
 		if dialect != "" {
 			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
-			//field.dialectDatabaseTypeName = cacheItem.dialectDatabaseTypeName
 		}
 
 		// 缓存customDriverValueConver,避免每行每列的map查找
@@ -544,9 +545,6 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			if cacheItem.customDriverValueConver == nil {
 				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.databaseTypeName]
 			}
-			//field.cdvcStatus = 1     // 已检查
-			//cacheItem.cdvcStatus = 1 // 已检查
-			//field.customDriverValueConver = cacheItem.customDriverValueConver
 		}
 
 		fieldCache[i] = cacheItem
