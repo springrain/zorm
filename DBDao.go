@@ -597,8 +597,8 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 
 	}
 
-	var fieldCache []*fieldColumnCache
-	var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
+	var fieldCaches []*fieldColumnCache
+	//var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
 
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
@@ -611,7 +611,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		}
 		// 构建查询字段缓存
 		// Build query field cache
-		fieldCache, columnTypeToCache, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
+		fieldCaches, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
 		if err != nil {
 			err = fmt.Errorf("->QueryRow-->buildSelectFieldColumnCache构建字段缓存错误:%w", err)
 			return has, err
@@ -619,7 +619,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 	} else {
 		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
 		// For single field query, create an empty field Cache, but contains column Types information
-		fieldCache, columnTypeToCache = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
+		fieldCaches = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
 	}
 
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
@@ -643,9 +643,9 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 			return has, errQueryRow
 		}
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, nil, typeOf, rows, &driverValue, fieldCache, columnTypeToCache, entity)
+			err = sqlRowsValues(ctx, nil, typeOf, rows, &driverValue, fieldCaches, entity)
 		} else {
-			err = sqlRowsValues(ctx, &pv, typeOf, rows, &driverValue, fieldCache, columnTypeToCache, nil)
+			err = sqlRowsValues(ctx, &pv, typeOf, rows, &driverValue, fieldCaches, nil)
 		}
 
 		if err != nil {
@@ -800,7 +800,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	}
 
 	var fieldCache []*fieldColumnCache
-	var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
+	//var columnTypeToCache map[*sql.ColumnType]*fieldColumnCache
 	if !oneColumnScanner { // 如果不是一个直接可以映射的字段,默认为是sturct | If it is not a field that can be mapped directly, it is assumed to be sturct
 		// 获取到类型的字段缓存
 		// Get the type field cache
@@ -812,7 +812,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		}
 		// 构建查询字段缓存
 		// Build query field cache
-		fieldCache, columnTypeToCache, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
+		fieldCache, err = buildSelectFieldColumnCache(columnTypes, entityCache, config.Dialect)
 		if err != nil {
 			err = fmt.Errorf("->Query-->buildSelectFieldColumnCache构建字段缓存错误:%w", err)
 			return err
@@ -820,7 +820,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	} else {
 		// 对于单字段查询,创建一个空的fieldCache,但包含columnTypes信息
 		// For single field query, create an empty field Cache, but contains column Types information
-		fieldCache, columnTypeToCache = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
+		fieldCache = buildEmptySelectFieldColumnCache(columnTypes, config.Dialect)
 	}
 	// 反射获取 []driver.Value的值,用于处理nil值和自定义类型
 	// Reflect to get the value of []driver.Value, used to deal with nil values ​​and custom types
@@ -831,9 +831,9 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	for rows.Next() {
 		pv := reflect.New(sliceElementType)
 		if oneColumnScanner {
-			err = sqlRowsValues(ctx, nil, &sliceElementType, rows, &driverValue, fieldCache, columnTypeToCache, pv.Interface())
+			err = sqlRowsValues(ctx, nil, &sliceElementType, rows, &driverValue, fieldCache, pv.Interface())
 		} else {
-			err = sqlRowsValues(ctx, &pv, &sliceElementType, rows, &driverValue, fieldCache, columnTypeToCache, nil)
+			err = sqlRowsValues(ctx, &pv, &sliceElementType, rows, &driverValue, fieldCache, nil)
 		}
 		pv = pv.Elem()
 		// scan赋值.是一个指针数组,已经根据struct的属性类型初始化了,sql驱动能感知到参数类型,所以可以直接赋值给struct的指针.这样struct的属性就有值了
@@ -1031,9 +1031,9 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 
 		// 记录需要类型转换的字段信息
 		// Record the field information that requires type conversion
-		var fieldTempDriverValueMap map[int]*driverValueInfo
+		var fieldTempDriverValueMap map[int]*fieldColumnCache
 		if iscdvm {
-			fieldTempDriverValueMap = make(map[int]*driverValueInfo)
+			fieldTempDriverValueMap = make(map[int]*fieldColumnCache)
 		}
 
 		// 给数据赋值初始化变量
@@ -1079,11 +1079,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 					values[i] = new(interface{})
 				} else { // 如果需要类型转换 | If type conversion is required
 					values[i] = tempDriverValue
-					dvinfo := driverValueInfo{}
-					dvinfo.customDriverValueConver = customDriverValueConver
-					dvinfo.columnType = columnType
-					dvinfo.tempDriverValue = tempDriverValue
-					fieldTempDriverValueMap[i] = &dvinfo
+					fieldCache := &fieldColumnCache{}
+					fieldCache.customDriverValueConver = customDriverValueConver
+					fieldCache.columnType = columnType
+					fieldCache.tempDriverValue = tempDriverValue
+					fieldTempDriverValueMap[i] = fieldCache
 				}
 
 				continue
@@ -1136,11 +1136,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 
 		// 循环 需要类型转换的字段,把临时值赋值给实际的接收对象
 		// Loop through the fields that require type conversion and assign the temporary value to the actual receiving object
-		for i, driverValueInfo := range fieldTempDriverValueMap {
+		for i, fieldCache := range fieldTempDriverValueMap {
 			// driverValueInfo := *driverValueInfoPtr
 			// 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
 			// According to the column name, field type, and new value, return a pointer that meets the receiving type value. The return value is a pointer, pointer, pointer!!!!
-			rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, driverValueInfo.columnType, driverValueInfo.tempDriverValue, nil)
+			rightValue, errConverDriverValue := fieldCache.customDriverValueConver.ConverDriverValue(ctx, fieldCache.columnType, fieldCache.tempDriverValue, nil)
 			if errConverDriverValue != nil {
 				errConverDriverValue = fmt.Errorf("->QueryMap-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 				FuncLogError(ctx, errConverDriverValue)

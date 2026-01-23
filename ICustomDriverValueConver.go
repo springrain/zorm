@@ -64,13 +64,6 @@ func RegisterCustomDriverValueConver(dialectColumnType string, customDriverValue
 	return nil
 }
 
-type driverValueInfo struct {
-	customDriverValueConver ICustomDriverValueConver
-	columnType              *sql.ColumnType
-	tempDriverValue         interface{}
-	structFieldType         *reflect.Type
-}
-
 /**
 
 import (

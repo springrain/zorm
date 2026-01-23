@@ -21,6 +21,7 @@ package zorm
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -61,6 +62,8 @@ type fieldColumnCache struct {
 	dialectDatabaseTypeName string
 	// customDriverValueConver 自定义类型转换接口,缓存避免每行每列的map查找
 	customDriverValueConver ICustomDriverValueConver
+	// tempDriverValue 记录customDriverValueConver.GetDriverValue临时的值
+	tempDriverValue driver.Value
 }
 
 // entityStructCache entity和struct结构体缓存,包含实体类的字段和数据库列的映射信息
@@ -368,7 +371,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 // 当读取数据库的值为NULL时,由于基本类型不支持为NULL,通过反射将未知driver.Value改为interface{},不再映射到struct实体类
 // 感谢@fastabler提交的pr fix:converting NULL to int is unsupported
 // oneColumnScanner 只有一个字段,而且可以直接Scan,例如string或者[]string,不需要反射StructType进行处理
-func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, fieldCache []*fieldColumnCache, columnTypeToCache map[*sql.ColumnType]*fieldColumnCache, entity interface{}) error {
+func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.Type, rows *sql.Rows, driverValue *reflect.Value, fieldCaches []*fieldColumnCache, entity interface{}) error {
 	if entity == nil && (valueOf == nil || valueOf.IsNil()) {
 		return errors.New("->sqlRowsValues-->接收值的entity参数为nil")
 	}
@@ -378,38 +381,38 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		valueOfElem = valueOf.Elem()
 	}
 
-	ctLen := len(fieldCache)
+	ctLen := len(fieldCaches)
 	// 声明载体数组,用于存放struct的属性指针
 	// Declare a carrier array to store the attribute pointer of the struct
 	values := make([]interface{}, ctLen)
 	// 记录需要类型转换的字段信息
-	var fieldTempDriverValueMap map[*sql.ColumnType]*driverValueInfo
+	var tempDriverValues []*fieldColumnCache
 	if iscdvm {
-		fieldTempDriverValueMap = make(map[*sql.ColumnType]*driverValueInfo)
+		tempDriverValues = make([]*fieldColumnCache, 0, ctLen)
 	}
 	// 循环字段
-	for i, cache := range fieldCache {
-		if cache == nil { // 数据库字段比实体类的多,实体类无法接收,设置为默认值
+	for i, fieldCache := range fieldCaches {
+		if fieldCache == nil { // 数据库字段比实体类的多,实体类无法接收,设置为默认值
 			values[i] = new(interface{})
 			continue
 		}
-		columnType := cache.columnType
+		columnType := fieldCache.columnType
 		dv := driverValue.Index(i)
 		// if dv.IsValid() && dv.InterfaceData()[0] == 0 {
 		if dv.IsValid() && dv.IsNil() { // 该字段的数据库值是null,取默认值 | The database value of this field is null, no further processing is required, use the default value
 			values[i] = new(interface{})
 			continue
 		}
-		if cache.customDriverValueConver != nil { // 如果是需要转换的字段
+		if fieldCache.customDriverValueConver != nil { // 如果是需要转换的字段
 			// 获取字段类型
 			var structFieldType *reflect.Type
 			if entity != nil { // 查询一个字段,并且可以直接接收
 				structFieldType = typeOf
-			} else if cache.structField != nil { // struct类型,存在这个字段
-				vtype := cache.structField.Type
+			} else if fieldCache.structField != nil { // struct类型,存在这个字段
+				vtype := fieldCache.structField.Type
 				structFieldType = &vtype
 			}
-			tempDriverValue, err := cache.customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
+			tempDriverValue, err := fieldCache.customDriverValueConver.GetDriverValue(ctx, columnType, structFieldType)
 			if err != nil {
 				return err
 			}
@@ -417,14 +420,8 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 				return errors.New("->sqlRowsValues-->customDriverValueConver.GetDriverValue返回的driver.Value不能为nil")
 			}
 			values[i] = tempDriverValue
-
-			// 需要类型转换
-			dvinfo := driverValueInfo{}
-			dvinfo.customDriverValueConver = cache.customDriverValueConver
-			// dvinfo.columnType = columnType
-			dvinfo.structFieldType = structFieldType
-			dvinfo.tempDriverValue = tempDriverValue
-			fieldTempDriverValueMap[columnType] = &dvinfo
+			fieldCache.tempDriverValue = tempDriverValue
+			tempDriverValues = append(tempDriverValues, fieldCache)
 			continue
 		}
 
@@ -433,17 +430,17 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			values[i] = entity
 			continue
 		}
-		if cache.structField == nil { // 如果不存在这个字段
+		if fieldCache.structField == nil { // 如果不存在这个字段
 			values[i] = new(interface{})
 			continue
 		}
 		// 记录值
 		var v interface{}
 		// 字段的反射值
-		fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
-		if cache.isPtr { // 如果是指针类型
+		fieldValue := valueOfElem.FieldByIndex(fieldCache.structField.Index)
+		if fieldCache.isPtr { // 如果是指针类型
 			// 反射new一个对应类型的指针
-			newValue := reflect.New(cache.structField.Type.Elem())
+			newValue := reflect.New(fieldCache.structField.Type.Elem())
 			// 反射赋值到字段值
 			fieldValue.Set(newValue)
 			// 获取字段值
@@ -459,14 +456,14 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		return err
 	}
 	// 没有特殊类型替换的值
-	if len(fieldTempDriverValueMap) < 1 {
+	if len(tempDriverValues) < 1 {
 		return nil
 	}
 
 	// 有特殊类型的替换值,循环需要替换的值
-	for columnType, driverValueInfo := range fieldTempDriverValueMap {
+	for _, fieldCache := range tempDriverValues {
 		// 根据列名,字段类型,新值 返回符合接收类型值的指针,返回值是个指针,指针,指针!!!!
-		rightValue, errConverDriverValue := driverValueInfo.customDriverValueConver.ConverDriverValue(ctx, columnType, driverValueInfo.tempDriverValue, driverValueInfo.structFieldType)
+		rightValue, errConverDriverValue := fieldCache.customDriverValueConver.ConverDriverValue(ctx, fieldCache.columnType, fieldCache.tempDriverValue, &fieldCache.structField.Type)
 		if errConverDriverValue != nil {
 			errConverDriverValue = fmt.Errorf("->sqlRowsValues-->customDriverValueConver.ConverDriverValue错误:%w", errConverDriverValue)
 			FuncLogError(ctx, errConverDriverValue)
@@ -477,10 +474,10 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 			reflect.ValueOf(entity).Elem().Set(reflect.ValueOf(rightValue).Elem())
 			continue
 		}
-		// 如果是Struct类型接收,使用映射进行O(1)查找
-		if cache, ok := columnTypeToCache[columnType]; ok && cache.structField != nil {
+		// 如果是Struct类型接收
+		if fieldCache.structField != nil {
 			// 字段的反射值
-			fieldValue := valueOfElem.FieldByIndex(cache.structField.Index)
+			fieldValue := valueOfElem.FieldByIndex(fieldCache.structField.Index)
 			// 给字段赋值
 			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 		}
@@ -492,14 +489,14 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 
 // buildSelectFieldColumnCache 构建查询字段缓存
 // buildSelectFieldColumnCache builds a cache of query fields
-func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *entityStructCache, dialect string) ([]*fieldColumnCache, map[*sql.ColumnType]*fieldColumnCache, error) {
+func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *entityStructCache, dialect string) ([]*fieldColumnCache, error) {
 	if columnTypes == nil {
-		return nil, nil, errors.New("->buildSelectFieldColumnCache-->columnTypes不能为nil")
+		return nil, errors.New("->buildSelectFieldColumnCache-->columnTypes不能为nil")
 	}
 
-	fieldCache := make([]*fieldColumnCache, len(columnTypes))
+	fieldCaches := make([]*fieldColumnCache, len(columnTypes))
 	// 创建columnType到cache的映射,用于O(1)查找
-	columnTypeToCache := make(map[*sql.ColumnType]*fieldColumnCache, len(columnTypes))
+	//columnTypeToCache := make(map[*sql.ColumnType]*fieldColumnCache, len(columnTypes))
 
 	for i, columnType := range columnTypes {
 		//field, err := getStructFieldByColumnType(columnType, dbColumnFieldMap, exportFieldMap)
@@ -514,12 +511,12 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 		}
 		// 数据库字段可能比Struct里多, fieldCache[i] = nil
 		if field == nil {
-			fieldCache[i] = nil
+			fieldCaches[i] = nil
 			continue
 		}
 
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-		cacheItem := &fieldColumnCache{
+		fieldCache := &fieldColumnCache{
 			columnType:       columnType,
 			structField:      field.structField,
 			databaseTypeName: databaseTypeName,
@@ -534,62 +531,62 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 
 		// 缓存带方言前缀的数据库类型名
 		if dialect != "" {
-			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
+			fieldCache.dialectDatabaseTypeName = dialect + "." + databaseTypeName
 		}
 
 		// 缓存customDriverValueConver,避免每行每列的map查找
 		if iscdvm {
-			if cacheItem.customDriverValueConver == nil {
-				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.dialectDatabaseTypeName]
+			if fieldCache.customDriverValueConver == nil {
+				fieldCache.customDriverValueConver, _ = customDriverValueMap[fieldCache.dialectDatabaseTypeName]
 			}
-			if cacheItem.customDriverValueConver == nil {
-				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.databaseTypeName]
+			if fieldCache.customDriverValueConver == nil {
+				fieldCache.customDriverValueConver, _ = customDriverValueMap[fieldCache.databaseTypeName]
 			}
 		}
 
-		fieldCache[i] = cacheItem
-		columnTypeToCache[columnType] = cacheItem
+		fieldCaches[i] = fieldCache
+		//columnTypeToCache[columnType] = cacheItem
 	}
 
-	return fieldCache, columnTypeToCache, nil
+	return fieldCaches, nil
 }
 
 // buildEmptySelectFieldColumnCache 构建空的查询字段缓存(用于单字段查询)
 // buildEmptySelectFieldColumnCache builds an empty query field cache (used for single field queries)
-func buildEmptySelectFieldColumnCache(columnTypes []*sql.ColumnType, dialect string) ([]*fieldColumnCache, map[*sql.ColumnType]*fieldColumnCache) {
+func buildEmptySelectFieldColumnCache(columnTypes []*sql.ColumnType, dialect string) []*fieldColumnCache {
 	if columnTypes == nil {
-		return nil, nil
+		return nil
 	}
 
-	cache := make([]*fieldColumnCache, len(columnTypes))
+	fieldCaches := make([]*fieldColumnCache, len(columnTypes))
 	// 创建columnType到cache的映射,用于O(1)查找
-	columnTypeToCache := make(map[*sql.ColumnType]*fieldColumnCache, len(columnTypes))
+	// columnTypeToCache := make(map[*sql.ColumnType]*fieldColumnCache, len(columnTypes))
 
 	for i, columnType := range columnTypes {
 		databaseTypeName := strings.ToUpper(columnType.DatabaseTypeName())
-		cacheItem := &fieldColumnCache{
+		fieldCache := &fieldColumnCache{
 			columnType:       columnType,
 			databaseTypeName: databaseTypeName,
 		}
 		// 缓存带方言前缀的数据库类型名
 		if dialect != "" {
-			cacheItem.dialectDatabaseTypeName = dialect + "." + databaseTypeName
+			fieldCache.dialectDatabaseTypeName = dialect + "." + databaseTypeName
 		}
 		// 缓存customDriverValueConver,避免每行每列的map查找
 		if iscdvm {
-			if cacheItem.customDriverValueConver == nil {
-				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.dialectDatabaseTypeName]
+			if fieldCache.customDriverValueConver == nil {
+				fieldCache.customDriverValueConver, _ = customDriverValueMap[fieldCache.dialectDatabaseTypeName]
 			}
-			if cacheItem.customDriverValueConver == nil {
-				cacheItem.customDriverValueConver, _ = customDriverValueMap[cacheItem.databaseTypeName]
+			if fieldCache.customDriverValueConver == nil {
+				fieldCache.customDriverValueConver, _ = customDriverValueMap[fieldCache.databaseTypeName]
 			}
 			//cacheItem.cdvcStatus = 1 // 已检查
 		}
-		cache[i] = cacheItem
-		columnTypeToCache[columnType] = cacheItem
+		fieldCaches[i] = fieldCache
+		//columnTypeToCache[columnType] = cacheItem
 	}
 
-	return cache, columnTypeToCache
+	return fieldCaches
 }
 
 // checkEntityKind 检查entity类型必须是*struct类型或者基础类型的指针
