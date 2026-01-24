@@ -118,8 +118,8 @@ type DataSourceConfig struct {
 	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 
-	// TDengineInsertsColumnName TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
-	TDengineInsertsColumnName bool
+	// InsertSQLNoColumn 批量insert语句中是否没有列名.true没有列名,插入值和数据库列顺序保持一致,减少语句长度
+	InsertSQLNoColumn bool
 }
 
 // DBDao 数据库操作基类,隔离原生操作数据库API入口,所有数据库操作必须通过DBDao进行
@@ -1411,6 +1411,10 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 		FuncLogError(ctx, err)
 		return affected, err
 	}
+
+	// 用于处理 tdengine 的多条插入语法
+	tableName := entity.GetTableName()
+
 	// SQL语句的构造器
 	// SQL statement constructor
 	var insertSliceSQLBuilder strings.Builder
@@ -1424,9 +1428,12 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 			FuncLogError(ctx, err)
 			return affected, err
 		}
-		if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		// 用于处理 tdengine 批量插入语法
+		newTableName := entity.GetTableName()
+		if config.Dialect == "tdengine" && tableName != newTableName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('1','2'),('3','4')  table2 values('5','6'),目前要求字段和类型必须一致,如果不一致,改动略多
+			tableName = newTableName
 			insertSliceSQLBuilder.WriteByte(' ')
-			insertSliceSQLBuilder.WriteString(entity.GetTableName())
+			insertSliceSQLBuilder.WriteString(tableName)
 			insertSliceSQLBuilder.WriteString(" VALUES")
 		} else {
 			insertSliceSQLBuilder.WriteByte(',')

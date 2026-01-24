@@ -1,4 +1,5 @@
 v1.8.2
+- ```TDengineInsertsColumnName```修改为```InsertSQLNoColumn```
 - 优化```customDriverValueConver```处理逻辑
 - 优化主键判断
 - 移除```getFieldTagName```函数,直接使用```FuncWrapFieldTagName```

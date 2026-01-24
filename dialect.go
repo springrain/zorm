@@ -92,7 +92,9 @@ var wrapInsertSQL = func(ctx context.Context, entityCache *entityStructCache, co
 	var insertSQLBuilder strings.Builder
 	insertSQLBuilder.Grow(stringBuilderGrowLen)
 	// sqlBuilder.WriteString(entity.GetTableName())
-	insertSQLBuilder.WriteByte('(')
+	if !config.InsertSQLNoColumn {
+		insertSQLBuilder.WriteByte('(')
+	}
 
 	// SQL语句中,VALUES(?,?,...)语句的构造器
 	// In the SQL statement, the constructor of the VALUES(?,?,...) statement
@@ -111,35 +113,49 @@ var wrapInsertSQL = func(ctx context.Context, entityCache *entityStructCache, co
 			// 删除主键列
 			entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
 			// 构造SQL语句
-			insertSQLBuilder.WriteString(column.columnTag)
+			if !config.InsertSQLNoColumn {
+				insertSQLBuilder.WriteString(column.columnTag)
+			}
 			valueSQLBuilder.WriteString(entityCache.pkSequence)
 			i = i - 1
 			// if i > 0 { // i+1<len(*columns)会有风险:id是最后的字段,而且还是自增,被忽略了,但是前面的已经处理,是 逗号, 结尾的,就会bug,实际概率极低
 			if i < len(entityCache.columns)-1 { // 不是最后一个
-				insertSQLBuilder.WriteByte(',')
+				if !config.InsertSQLNoColumn {
+					insertSQLBuilder.WriteByte(',')
+				}
 				valueSQLBuilder.WriteByte(',')
 			}
 			continue
 		}
 		if i > 0 {
-			insertSQLBuilder.WriteByte(',')
+			if !config.InsertSQLNoColumn {
+				insertSQLBuilder.WriteByte(',')
+			}
 			valueSQLBuilder.WriteByte(',')
 		}
 		// 构造SQL语句
-		insertSQLBuilder.WriteString(column.columnTag)
+		if !config.InsertSQLNoColumn {
+			insertSQLBuilder.WriteString(column.columnTag)
+		}
 		valueSQLBuilder.WriteByte('?')
 	}
-	insertSQLBuilder.WriteByte(')')
+	if !config.InsertSQLNoColumn {
+		insertSQLBuilder.WriteByte(')')
+	}
 	valueSQLBuilder.WriteByte(')')
 	entityCache.valuesSQL += valueSQLBuilder.String()
 
 	insertSQLBuilder.WriteString(" VALUES")
 	insertSQLBuilder.WriteString(entityCache.valuesSQL)
-	if config.Dialect == "tdengine" && !config.TDengineInsertsColumnName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
-		entityCache.insertSQL += " VALUES" + entityCache.valuesSQL
-	} else {
-		entityCache.insertSQL += insertSQLBuilder.String()
-	}
+	entityCache.insertSQL += insertSQLBuilder.String()
+	/*
+		if config.Dialect == "tdengine" && config.InsertSQLNoColumn { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+			entityCache.insertSQL += " VALUES" + entityCache.valuesSQL
+		} else {
+			entityCache.insertSQL += insertSQLBuilder.String()
+		}
+	*/
+
 	return nil
 }
 
@@ -164,30 +180,34 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 		return &sqlstr, values, err
 	}
 
+	// 用于处理 tdengine 的多条插入语法
+	tableName := entity.GetTableName()
+
 	var sqlBuilder strings.Builder
 	// sqlBuilder.Grow(len(entity.GetTableName()) + len(inserColumnName) + len(valuesql) + 19)
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
-	sqlBuilder.WriteString(entity.GetTableName())
+	sqlBuilder.WriteString(tableName)
 	// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-	sqlBuilder.WriteString(*inserColumnName)
+	if !config.InsertSQLNoColumn {
+		sqlBuilder.WriteString(*inserColumnName)
+	}
 	sqlBuilder.WriteString(" VALUES")
 	sqlBuilder.WriteString(*valuesql)
 	for i := 1; i < sliceLen; i++ {
+		// 用于处理 tdengine 批量插入语法
+		newTaableName := entityMapSlice[i].GetTableName()
 		// 拼接字符串
 		// Splicing string
-		if config.Dialect == "tdengine" { // 如果是tdengine,拼接类似 INSERT INTO table1 values('2','3')  table2 values('4','5'),目前要求字段和类型必须一致,如果不一致,改动略多
+		if config.Dialect == "tdengine" && tableName != newTaableName { // 如果是tdengine,拼接类似 INSERT INTO table1 values('1','2'),('3','4')  table2 values('5','6'),目前要求字段和类型必须一致,如果不一致,改动略多
+			tableName = newTaableName
 			sqlBuilder.WriteByte(' ')
-			sqlBuilder.WriteString(entityMapSlice[i].GetTableName())
-			if config.TDengineInsertsColumnName {
-				sqlBuilder.WriteString(*inserColumnName)
-			}
+			sqlBuilder.WriteString(tableName)
 			sqlBuilder.WriteString(" VALUES")
-			sqlBuilder.WriteString(*valuesql)
 		} else { // 标准语法 类似 INSERT INTO table1(id,name) values('2','3'), values('4','5')
 			sqlBuilder.WriteByte(',')
-			sqlBuilder.WriteString(*valuesql)
 		}
+		sqlBuilder.WriteString(*valuesql)
 
 		entityMap := entityMapSlice[i]
 		for j := 0; j < len(dbFieldMapKey); j++ {
@@ -235,7 +255,9 @@ var wrapInsertEntityMapSQL = func(ctx context.Context, config *DataSourceConfig,
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
-	sqlBuilder.WriteString(*inserColumnName)
+	if !config.InsertSQLNoColumn {
+		sqlBuilder.WriteString(*inserColumnName)
+	}
 	sqlBuilder.WriteString(" VALUES")
 	sqlBuilder.WriteString(*valuesql)
 	sqlstr = sqlBuilder.String()
