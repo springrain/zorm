@@ -25,7 +25,7 @@ import (
 	"testing"
 )
 
-func Test_getFiieldTagName_dialectFromConfig(t *testing.T) {
+func Test_FuncWrapFieldTagName_dialectFromConfig(t *testing.T) {
 	type args struct {
 		dialect string
 		field   *reflect.StructField
@@ -114,7 +114,7 @@ func Test_getFiieldTagName_dialectFromConfig(t *testing.T) {
 	}
 }
 
-func Test_getFieldTagName(t *testing.T) {
+func Test_FuncWrapFieldTagName(t *testing.T) {
 	type args struct {
 		field *reflect.StructField
 	}
@@ -148,7 +148,7 @@ func Test_getFieldTagName(t *testing.T) {
 					}
 				}
 
-				return colName
+				return fmt.Sprintf("`%s`", colName)
 			},
 			want: "`described`",
 		},
