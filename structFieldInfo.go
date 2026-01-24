@@ -296,19 +296,11 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 		mustUpdateCols := ctx.Value(contextMustUpdateColsValueKey)
 		if mustUpdateCols != nil { // 指定了仅更新的列
 			mustUpdateColsMap = mustUpdateCols.(map[string]bool)
-			if mustUpdateColsMap != nil {
-				// 添加主键
-				mustUpdateColsMap[entityCache.pkField.columnNameLower] = true
-			}
 		}
 	} else { // update 更新全部字段时,需要处理onlyUpdateCols
 		onlyUpdateCols := ctx.Value(contextOnlyUpdateColsValueKey)
 		if onlyUpdateCols != nil { // 指定了仅更新的列
 			onlyUpdateColsMap = onlyUpdateCols.(map[string]bool)
-			if onlyUpdateColsMap != nil {
-				// 添加主键
-				onlyUpdateColsMap[entityCache.pkField.columnNameLower] = true
-			}
 		}
 	}
 	// 记录需要更新字段的索引,因为有些字段会跳过,所以不用 i
@@ -320,7 +312,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			continue
 		}
 
-		// UpdateNotZeroValue,指定仅更新的列,当前列不用更新
+		// Update 指定仅更新的列
 		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[column.columnNameLower]) {
 			continue
 		}
@@ -334,7 +326,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			isMustUpdate = mustUpdateColsMap[column.columnNameLower]
 		}
 		isZero := fieldValue.IsZero()
-		if onlyUpdateNotZero && !isMustUpdate && isZero { // 如果只更新不为零值的,并且不是mustUpdateCols
+		if onlyUpdateNotZero && isZero && !isMustUpdate { // 如果只更新不为零值的,并且不是mustUpdateCols
 			continue
 		}
 		if column.isPtr { // 如果是指针类型
