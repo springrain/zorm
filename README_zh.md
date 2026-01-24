@@ -125,7 +125,7 @@ func init() {
 ### TDengine  
 - 因TDengine驱动不支持事务,需要设置```DisableTransaction=true```
 - 配置zorm.DataSourceConfig的 ```DriverName:taosSql或者taosRestful, Dialect:tdengine``` 
-- zorm.DataSourceConfig的```InsertSQLNoColumn ```TDengine批量insert语句中是否有列名.默认false没有列名,插入值和数据库列顺序保持一致,减少语句长度
+- zorm.DataSourceConfig的```InsertSQLNoColumn ```insert语句中是否没有列名.true没有列名,插入值和数据库列顺序保持一致,减少语句长度
 - 测试用例: https://zorm.cn/docs/zorm_tdengine_3.0_test   
 - TDengine已收录: https://github.com/taosdata/awesome-tdengine/#orm   
 
