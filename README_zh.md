@@ -467,7 +467,7 @@ func TestQueryRow(t *testing.T) {
 
 	// 构造查询用的finder
 	// finder := zorm.NewSelectFinder(demoStructTableName) // select * from t_demo
-	// finder := zorm.NewSelectFinder(demoStructTableName, "id,userName") // select id,userName from t_demo
+	// finder := zorm.NewSelectFinder(demoStructTableName, "id,user_name") // select id,user_name from t_demo
 	finder := zorm.NewFinder().Append("SELECT * FROM " + demoStructTableName) // select * from t_demo
 	// finder默认启用了sql注入检查,禁止语句中拼接 ' 单引号,可以设置 finder.InjectionCheck = false 解开限制
 
@@ -593,7 +593,7 @@ func TestUpdateNotZeroValue(t *testing.T) {
 		// newCtx, _ := zorm.BindContextMustUpdateCols(ctx, []string{"active"})
 		// _, err := zorm.UpdateNotZeroValue(newCtx, &demo)
 
-		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
+		// 更新 "sql":"UPDATE t_demo SET user_name=? WHERE id=?","args":["UpdateNotZeroValue","20210630163227149563000042432429"]
 		_, err := zorm.UpdateNotZeroValue(ctx, &demo)
 
 		// 如果返回的err不是nil,事务就会回滚
@@ -647,9 +647,9 @@ func TestUpdateFinder(t *testing.T) {
 		// finder := zorm.NewUpdateFinder(demoStructTableName) // UPDATE t_demo SET
 		// finder := zorm.NewDeleteFinder(demoStructTableName)  // DELETE FROM t_demo
 		finder := zorm.NewFinder().Append("UPDATE").Append(demoStructTableName).Append("SET") // UPDATE t_demo SET
-		finder.Append("userName=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
+		finder.Append("user_name=?,active=?", "TestUpdateFinder", 1).Append("WHERE id=?", "20210630163227149563000042432429")
 
-		// 更新 "sql":"UPDATE t_demo SET  userName=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]
+		// 更新 "sql":"UPDATE t_demo SET  user_name=?,active=? WHERE id=?","args":["TestUpdateFinder",1,"20210630163227149563000042432429"]
 		_, err := zorm.UpdateFinder(ctx, finder)
 
 		// 如果返回的err不是nil,事务就会回滚
@@ -677,7 +677,7 @@ func TestUpdateEntityMap(t *testing.T) {
 		// Set 设置数据库的字段值,主键必须有值
 		entityMap.Set("id", "20210630163227149563000042432429")
 		entityMap.Set("user_name", "TestUpdateEntityMap")
-		// 更新 "sql":"UPDATE t_demo SET userName=? WHERE id=?","args":["TestUpdateEntityMap","20210630163227149563000042432429"]
+		// 更新 "sql":"UPDATE t_demo SET user_name=? WHERE id=?","args":["TestUpdateEntityMap","20210630163227149563000042432429"]
 		_, err := zorm.UpdateEntityMap(ctx, entityMap)
 
 		// 如果返回的err不是nil,事务就会回滚
