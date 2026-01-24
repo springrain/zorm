@@ -118,7 +118,7 @@ type DataSourceConfig struct {
 	// SQLDB 使用现有的数据库连接,优先级高于DSN
 	SQLDB *sql.DB
 
-	// InsertSQLNoColumn 批量insert语句中是否没有列名.true没有列名,插入值和数据库列顺序保持一致,减少语句长度
+	// InsertSQLNoColumn insert语句中是否没有列名.true没有列名,插入值和数据库列顺序保持一致,减少语句长度
 	InsertSQLNoColumn bool
 }
 
