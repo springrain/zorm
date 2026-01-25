@@ -304,7 +304,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 		}
 	}
 	// 记录需要更新字段的索引,因为有些字段会跳过,所以不用 i
-	j := 0
+	updateColumnIndex := 0
 	// 遍历所有数据库字段名,小写的
 	for _, column := range entityCache.columns {
 
@@ -313,21 +313,23 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 		}
 
 		// Update 指定仅更新的列
-		if onlyUpdateColsMap != nil && (!onlyUpdateColsMap[column.columnNameLower]) {
+		if onlyUpdateColsMap != nil && !onlyUpdateColsMap[column.columnNameLower] {
 			continue
 		}
 		// 记录值
 		var value interface{}
 		// 反射获取字段的值
 		fieldValue := valueOf.FieldByIndex(column.structField.Index)
-		// 是否必须更新的字段
-		isMustUpdate := false
-		if mustUpdateColsMap != nil {
-			isMustUpdate = mustUpdateColsMap[column.columnNameLower]
-		}
 		isZero := fieldValue.IsZero()
-		if onlyUpdateNotZero && isZero && !isMustUpdate { // 如果只更新不为零值的,并且不是mustUpdateCols
-			continue
+		// 更新非零值,并且是零值
+		if onlyUpdateNotZero && isZero {
+			if mustUpdateColsMap == nil {
+				continue
+			}
+			// 是否必须更新的字段
+			if !mustUpdateColsMap[column.columnNameLower] { // 如果只更新不为零值的,并且不是mustUpdateCols
+				continue
+			}
 		}
 		if column.isPtr { // 如果是指针类型
 			if fieldValue.IsNil() { // 如果是nil值
@@ -339,14 +341,17 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			value = fieldValue.Interface()
 		}
 		// 添加 , 逗号
-		if j > 0 {
+		if updateColumnIndex > 0 {
 			updateSQLBuilder.WriteByte(',')
 		}
-		j++
+		updateColumnIndex++
 		updateSQLBuilder.WriteString(column.columnTag)
 		updateSQLBuilder.WriteString("=?")
 		// 添加到记录值的数组
 		values = append(values, value)
+	}
+	if updateColumnIndex == 0 { //没有要更新的字段
+		return nil, nil, errors.New("->updateEntityFieldValues 没有要更新的列")
 	}
 	// 添加组件参数
 	updateSQLBuilder.WriteString(" WHERE ")
