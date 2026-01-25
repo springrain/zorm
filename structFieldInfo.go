@@ -355,7 +355,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	}
 	// 添加组件参数
 	updateSQLBuilder.WriteString(" WHERE ")
-	updateSQLBuilder.WriteString(entityCache.pkField.columnName)
+	updateSQLBuilder.WriteString(entity.GetPKColumnName())
 	updateSQLBuilder.WriteString("=?")
 	// 添加主键值
 	pkValue := valueOf.FieldByIndex(entityCache.pkField.structField.Index).Interface()

@@ -1814,6 +1814,9 @@ var wrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpd
 	if entity == nil {
 		return nil, nil, errors.New("->WrapUpdateSQLValue-->entity对象不能为空")
 	}
+	if entity.GetPKColumnName() == "" {
+		return nil, nil, errors.New("->WrapUpdateSQLValue-->主键不能为空")
+	}
 
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
