@@ -610,11 +610,12 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	}
 	fieldName := field.Name
 	fieldNameLower := strings.ToLower(fieldName)
-	existsField := entityCache.fieldMap[fieldNameLower]
-	if existsField != nil { //已经存在field,要把已经存在的fields删除,struct属性使用就近原则,自己属性替代嵌入的属性
+	//嵌套struct的字段
+	embedField := entityCache.fieldMap[fieldNameLower]
+	if embedField != nil { //已经存在field,要把已经存在的fields删除,struct属性使用就近原则,自己属性替代嵌入的属性
 		for i, field := range entityCache.fields {
 			// 删除field字段
-			if field.fieldName == existsField.fieldName {
+			if field.fieldName == embedField.fieldName {
 				entityCache.fields = append(entityCache.fields[:i], entityCache.fields[i+1:]...)
 				break
 			}
@@ -638,12 +639,13 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 		return true
 	}
 
-	if existsField != nil && existsField.columnNameLower != "" { //已经存在column,要把已经存在的columns删除,struct属性使用就近原则,自己属性替代嵌入的属性
+	if embedField != nil && embedField.columnNameLower != "" { //已经存在column,要把已经存在的columns删除,struct属性使用就近原则,自己属性替代嵌入的属性
 		for i, column := range entityCache.columns {
 			// 数据库字段的先删除,一般来说,columns比fields少
-			if column.columnNameLower == existsField.columnNameLower {
+			if column.columnNameLower == embedField.columnNameLower {
 				entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
-				delete(entityCache.columnMap, existsField.columnNameLower)
+				//嵌套的struct属性映射的columnName 和 column的不一定一样,所以这里从map中删除
+				delete(entityCache.columnMap, embedField.columnNameLower)
 				break
 			}
 		}
