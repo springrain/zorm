@@ -143,12 +143,14 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 		return nil, err
 	}
 	dbdao, err := FuncReadWriteStrategy(nil, 1)
-	if err != nil {
-		return nil, err
-	}
+	// dbDao 不存在,初始化defaultDao
 	if dbdao == nil {
 		defaultDao = &DBDao{config, dataSource}
 		return defaultDao, nil
+	}
+	// dbdao 存在,但是有error的情况
+	if err != nil {
+		return dbdao, err
 	}
 	return &DBDao{config, dataSource}, nil
 }
