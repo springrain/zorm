@@ -1241,10 +1241,10 @@ var updateFinder = func(ctx context.Context, finder *Finder) (int, error) {
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build dbConnection yourself
 // The number of rows affected by affected, if it is abnormal or the driver does not support it, return -1
 func Insert(ctx context.Context, entity IEntityStruct) (int, error) {
-	return insert(ctx, entity)
+	return insertEntity(ctx, entity)
 }
 
-var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
+var insertEntity = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
 	if entity == nil {
 		return affected, errors.New("->Insert-->entity对象不能为空")
@@ -1467,10 +1467,10 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 // Update updates all attributes of the struct, which must be of type IEntityStruct
 // ctx cannot be nil, refer to zorm.Transaction method to pass in ctx. Don't build DB Connection yourself
 func Update(ctx context.Context, entity IEntityStruct) (int, error) {
-	return update(ctx, entity)
+	return updateEntity(ctx, entity)
 }
 
-var update = func(ctx context.Context, entity IEntityStruct) (int, error) {
+var updateEntity = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	sqlstr, values, err := WrapUpdateSQLValue(ctx, entity, false)
 	if err != nil {
 		err = fmt.Errorf("->Update-->WrapUpdateSQLValue包装Finder错误:%w", err)
@@ -1526,11 +1526,15 @@ var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, e
 // affected影响的行数,如果异常或者驱动不支持,返回-1
 // Delete deletes an object based on the primary key. It must be of type IEntityStruct
 func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
-	return delete(ctx, entity)
+	return deleteEntity(ctx, entity)
 }
 
-var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
+var deleteEntity = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
+	if entity.GetPKColumnName() == "" { // 没有主键
+		return affected, errors.New("->deleteEntity-->entity没有主键")
+	}
+
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)

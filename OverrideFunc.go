@@ -96,8 +96,8 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 	case "Insert":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc = insert
-			insert = newFunc
+			oldFunc = insertEntity
+			insertEntity = newFunc
 		}
 	case "InsertSlice":
 		newFunc, ok := funcObject.(func(ctx context.Context, entityStructSlice []IEntityStruct) (int, error))
@@ -108,8 +108,8 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 	case "Update":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc = update
-			update = newFunc
+			oldFunc = updateEntity
+			updateEntity = newFunc
 		}
 	case "UpdateNotZeroValue":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
@@ -120,8 +120,8 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 	case "Delete":
 		newFunc, ok := funcObject.(func(ctx context.Context, entity IEntityStruct) (int, error))
 		if ok {
-			oldFunc = delete
-			delete = newFunc
+			oldFunc = deleteEntity
+			deleteEntity = newFunc
 		}
 
 	case "InsertEntityMap":

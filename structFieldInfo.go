@@ -136,7 +136,8 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 		field := typeOf.Field(i)
 		if field.Anonymous { // 如果是匿名的,调用递归处理
 			funcRecursiveAnonymous(ctx, entityCache, &field)
-		} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
+			//} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
+		} else { // 普通字段
 			// 创建entityStruct缓存
 			funcCreateEntityStructCache(ctx, entityCache, field)
 		}
@@ -608,6 +609,17 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 		return true
 	}
 	fieldName := field.Name
+	fieldNameLower := strings.ToLower(fieldName)
+	existsField := entityCache.fieldMap[fieldNameLower]
+	if existsField != nil { //已经存在field,要把已经存在的fields删除,struct属性使用就近原则,自己属性替代嵌入的属性
+		for i, field := range entityCache.fields {
+			// 删除field字段
+			if field.fieldName == existsField.fieldName {
+				entityCache.fields = append(entityCache.fields[:i], entityCache.fields[i+1:]...)
+				break
+			}
+		}
+	}
 
 	fieldCache := &fieldColumnCache{}
 	fieldCache.structField = &field
@@ -617,33 +629,45 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	fieldCache.fieldIndex = field.Index
 
 	//记录FieldCache
-	fieldNameLower := strings.ToLower(fieldName)
 	entityCache.fieldMap[fieldNameLower] = fieldCache
 	entityCache.fields = append(entityCache.fields, fieldCache)
 
 	// 如果是数据库字段
 	columnTag := field.Tag.Get(tagColumnName)
-	if columnTag != "" {
-		// dbColumnFieldMap[tagColumnValue] = field
-		// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
-		columnName := columnTag
-		//去掉可能的包裹符号
-		columnName = strings.Trim(columnName, "`")
-		columnName = strings.Trim(columnName, "\"")
-		columnName = strings.TrimLeft(columnName, "[")
-		columnName = strings.TrimRight(columnName, "]")
-		fieldCache.columnName = columnName
-		fieldCache.columnNameLower = strings.ToLower(columnName)
-
-		fieldCache.columnTag = columnTag
-		// @TODO 这里需要考虑已经在column tag中添加了包裹符,最好是把包裹符号放到Config中,取消FuncWrapFieldTagName函数
-		if FuncWrapFieldTagName != nil {
-			fieldCache.columnTag = FuncWrapFieldTagName(ctx, fieldCache.structField, columnTag)
-		}
-
-		entityCache.columns = append(entityCache.columns, fieldCache)
-		entityCache.columnMap[fieldCache.columnNameLower] = fieldCache
+	if columnTag == "" {
+		return true
 	}
+
+	if existsField != nil && existsField.columnNameLower != "" { //已经存在column,要把已经存在的columns删除,struct属性使用就近原则,自己属性替代嵌入的属性
+		for i, column := range entityCache.columns {
+			// 数据库字段的先删除,一般来说,columns比fields少
+			if column.columnNameLower == existsField.columnNameLower {
+				entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
+				delete(entityCache.columnMap, existsField.columnNameLower)
+				break
+			}
+		}
+	}
+
+	// dbColumnFieldMap[tagColumnValue] = field
+	// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
+	columnName := columnTag
+	//去掉可能的包裹符号
+	columnName = strings.Trim(columnName, "`")
+	columnName = strings.Trim(columnName, "\"")
+	columnName = strings.TrimLeft(columnName, "[")
+	columnName = strings.TrimRight(columnName, "]")
+	fieldCache.columnName = columnName
+	fieldCache.columnNameLower = strings.ToLower(columnName)
+
+	fieldCache.columnTag = columnTag
+	// @TODO 这里需要考虑已经在column tag中添加了包裹符,最好是把包裹符号放到Config中,取消FuncWrapFieldTagName函数
+	if FuncWrapFieldTagName != nil {
+		fieldCache.columnTag = FuncWrapFieldTagName(ctx, fieldCache.structField, columnTag)
+	}
+
+	entityCache.columns = append(entityCache.columns, fieldCache)
+	entityCache.columnMap[fieldCache.columnNameLower] = fieldCache
 
 	return true
 }
@@ -676,7 +700,8 @@ func funcRecursiveAnonymous(ctx context.Context, entityCache *entityStructCache,
 			//anonymousFieldCopy := anonymousField
 			anonymousField.Index = append(anonymous.Index, anonymousField.Index...)
 			funcRecursiveAnonymous(ctx, entityCache, &anonymousField)
-		} else if _, ok := entityCache.fieldMap[strings.ToLower(anonymousField.Name)]; !ok { // 普通命名字段,而且没有记录过
+			//} else if _, ok := entityCache.fieldMap[strings.ToLower(anonymousField.Name)]; !ok { // 普通命名字段,而且没有记录过
+		} else {
 			// 创建entityStruct缓存
 			// 构建完整的fieldIndex，组合父匿名字段的索引和当前字段的索引
 			//anonymousFieldCopy := anonymousField

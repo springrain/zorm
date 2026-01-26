@@ -1,7 +1,7 @@
 v1.8.2
+- 修改```update```为```updateEntity```,```delete```为```deleteEntity```,```insert```为```insertEntity```
 - ```TDengineInsertsColumnName```修改为```InsertSQLNoColumn```
 - 优化```customDriverValueConver```处理逻辑
-- 优化主键判断
 - 移除```getFieldTagName```函数,直接使用```FuncWrapFieldTagName```
 - 移除```wrapUpdateSQL```,```wrapInsertSliceSQL```复写函数
 - ```WrapUpdateStructFinder```修改为```WrapUpdateSQLValue```变量
