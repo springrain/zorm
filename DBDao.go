@@ -143,12 +143,12 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 		return nil, err
 	}
 	dbdao, err := FuncReadWriteStrategy(nil, 1)
+	if err != nil {
+		return nil, err
+	}
 	if dbdao == nil {
 		defaultDao = &DBDao{config, dataSource}
 		return defaultDao, nil
-	}
-	if err != nil {
-		return dbdao, err
 	}
 	return &DBDao{config, dataSource}, nil
 }
@@ -389,6 +389,11 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
 			//}
+			// 如果dbConnection为nil，无法进行回滚操作
+			// If dbConnection is nil, rollback operations cannot be performed
+			if dbConnection == nil {
+				return
+			}
 			//如果禁用了事务
 			// If transactions are disabled
 			if getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction) {
@@ -401,7 +406,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			}
 			// 任意一个分支事务回滚,分布式事务就整体回滚
 			// If any branch transaction rolls back, the distributed transaction rolls back as a whole
-			if globalTransaction != nil {
+			if globalTransaction != nil && globalRootContext != nil {
 				errGlobal = globalTransaction.RollbackGTX(ctx, globalRootContext)
 				if errGlobal != nil {
 					errGlobal = fmt.Errorf("->Transaction-->global:recover内globalTransaction事务回滚失败:%w", errGlobal)
