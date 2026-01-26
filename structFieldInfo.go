@@ -45,8 +45,10 @@ type fieldColumnCache struct {
 	columnNameLower string
 	// structField 对应的结构体字段,可能为nil
 	structField *reflect.StructField
-	// fieldName 字段名,如果structField不为nil.字段查找必须使用Name,因为如果struct嵌套了struct,Index会有错误
+	// fieldName 字段名,如果structField不为nil.使用fieldIndex进行FieldByIndex查找,正确处理嵌套struct
 	fieldName string
+	// fieldIndex 字段索引,用于FieldByIndex,避免嵌套struct时Index错误
+	fieldIndex []int
 	// isPtr 字段是否为指针类型
 	isPtr bool
 	// isPK 是否是主键字段
@@ -200,7 +202,7 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 			return nil, errors.New("->getEntityStructCache-->不支持的主键类型,只支持string,int,int64类型")
 		}
 		entityCache.pkType = pktype
-		pkValueIsZero := valueOf.FieldByName(entityCache.pkField.fieldName).IsZero()
+		pkValueIsZero := valueOf.FieldByIndex(entityCache.pkField.fieldIndex).IsZero()
 		if pkValueIsZero && entityCache.autoIncrement != 2 && (pktype == "int" || pktype == "int64") { // 主键值是零值,并且不是序列自增
 			entityCache.autoIncrement = 1 // 普通自增
 		}
@@ -235,7 +237,7 @@ func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	// 遍历所有数据库字段名,小写的
 	for _, column := range entityCache.columns {
 		var value interface{}
-		fv := valueOf.FieldByName(column.fieldName)
+		fv := valueOf.FieldByIndex(column.fieldIndex)
 		// 默认值
 		isDefaultValue := false
 		var defaultValue interface{}
@@ -252,7 +254,7 @@ func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			value = id
 			// 给对象主键赋值
 			// Assign a value to the primary key of the object
-			valueOf.FieldByName(entityCache.pkField.fieldName).Set(reflect.ValueOf(id))
+			valueOf.FieldByIndex(entityCache.pkField.fieldIndex).Set(reflect.ValueOf(id))
 		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
 		} else if column.isPtr { // 如果是指针类型
@@ -319,7 +321,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 		// 记录值
 		var value interface{}
 		// 反射获取字段的值
-		fieldValue := valueOf.FieldByName(column.fieldName)
+		fieldValue := valueOf.FieldByIndex(column.fieldIndex)
 		isZero := fieldValue.IsZero()
 		// 更新非零值,并且是零值
 		if onlyUpdateNotZero && isZero {
@@ -358,7 +360,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	updateSQLBuilder.WriteString(entity.GetPKColumnName())
 	updateSQLBuilder.WriteString("=?")
 	// 添加主键值
-	pkValue := valueOf.FieldByName(entityCache.pkField.fieldName).Interface()
+	pkValue := valueOf.FieldByIndex(entityCache.pkField.fieldIndex).Interface()
 	values = append(values, pkValue)
 	updateSQL := updateSQLBuilder.String()
 	return &updateSQL, &values, nil
@@ -434,7 +436,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		// 记录值
 		var v interface{}
 		// 字段的反射值
-		fieldValue := valueOfElem.FieldByName(fieldCache.fieldName)
+		fieldValue := valueOfElem.FieldByIndex(fieldCache.fieldIndex)
 		if fieldCache.isPtr { // 如果是指针类型
 			// 反射new一个对应类型的指针
 			newValue := reflect.New(fieldCache.structField.Type.Elem())
@@ -474,7 +476,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		// 如果是Struct类型接收
 		if fieldCache.structField != nil {
 			// 字段的反射值
-			fieldValue := valueOfElem.FieldByName(fieldCache.fieldName)
+			fieldValue := valueOfElem.FieldByIndex(fieldCache.fieldIndex)
 			// 给字段赋值
 			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 		}
@@ -520,6 +522,7 @@ func buildSelectFieldColumnCache(columnTypes []*sql.ColumnType, entityCache *ent
 			columnNameLower:  field.columnNameLower,
 			isPtr:            field.isPtr,
 			fieldName:        field.fieldName,
+			fieldIndex:       field.fieldIndex,
 
 			// VARCHAR 和 TEXT 可以同时映射到一个string字段上,所以每次临时获取,不能缓存到field上
 			//dialectDatabaseTypeName: field.dialectDatabaseTypeName,
@@ -601,16 +604,17 @@ func checkEntityKind(entity interface{}) (*reflect.Type, error) {
 
 // funcCreateEntityStructCache 创建实体类字段缓存
 func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructCache, field reflect.StructField) bool {
-	fieldName := field.Name
 	if !field.IsExported() { // 私有字段不处理
 		return true
 	}
+	fieldName := field.Name
 
 	fieldCache := &fieldColumnCache{}
 	fieldCache.structField = &field
 
 	fieldCache.isPtr = field.Type.Kind() == reflect.Ptr
 	fieldCache.fieldName = fieldName
+	fieldCache.fieldIndex = field.Index
 
 	//记录FieldCache
 	fieldNameLower := strings.ToLower(fieldName)
@@ -668,9 +672,15 @@ func funcRecursiveAnonymous(ctx context.Context, entityCache *entityStructCache,
 	for i := 0; i < fieldNum; i++ {
 		anonymousField := anonymousTypeOf.Field(i)
 		if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct,调用递归处理
+			// 构建完整的fieldIndex，组合父匿名字段的索引和当前字段的索引
+			//anonymousFieldCopy := anonymousField
+			anonymousField.Index = append(anonymous.Index, anonymousField.Index...)
 			funcRecursiveAnonymous(ctx, entityCache, &anonymousField)
 		} else if _, ok := entityCache.fieldMap[strings.ToLower(anonymousField.Name)]; !ok { // 普通命名字段,而且没有记录过
 			// 创建entityStruct缓存
+			// 构建完整的fieldIndex，组合父匿名字段的索引和当前字段的索引
+			//anonymousFieldCopy := anonymousField
+			anonymousField.Index = append(anonymous.Index, anonymousField.Index...)
 			funcCreateEntityStructCache(ctx, entityCache, anonymousField)
 		}
 	}
