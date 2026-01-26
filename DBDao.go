@@ -1348,13 +1348,13 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 			}
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
-			pk := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index)
+			pk := reflect.ValueOf(entity).Elem().FieldByName(entityCache.pkField.structField.Name)
 			pk.Set(reflect.ValueOf(autoIncrementIDInt))
 			//err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt)
 		case "int64":
 			// 设置自增主键的值
 			// Set the value of the auto-incrementing primary key
-			pk := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index)
+			pk := reflect.ValueOf(entity).Elem().FieldByName(entityCache.pkField.structField.Name)
 			pk.Set(reflect.ValueOf(autoIncrementIDInt64))
 			//err = setFieldValueByColumnName(entity, pkName, autoIncrementIDInt64)
 		}
@@ -1557,7 +1557,7 @@ var delete = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	// SQL语句
 	// SQL statement
 	sqlstr := entityCache.deleteSQL
-	value := reflect.ValueOf(entity).Elem().FieldByIndex(entityCache.pkField.structField.Index).Interface()
+	value := reflect.ValueOf(entity).Elem().FieldByName(entityCache.pkField.structField.Name).Interface()
 	// 包装update执行,赋值给影响的函数指针变量,返回*sql.Result
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
 	values := make([]interface{}, 1)

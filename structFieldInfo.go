@@ -45,7 +45,7 @@ type fieldColumnCache struct {
 	columnNameLower string
 	// structField 对应的结构体字段,可能为nil
 	structField *reflect.StructField
-	// fieldName 字段名,如果structField不为nil
+	// fieldName 字段名,如果structField不为nil.字段查找必须使用Name,因为如果struct导入了其他的struct,Index会有错误
 	fieldName string
 	// isPtr 字段是否为指针类型
 	isPtr bool
@@ -200,7 +200,7 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 			return nil, errors.New("->getEntityStructCache-->不支持的主键类型,只支持string,int,int64类型")
 		}
 		entityCache.pkType = pktype
-		pkValueIsZero := valueOf.FieldByIndex(entityCache.pkField.structField.Index).IsZero()
+		pkValueIsZero := valueOf.FieldByName(entityCache.pkField.structField.Name).IsZero()
 		if pkValueIsZero && entityCache.autoIncrement != 2 && (pktype == "int" || pktype == "int64") { // 主键值是零值,并且不是序列自增
 			entityCache.autoIncrement = 1 // 普通自增
 		}
@@ -235,7 +235,7 @@ func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	// 遍历所有数据库字段名,小写的
 	for _, column := range entityCache.columns {
 		var value interface{}
-		fv := valueOf.FieldByIndex(column.structField.Index)
+		fv := valueOf.FieldByName(column.fieldName)
 		// 默认值
 		isDefaultValue := false
 		var defaultValue interface{}
@@ -252,7 +252,7 @@ func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			value = id
 			// 给对象主键赋值
 			// Assign a value to the primary key of the object
-			valueOf.FieldByIndex(entityCache.pkField.structField.Index).Set(reflect.ValueOf(id))
+			valueOf.FieldByName(entityCache.pkField.structField.Name).Set(reflect.ValueOf(id))
 		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
 		} else if column.isPtr { // 如果是指针类型
@@ -319,7 +319,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 		// 记录值
 		var value interface{}
 		// 反射获取字段的值
-		fieldValue := valueOf.FieldByIndex(column.structField.Index)
+		fieldValue := valueOf.FieldByName(column.fieldName)
 		isZero := fieldValue.IsZero()
 		// 更新非零值,并且是零值
 		if onlyUpdateNotZero && isZero {
@@ -358,7 +358,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	updateSQLBuilder.WriteString(entity.GetPKColumnName())
 	updateSQLBuilder.WriteString("=?")
 	// 添加主键值
-	pkValue := valueOf.FieldByIndex(entityCache.pkField.structField.Index).Interface()
+	pkValue := valueOf.FieldByName(entityCache.pkField.structField.Name).Interface()
 	values = append(values, pkValue)
 	updateSQL := updateSQLBuilder.String()
 	return &updateSQL, &values, nil
@@ -434,7 +434,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		// 记录值
 		var v interface{}
 		// 字段的反射值
-		fieldValue := valueOfElem.FieldByIndex(fieldCache.structField.Index)
+		fieldValue := valueOfElem.FieldByName(fieldCache.fieldName)
 		if fieldCache.isPtr { // 如果是指针类型
 			// 反射new一个对应类型的指针
 			newValue := reflect.New(fieldCache.structField.Type.Elem())
@@ -474,7 +474,7 @@ func sqlRowsValues(ctx context.Context, valueOf *reflect.Value, typeOf *reflect.
 		// 如果是Struct类型接收
 		if fieldCache.structField != nil {
 			// 字段的反射值
-			fieldValue := valueOfElem.FieldByIndex(fieldCache.structField.Index)
+			fieldValue := valueOfElem.FieldByName(fieldCache.fieldName)
 			// 给字段赋值
 			fieldValue.Set(reflect.ValueOf(rightValue).Elem())
 		}
