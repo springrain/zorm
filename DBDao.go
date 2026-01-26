@@ -1333,7 +1333,7 @@ var insert = func(ctx context.Context, entity IEntityStruct) (int, error) {
 		if err != nil {
 			err = fmt.Errorf("->Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", err)
 			FuncLogError(ctx, err)
-			return affected, nil
+			return affected, err
 		}
 		//pkName := entity.GetPKColumnName()
 		switch entityCache.pkType {
