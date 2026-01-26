@@ -45,7 +45,7 @@ type fieldColumnCache struct {
 	columnNameLower string
 	// structField 对应的结构体字段,可能为nil
 	structField *reflect.StructField
-	// fieldName 字段名,如果structField不为nil.字段查找必须使用Name,因为如果struct导入了其他的struct,Index会有错误
+	// fieldName 字段名,如果structField不为nil.字段查找必须使用Name,因为如果struct嵌套了struct,Index会有错误
 	fieldName string
 	// isPtr 字段是否为指针类型
 	isPtr bool
@@ -200,7 +200,7 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 			return nil, errors.New("->getEntityStructCache-->不支持的主键类型,只支持string,int,int64类型")
 		}
 		entityCache.pkType = pktype
-		pkValueIsZero := valueOf.FieldByName(entityCache.pkField.structField.Name).IsZero()
+		pkValueIsZero := valueOf.FieldByName(entityCache.pkField.fieldName).IsZero()
 		if pkValueIsZero && entityCache.autoIncrement != 2 && (pktype == "int" || pktype == "int64") { // 主键值是零值,并且不是序列自增
 			entityCache.autoIncrement = 1 // 普通自增
 		}
@@ -252,7 +252,7 @@ func insertEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 			value = id
 			// 给对象主键赋值
 			// Assign a value to the primary key of the object
-			valueOf.FieldByName(entityCache.pkField.structField.Name).Set(reflect.ValueOf(id))
+			valueOf.FieldByName(entityCache.pkField.fieldName).Set(reflect.ValueOf(id))
 		} else if isDefaultValue && isZero { // 如果有默认值,并且fv是零值,等于默认值
 			value = defaultValue
 		} else if column.isPtr { // 如果是指针类型
@@ -358,7 +358,7 @@ func updateEntityFieldValues(ctx context.Context, entity IEntityStruct, entityCa
 	updateSQLBuilder.WriteString(entity.GetPKColumnName())
 	updateSQLBuilder.WriteString("=?")
 	// 添加主键值
-	pkValue := valueOf.FieldByName(entityCache.pkField.structField.Name).Interface()
+	pkValue := valueOf.FieldByName(entityCache.pkField.fieldName).Interface()
 	values = append(values, pkValue)
 	updateSQL := updateSQLBuilder.String()
 	return &updateSQL, &values, nil
