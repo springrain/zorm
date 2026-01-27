@@ -391,7 +391,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			//if !txOpen { //如果不是开启方,也应该回滚事务,虽然可能造成日志不准确,但是回滚要尽早
 			//	return
 			//}
-			// 如果dbConnection为nil，无法进行回滚操作
+			// 如果dbConnection为nil,无法进行回滚操作
 			// If dbConnection is nil, rollback operations cannot be performed
 			if dbConnection == nil {
 				return
@@ -1330,12 +1330,14 @@ var insertEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 			autoIncrementIDInt64, err = (*res).LastInsertId()
 		}
 
-		// 数据库不支持自增主键,不再赋值给struct属性
+		// 数据库不支持返回自增的值,不再赋值给struct属性
 		// The database does not support self-incrementing primary keys, and no longer assigns values ​​to struct attributes
 		if err != nil {
+			// 数据库不支持返回自增的值,只记录日志,不返回错误
 			err = fmt.Errorf("->Insert-->LastInsertId数据库不支持自增主键,不再赋值给struct属性:%w", err)
 			FuncLogError(ctx, err)
-			return affected, err
+			// 不返回错误,因为插入操作可能已成功,只是不支持返回自增的值
+			return affected, nil
 		}
 		//pkName := entity.GetPKColumnName()
 		switch entityCache.pkType {
