@@ -54,7 +54,7 @@ type fieldColumnCache struct {
 	// isPK 是否是主键字段
 	isPK bool
 
-	// 以下属性仅用在查询时的映射上,每个查询都是单独的struct对象
+	// 以下属性仅用在查询时的映射上,每个查询都是重新初始化的struct对象
 
 	// columnType 数据库列类型
 	columnType *sql.ColumnType
@@ -101,7 +101,7 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 	typeOf := *typeOfPtr
 	pkgPath := typeOf.PkgPath()
 	typeOfString := typeOf.String()
-	// 不同方言的缓存分开存储
+	// 不同方言的缓存分开存储.不同方言的columnTag并不一样,例如 `name` 和 "name",一个项目使用多种数据库时,同一个Struct的映射会有区别
 	var keyBuilder strings.Builder
 	keyBuilder.Grow(len(config.Dialect) + len(pkgPath) + len(typeOfString) + 3)
 	keyBuilder.WriteString(config.Dialect)
@@ -610,9 +610,10 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	}
 	fieldName := field.Name
 	fieldNameLower := strings.ToLower(fieldName)
-	//嵌套struct的字段
+
 	embedField := entityCache.fieldMap[fieldNameLower]
-	if embedField != nil { //已经存在field,要把已经存在的fields删除,struct属性使用就近原则,自己属性替代嵌入的属性
+	//嵌套struct已经有了这个属性,重复了,struct属性使用就近原则,要把已经存在的fields删除,自己属性替代嵌套struct的属性
+	if embedField != nil {
 		for i, field := range entityCache.fields {
 			// 删除field字段
 			if field.fieldName == embedField.fieldName {
@@ -638,13 +639,12 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	if columnTag == "" {
 		return true
 	}
-
-	if embedField != nil && embedField.columnNameLower != "" { //已经存在column,要把已经存在的columns删除,struct属性使用就近原则,自己属性替代嵌入的属性
+	//嵌套struct已经有了这个属性,重复了,struct属性使用就近原则,要把已经存在的columns删除,自己属性替代嵌套struct的属性
+	if embedField != nil && embedField.columnNameLower != "" {
 		for i, column := range entityCache.columns {
-			// 数据库字段的先删除,一般来说,columns比fields少
 			if column.columnNameLower == embedField.columnNameLower {
 				entityCache.columns = append(entityCache.columns[:i], entityCache.columns[i+1:]...)
-				//嵌套的struct属性映射的columnName 和 column的不一定一样,所以这里从map中删除
+				//嵌套的struct属性映射的columnName 和 column的不一定一样,所以从map中删除,后面再添加需要的column
 				delete(entityCache.columnMap, embedField.columnNameLower)
 				break
 			}
