@@ -48,7 +48,7 @@ var FuncLogPanic func(ctx context.Context, err error) = defaultLogPanic
 var FuncPrintSQL func(ctx context.Context, sqlstr string, args []interface{}, execSQLMillis int64) = defaultPrintSQL
 
 func defaultLogError(ctx context.Context, err error) {
-	log.Output(LogCallDepth, fmt.Sprintln(err))
+	_ = log.Output(LogCallDepth, fmt.Sprintln(err))
 }
 
 func defaultLogPanic(ctx context.Context, err error) {
@@ -57,9 +57,9 @@ func defaultLogPanic(ctx context.Context, err error) {
 
 func defaultPrintSQL(ctx context.Context, sqlstr string, args []interface{}, execSQLMillis int64) {
 	if args != nil {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",execSQLMillis:", execSQLMillis))
+		_ = log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args:", args, ",execSQLMillis:", execSQLMillis))
 	} else {
-		log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",execSQLMillis:", execSQLMillis))
+		_ = log.Output(LogCallDepth, fmt.Sprintln("sql:", sqlstr, ",args: [] ", ",execSQLMillis:", execSQLMillis))
 	}
 }
 

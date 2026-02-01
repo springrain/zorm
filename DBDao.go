@@ -37,18 +37,6 @@ import (
 	"time"
 )
 
-// FuncReadWriteStrategy 数据库的读写分离的策略,用于外部重写实现自定义的逻辑,也可以使用ctx标识,处理多库的场景,rwType=0 read,rwType=1 write
-// 不能归属到DBDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为读写分离的处理方式
-// 即便是放到DBDao里,因为是多库,BindContextDBConnection函数调用少不了,业务包装一个方法,指定一下读写获取一个DBDao效果是一样的,唯一就是需要根据业务指定一下读写,其实更灵活了
-// FuncReadWriteStrategy Single database read and write separation strategy,used for external replication to implement custom logic, rwType=0 read, rwType=1 write.
-// "BindContextDBConnection" is already a connection to the specified database and will conflict with this function. As a single database read and write separation of processing
-var FuncReadWriteStrategy = func(ctx context.Context, rwType int) (*DBDao, error) {
-	if defaultDao == nil {
-		return nil, errors.New("->FuncReadWriteStrategy-->defaultDao为nil,请检查数据库初始化配置是否正确,主要是DSN,DriverName和Dialect")
-	}
-	return defaultDao, nil
-}
-
 // wrapContextStringKey 包装context的key,不直接使用string类型,避免外部直接注入使用
 // wrapContextStringKey wraps the context key, not directly using the string type to avoid direct external injection
 type wrapContextStringKey string
@@ -62,6 +50,18 @@ const contextTxOptionsKey = wrapContextStringKey("contextTxOptionsKey")
 
 // stringBuilderGrowLen 默认长度
 const stringBuilderGrowLen = 100
+
+// FuncReadWriteStrategy 数据库的读写分离的策略,用于外部重写实现自定义的逻辑,也可以使用ctx标识,处理多库的场景,rwType=0 read,rwType=1 write
+// 不能归属到DBDao里,BindContextDBConnection已经是指定数据库的连接了,和这个函数会冲突.就作为读写分离的处理方式
+// 即便是放到DBDao里,因为是多库,BindContextDBConnection函数调用少不了,业务包装一个方法,指定一下读写获取一个DBDao效果是一样的,唯一就是需要根据业务指定一下读写,其实更灵活了
+// FuncReadWriteStrategy Single database read and write separation strategy,used for external replication to implement custom logic, rwType=0 read, rwType=1 write.
+// "BindContextDBConnection" is already a connection to the specified database and will conflict with this function. As a single database read and write separation of processing
+var FuncReadWriteStrategy = func(ctx context.Context, rwType int) (*DBDao, error) {
+	if defaultDao == nil {
+		return nil, errors.New("->FuncReadWriteStrategy-->defaultDao为nil,请检查数据库初始化配置是否正确,主要是DSN,DriverName和Dialect")
+	}
+	return defaultDao, nil
+}
 
 // DataSourceConfig 数据库连接池的配置
 // DateSourceConfig Database connection pool configuration
