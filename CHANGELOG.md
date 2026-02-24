@@ -1,3 +1,6 @@
+v1.8.3
+- 完善文档,注释
+
 v1.8.2
 - 修改```update```为```updateEntity```,```delete```为```deleteEntity```,```insert```为```insertEntity```
 - ```TDengineInsertsColumnName```修改为```InsertSQLNoColumn```
