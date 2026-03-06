@@ -263,7 +263,7 @@ func Transaction(ctx context.Context, doTransaction func(ctx context.Context) (i
 	return transaction(ctx, doTransaction)
 }
 
-var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (info interface{}, err error) {
+var transaction = func(ctx context.Context, doTransaction func(ctx context.Context) (interface{}, error)) (interface{}, error) {
 	// 是否是dbConnection的开启方,如果是开启方,才可以提交事务
 	// Whether it is the opener of db Connection, if it is the opener, the transaction can be submitted
 	localTxOpen := false
@@ -272,6 +272,10 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 	// 如果dbConnection不存在,则会用默认的datasource开启事务
 	// If db Connection does not exist, the default datasource will be used to start the transaction
 	var dbConnection *dataBaseConnection
+
+	// result 事务函数的结果
+	var result interface{}
+	var err error
 	ctx, dbConnection, err = checkDBConnection(ctx, dbConnection, false, 1)
 	if err != nil {
 		FuncLogError(ctx, err)
@@ -379,8 +383,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			//if _, ok := r.(runtime.Error); ok {
 			//	panic(r)
 			//}
-			var errOk bool
-			err, errOk = r.(error)
+			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("->Transaction-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -421,7 +424,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 
 	// 执行业务的事务函数
 	// Execute the business transaction function
-	info, err = doTransaction(ctx)
+	result, err = doTransaction(ctx)
 
 	if err != nil {
 		err = fmt.Errorf("->Transaction-->doTransaction业务执行错误:%w", err)
@@ -430,7 +433,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 		// 如果禁用了事务
 		// If transactions are disabled
 		if getContextBoolValue(ctx, contextDisableTransactionValueKey, dbConnection.config.DisableTransaction) {
-			return info, err
+			return result, err
 		}
 
 		// 不是开启方回滚事务,有可能造成日志记录不准确,但是回滚最重要了,尽早回滚
@@ -449,7 +452,7 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				FuncLogError(ctx, errGlobal)
 			}
 		}
-		return info, err
+		return result, err
 	}
 	// 如果是事务开启方,提交事务
 	// If it is the transaction opener, commit the transaction
@@ -477,12 +480,12 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 				}
 			}
 
-			return info, errCommit
+			return result, errCommit
 		}
 
 	}
 
-	return info, err
+	return result, err
 }
 
 var errQueryRow = errors.New("->QueryRow查询出多条数据")
@@ -561,8 +564,7 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
 			has = false
-			var errOk bool
-			err, errOk = r.(error)
+			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("->QueryRow-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -765,8 +767,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
-			var errOk bool
-			err, errOk = r.(error)
+			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("->Query-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -986,8 +987,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
-			var errOk bool
-			err, errOk = r.(error)
+			err, errOk := r.(error)
 			if errOk {
 				err = fmt.Errorf("->QueryMap-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -1199,6 +1199,75 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	}
 
 	return resultMapList, nil
+}
+
+// ResultSetRows 根据Finder和Page查询,用户自己处理结果集,一般用于处理多结果集,游标等特殊情况
+// ResultSetRows According to Finder and Page queries, the user handles the result set themselves, generally used for handling multiple result sets, cursor, and other special situations
+func ResultSetRows(ctx context.Context, finder *Finder, page *Page, doRows func(ctx context.Context, rows *sql.Rows) (interface{}, error)) (interface{}, error) {
+	return resultSetRows(ctx, finder, page, doRows)
+}
+
+var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows func(ctx context.Context, rows *sql.Rows) (interface{}, error)) (interface{}, error) {
+	//从contxt中获取数据库连接,可能为nil
+	//Get database connection from contxt, may be nil
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		FuncLogError(ctx, errFromContxt)
+		return nil, errFromContxt
+	}
+
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 0)
+	if errConfig != nil {
+		FuncLogError(ctx, errConfig)
+		return nil, errConfig
+	}
+	sqlstr, errSQL := wrapQuerySQL(ctx, config, finder, page)
+	if errSQL != nil {
+		errSQL = fmt.Errorf("->ResultSetRows-->wrapQuerySQL获取查询SQL语句错误:%w", errSQL)
+		FuncLogError(ctx, errSQL)
+		return nil, errSQL
+	}
+
+	// 检查dbConnection.有可能会创建dbConnection或者开启事务,所以要尽可能的接近执行时检查
+	// Check db Connection. It is possible to create a db Connection or start a transaction, so check it as close as possible to the execution
+	var errDbConnection error
+	ctx, dbConnection, errDbConnection = checkDBConnection(ctx, dbConnection, false, 0)
+	if errDbConnection != nil {
+		FuncLogError(ctx, errDbConnection)
+		return nil, errDbConnection
+	}
+
+	// 根据语句和参数查询
+	// Query based on statements and parameters
+	rows, errQueryContext := dbConnection.queryContext(ctx, &sqlstr, &finder.values)
+	if errQueryContext != nil {
+		errQueryContext = fmt.Errorf("->ResultSetRows-->queryContext查询rows错误:%w", errQueryContext)
+		FuncLogError(ctx, errQueryContext)
+		return nil, errQueryContext
+	}
+	// 先判断error 再关闭
+	// First determine error and then close
+	defer func() {
+		// 先判断error 再关闭
+		// First determine error and then close
+		rows.Close()
+		// 捕获panic,赋值给err,避免程序崩溃
+		// Capture panic, assign it to err, and avoid program crash
+		if r := recover(); r != nil {
+			err, errOk := r.(error)
+			if errOk {
+				err = fmt.Errorf("->ResultSetRows-->recover异常:%w", err)
+				FuncLogPanic(ctx, err)
+			} else {
+				err = fmt.Errorf("->ResultSetRows-->recover异常:%v", r)
+				FuncLogPanic(ctx, err)
+			}
+		}
+	}()
+
+	// 执行处理结果集的函数
+	result, err := doRows(ctx, rows)
+	return result, err
 }
 
 // UpdateFinder 更新Finder语句

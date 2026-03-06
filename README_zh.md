@@ -776,6 +776,9 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // ICustomDriverValueConver接口,参见达梦的例子
 
 // --------------------------------------------
+// ResultSetRows 根据Finder和Page查询,用户自己处理结果集,一般用于处理多结果集,游标等特殊情况
+
+// --------------------------------------------
 // OverrideFunc 重写ZORM的函数,当你使用这个函数时,你必须知道自己在做什么
 
 //oldInsertFunc 默认的Insert实现

@@ -762,6 +762,10 @@ func myReadWriteStrategy(ctx context.Context, rwType int) (*zorm.DBDao, error) {
 // ICustomDriverValueConver interface, see examples of DaMeng
 
 // --------------------------------------------
+// ResultSetRows According to Finder and Page queries, the user handles the result set themselves, generally used for handling multiple result sets, cursor, and other special situations
+
+
+// --------------------------------------------
 // OverrideFunc Rewrite the functions of ZORM, when you use this function, you have to know what you are doing
 
 // oldInsertFunc The default Insert implementation

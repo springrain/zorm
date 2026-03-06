@@ -20,6 +20,7 @@ package zorm
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 )
 
@@ -86,6 +87,12 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 		if ok {
 			oldFunc = queryMap
 			queryMap = newFunc
+		}
+	case "ResultSetRows":
+		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder, page *Page, doRows func(ctx context.Context, rows *sql.Rows) (interface{}, error)) (interface{}, error))
+		if ok {
+			oldFunc = resultSetRows
+			resultSetRows = newFunc
 		}
 	case "UpdateFinder":
 		newFunc, ok := funcObject.(func(ctx context.Context, finder *Finder) (int, error))
