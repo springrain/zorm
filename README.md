@@ -721,7 +721,49 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
-// TestOther 17. Some other instructions. Thank you very much for seeing this line
+
+
+// TestResultSetRows 17. Test ResultSetRows, the user handles the result set themselves, generally used for handling multiple result sets, cursor, and other special situations
+func TestResultSetRows(t *testing.T) {
+	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c.Request.Context(). This is just a simulation
+	var ctx = context.Background()
+
+	// finder used to construct the query
+	finder := zorm.NewFinder().Append("SELECT id,user_name,password,create_time,active FROM " + demoStructTableName)
+
+	// Execute the query, the user handles the result set themselves
+	result, err := zorm.ResultSetRows(ctx, finder, nil, func(ctx context.Context, rows *sql.Rows) (interface{}, error) {
+		// Get column information
+		columnTypes, err := rows.ColumnTypes()
+		if err != nil {
+			return nil, err
+		}
+
+		list := make([]demoStruct, 0)
+
+		// Iterate through the result set
+		for rows.Next() {
+			demo := demoStruct{}
+			// Scan data into the object
+			err := rows.Scan(&demo.Id, &demo.UserName, &demo.Password, &demo.CreateTime, &demo.Active)
+			if err != nil {
+				return nil, err
+			}
+			list = append(list, demo)
+		}
+
+		return list, nil
+	})
+
+	if err != nil { // Mark the test failed
+		t.Errorf("Error:%v", err)
+	}
+	// Print the result
+	fmt.Println(result)
+}
+
+
+// TestOther 18. Some other instructions. Thank you very much for seeing this line
 func TestOther(t *testing.T) {
 	// ctx is generally a request for one ctx, normally there should be a web layer in, such as gin's c. Request.Context()
 	var ctx = context.Background()

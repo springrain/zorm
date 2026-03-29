@@ -735,7 +735,47 @@ func TestFunc(t *testing.T) {
 	fmt.Println(userName)
 }
 
-// TestOther 17.其他的一些说明.非常感谢您能看到这一行
+// TestResultSetRows 17.测试 ResultSetRows, 用户自己处理结果集, 一般用于处理多结果集、游标等特殊情况
+func TestResultSetRows(t *testing.T) {
+	// ctx 一般一个请求一个 ctx, 正常应该有 web 层传入, 例如 gin 的 c.Request.Context().这里只是模拟
+	var ctx = context.Background()
+
+	// 构造查询用的 finder
+	finder := zorm.NewFinder().Append("SELECT id,user_name,password,create_time,active FROM " + demoStructTableName)
+
+	// 执行查询, 用户自己处理结果集
+	result, err := zorm.ResultSetRows(ctx, finder, nil, func(ctx context.Context, rows *sql.Rows) (interface{}, error) {
+		// 获取列信息
+		columnTypes, err := rows.ColumnTypes()
+		if err != nil {
+			return nil, err
+		}
+
+		list := make([]demoStruct, 0)
+
+		// 遍历结果集
+		for rows.Next() {
+			demo := demoStruct{}
+			// 扫描数据到对象
+			err := rows.Scan(&demo.Id, &demo.UserName, &demo.Password, &demo.CreateTime, &demo.Active)
+			if err != nil {
+				return nil, err
+			}
+			list = append(list, demo)
+		}
+
+		return list, nil
+	})
+
+	if err != nil { // 标记测试失败
+		t.Errorf("错误:%v", err)
+	}
+	// 打印结果
+	fmt.Println(result)
+}
+
+
+// TestOther 18.其他的一些说明. 非常感谢您能看到这一行
 func TestOther(t *testing.T) {
 	// ctx 一般一个请求一个ctx,正常应该有web层传入,例如gin的c.Request.Context().这里只是模拟
 	var ctx = context.Background()
