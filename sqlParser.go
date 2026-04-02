@@ -28,11 +28,15 @@ type sqlSpan struct {
 // sqlPart 表示 SQL 语句的各个子句片段
 // sqlPart represents the fragments of each clause in a SQL statement
 type sqlPart struct {
-	Select  sqlSpan // SELECT 子句 / SELECT clause
-	From    sqlSpan // FROM 子句 / FROM clause
-	Where   sqlSpan // WHERE 子句 / WHERE clause
-	GroupBy sqlSpan // GROUP BY 子句 / GROUP BY clause
-	OrderBy sqlSpan // ORDER BY 子句 / ORDER BY clause
+	Select    sqlSpan // SELECT 子句 / SELECT clause
+	From      sqlSpan // FROM 子句 / FROM clause
+	Where     sqlSpan // WHERE 子句 / WHERE clause
+	GroupBy   sqlSpan // GROUP BY 子句 / GROUP BY clause
+	OrderBy   sqlSpan // ORDER BY 子句 / ORDER BY clause
+	Distinct  sqlSpan // DISTINCT 关键字 / DISTINCT keyword
+	Union     sqlSpan // UNION 关键字 / UNION keyword
+	Intersect sqlSpan // INTERSECT 关键字 / INTERSECT keyword
+	Except    sqlSpan // EXCEPT 关键字 / EXCEPT keyword
 }
 
 // sqlScanner SQL 词法扫描器, 用于逐个字符解析 SQL
@@ -280,6 +284,30 @@ func parseSQL(sql *string) sqlPart {
 					current.End = sc.i         // 结束当前子句 / End current clause
 					parts.OrderBy.Start = sc.i // 设置 ORDER BY 起始位置 / Set ORDER BY start position
 					current = &parts.OrderBy   // 切换到 ORDER BY 子句 / Switch to ORDER BY clause
+				}
+
+			case 'd', 'D':
+				if matchKeyword(sc.s, sc.i, "distinct") {
+					parts.Distinct.Start = sc.i
+					parts.Distinct.End = sc.i + 8
+				}
+
+			case 'u', 'U':
+				if matchKeyword(sc.s, sc.i, "union") {
+					parts.Union.Start = sc.i
+					parts.Union.End = sc.i + 5
+				}
+
+			case 'i', 'I':
+				if matchKeyword(sc.s, sc.i, "intersect") {
+					parts.Intersect.Start = sc.i
+					parts.Intersect.End = sc.i + 9
+				}
+
+			case 'e', 'E':
+				if matchKeyword(sc.s, sc.i, "except") {
+					parts.Except.Start = sc.i
+					parts.Except.End = sc.i + 6
 				}
 
 			}

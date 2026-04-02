@@ -33,13 +33,20 @@ import (
 
 // wrapPageSQL 包装分页的SQL语句
 // wrapPageSQL SQL statement for wrapping paging
-var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, finder *Finder, sqlstr *string, page *Page) error {
+var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error) {
+	// 获取到没有page的sql的语句
+	// Get the SQL statement without page.
+	sqlstr, err := finder.GetSQL()
+	if err != nil {
+		return "", err
+	}
+
 	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}
 	var sqlbuilder strings.Builder
 	sqlbuilder.Grow(stringBuilderGrowLen)
-	sqlbuilder.WriteString(*sqlstr)
+	sqlbuilder.WriteString(sqlstr)
 	switch config.Dialect {
 	case "mysql", "sqlite", "dm", "gbase", "clickhouse", "tdengine", "db2": // MySQL,sqlite3,dm,南通,clickhouse,TDengine,db2 7.2+
 		sqlbuilder.WriteString(" LIMIT ")
@@ -73,12 +80,12 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, finder *Fi
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	default:
-		return errors.New("->wrapPageSQL-->不支持的数据库类型:" + config.Dialect)
+		return "", errors.New("->wrapPageSQL-->不支持的数据库类型:" + config.Dialect)
 
 	}
-	*sqlstr = sqlbuilder.String()
+	sqlstr = sqlbuilder.String()
 	// return reBuildSQL(dialect, sqlstr)
-	return nil
+	return sqlstr, nil
 }
 
 // wrapInsertSQL  包装保存Struct语句.返回语句,是否自增,错误信息
@@ -390,18 +397,13 @@ var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*stri
 // wrapQuerySQL 封装查询语句
 // wrapQuerySQL Encapsulated query statement
 func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder, page *Page) (string, error) {
-	// 获取到没有page的sql的语句
-	// Get the SQL statement without page.
-	sqlstr, err := finder.GetSQL()
-	if err != nil {
-		return "", err
+	if page == nil {
+		// 获取到没有page的sql的语句
+		// Get the SQL statement without page.
+		sqlstr, err := finder.GetSQL()
+		return sqlstr, err
 	}
-	if page != nil {
-		err = wrapPageSQL(ctx, config, finder, &sqlstr, page)
-	}
-	if err != nil {
-		return "", err
-	}
+	sqlstr, err := wrapPageSQL(ctx, config, finder, page)
 	return sqlstr, err
 }
 

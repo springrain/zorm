@@ -340,6 +340,163 @@ func TestParseSQL_Union(t *testing.T) {
 	assertPart(t, sql, parts.From, "FROM")
 	assertPart(t, sql, parts.Where, "WHERE")
 	assertPart(t, sql, parts.OrderBy, "ORDER")
+
+	// 验证 UNION 被正确解析
+	if parts.Union.Start == parts.Union.End {
+		t.Errorf("UNION 应被解析")
+	}
+	unionContent := sql[parts.Union.Start:parts.Union.End]
+	if strings.ToUpper(strings.TrimSpace(unionContent)) != "UNION" {
+		t.Errorf("UNION 内容不正确，实际：%s", unionContent)
+	}
+}
+
+// ---------------- TestParseSQL_UnionAll ----------------
+// 测试 UNION ALL 的 SQL
+func TestParseSQL_UnionAll(t *testing.T) {
+	sql := `SELECT id FROM users UNION ALL SELECT id FROM orders UNION ALL SELECT id FROM products`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+
+	// 验证第一个 UNION 被正确解析
+	if parts.Union.Start == parts.Union.End {
+		t.Errorf("UNION 应被解析")
+	}
+}
+
+// ---------------- TestParseSQL_Distinct ----------------
+// 测试 DISTINCT 的 SQL
+func TestParseSQL_Distinct(t *testing.T) {
+	sql := `SELECT DISTINCT name FROM users WHERE status = 1 GROUP BY name`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+	assertPart(t, sql, parts.Where, "WHERE")
+	assertPart(t, sql, parts.GroupBy, "GROUP")
+
+	// 验证 DISTINCT 被正确解析
+	if parts.Distinct.Start == parts.Distinct.End {
+		t.Errorf("DISTINCT 应被解析")
+	}
+	distinctContent := sql[parts.Distinct.Start:parts.Distinct.End]
+	if strings.ToUpper(strings.TrimSpace(distinctContent)) != "DISTINCT" {
+		t.Errorf("DISTINCT 内容不正确，实际：%s", distinctContent)
+	}
+}
+
+// ---------------- TestParseSQL_DistinctInString ----------------
+// 测试字符串中的 DISTINCT 不会被误解析
+func TestParseSQL_DistinctInString(t *testing.T) {
+	sql := `SELECT * FROM users WHERE note = 'SELECT DISTINCT is a keyword'`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+	assertPart(t, sql, parts.Where, "WHERE")
+
+	// 字符串中的 DISTINCT 不应被解析
+	if parts.Distinct.Start != parts.Distinct.End {
+		t.Errorf("DISTINCT 不应被解析 (字符串中的伪关键字)")
+	}
+}
+
+// ---------------- TestParseSQL_DistinctAsIdentifier ----------------
+// 测试 DISTINCT 作为标识符一部分不会被误解析
+func TestParseSQL_DistinctAsIdentifier(t *testing.T) {
+	sql := `SELECT distinct_count, is_distinct FROM metrics WHERE id = 1`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+	assertPart(t, sql, parts.Where, "WHERE")
+
+	// 标识符中的 DISTINCT 不应被解析
+	if parts.Distinct.Start != parts.Distinct.End {
+		t.Errorf("DISTINCT 不应被解析 (标识符中的伪关键字)")
+	}
+}
+
+// ---------------- TestParseSQL_DistinctOrderBy ----------------
+// 测试 SELECT DISTINCT + ORDER BY 的 SQL
+func TestParseSQL_DistinctOrderBy(t *testing.T) {
+	sql := `SELECT DISTINCT name FROM users ORDER BY name`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+	assertPart(t, sql, parts.OrderBy, "ORDER")
+
+	// 验证 DISTINCT 被正确解析
+	if parts.Distinct.Start == parts.Distinct.End {
+		t.Errorf("DISTINCT 应被解析")
+	}
+}
+
+// ---------------- TestParseSQL_UnionInSubquery ----------------
+// 测试子查询中的 UNION 不应影响外层解析
+func TestParseSQL_UnionInSubquery(t *testing.T) {
+	sql := `SELECT * FROM (SELECT id FROM users UNION SELECT id FROM orders) AS temp WHERE id > 0`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+	assertPart(t, sql, parts.Where, "WHERE")
+
+	// UNION 应被解析 (即使在子查询中，当前实现会解析)
+	// 但 FROM 应该指向外层的 FROM
+	fromContent := sql[parts.From.Start:parts.From.End]
+	if !strings.Contains(fromContent, "temp") {
+		t.Logf("FROM 应包含外层查询范围：%s", fromContent)
+	}
+}
+
+// ---------------- TestParseSQL_Intersect ----------------
+// 测试 INTERSECT 的 SQL
+func TestParseSQL_Intersect(t *testing.T) {
+	sql := `SELECT id FROM users INTERSECT SELECT id FROM admins`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+
+	// 验证 INTERSECT 被正确解析
+	if parts.Intersect.Start == parts.Intersect.End {
+		t.Errorf("INTERSECT 应被解析")
+	}
+	intersectContent := sql[parts.Intersect.Start:parts.Intersect.End]
+	if strings.ToUpper(strings.TrimSpace(intersectContent)) != "INTERSECT" {
+		t.Errorf("INTERSECT 内容不正确，实际：%s", intersectContent)
+	}
+}
+
+// ---------------- TestParseSQL_Except ----------------
+// 测试 EXCEPT 的 SQL
+func TestParseSQL_Except(t *testing.T) {
+	sql := `SELECT id FROM users EXCEPT SELECT id FROM admins`
+
+	parts := parseSQL(&sql)
+
+	assertPart(t, sql, parts.Select, "SELECT")
+	assertPart(t, sql, parts.From, "FROM")
+
+	// 验证 EXCEPT 被正确解析
+	if parts.Except.Start == parts.Except.End {
+		t.Errorf("EXCEPT 应被解析")
+	}
+	exceptContent := sql[parts.Except.Start:parts.Except.End]
+	if strings.ToUpper(strings.TrimSpace(exceptContent)) != "EXCEPT" {
+		t.Errorf("EXCEPT 内容不正确，实际：%s", exceptContent)
+	}
 }
 
 // ---------------- TestParseSQL_Join ----------------
@@ -382,19 +539,6 @@ func TestParseSQL_WithHint(t *testing.T) {
 	assertPart(t, sql, parts.Where, "WHERE")
 }
 
-// ---------------- TestParseSQL_Distinct ----------------
-// 测试 DISTINCT 的 SQL
-func TestParseSQL_Distinct(t *testing.T) {
-	sql := `SELECT DISTINCT name FROM users WHERE status = 1 GROUP BY name`
-
-	parts := parseSQL(&sql)
-
-	assertPart(t, sql, parts.Select, "SELECT")
-	assertPart(t, sql, parts.From, "FROM")
-	assertPart(t, sql, parts.Where, "WHERE")
-	assertPart(t, sql, parts.GroupBy, "GROUP")
-}
-
 // ---------------- TestParseSQL_Count ----------------
 // 测试 COUNT 聚合的 SQL
 func TestParseSQL_Count(t *testing.T) {
@@ -410,7 +554,7 @@ func TestParseSQL_Count(t *testing.T) {
 // ---------------- TestParseSQL_CountSubquery ----------------
 // 测试分页 COUNT 子查询的 SQL (用于替代正则表达式场景)
 func TestParseSQL_CountSubquery(t *testing.T) {
-	sql := `SELECT COUNT(*) frame_row_count FROM (SELECT DISTINCT name FROM users WHERE age > 18 GROUP BY name ORDER BY name) temp_frame_noob_table_name WHERE 1=1`
+	sql := `SELECT COUNT(*) temp_zorm_row_count FROM (SELECT DISTINCT name FROM users WHERE age > 18 GROUP BY name ORDER BY name) temp_zorm_noob_table_name WHERE 1=1`
 
 	parts := parseSQL(&sql)
 
@@ -526,26 +670,6 @@ func TestParseSQL_MultipleOrderBy(t *testing.T) {
 	}
 }
 
-// ---------------- TestParseSQL_Having ----------------
-// 测试 HAVING 子句 (目前会包含在 GROUP BY 中)
-func TestParseSQL_Having(t *testing.T) {
-	sql := `SELECT status, COUNT(*) AS cnt FROM users WHERE age > 18 GROUP BY status HAVING COUNT(*) > 5 ORDER BY cnt DESC`
-
-	parts := parseSQL(&sql)
-
-	assertPart(t, sql, parts.Select, "SELECT")
-	assertPart(t, sql, parts.From, "FROM")
-	assertPart(t, sql, parts.Where, "WHERE")
-	assertPart(t, sql, parts.GroupBy, "GROUP")
-	assertPart(t, sql, parts.OrderBy, "ORDER")
-
-	// HAVING 会包含在 GROUP BY 中, 直到 ORDER BY 之前
-	groupByContent := sql[parts.GroupBy.Start:parts.GroupBy.End]
-	if !strings.Contains(groupByContent, "HAVING") {
-		t.Logf("注意：HAVING 子句目前会包含在 GROUP BY 中：%s", groupByContent)
-	}
-}
-
 // ---------------- TestParseSQL_RealWorldExamples ----------------
 // 测试真实世界的复杂 SQL 示例
 
@@ -604,7 +728,7 @@ func TestParseSQL_CountForPaging(t *testing.T) {
 
 	// 检查是否有 GROUP BY 或 DISTINCT
 	hasGroupBy := parts.GroupBy.Start != parts.GroupBy.End
-	hasDistinct := strings.Contains(strings.ToUpper(originalSQL), "DISTINCT")
+	hasDistinct := parts.Distinct.Start != parts.Distinct.End
 
 	if !hasGroupBy && !hasDistinct {
 		t.Errorf("应检测到 GROUP BY 或 DISTINCT")

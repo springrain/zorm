@@ -1962,19 +1962,22 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		countsql = countsql[:sqlPart.OrderBy.Start]
 	}
 
-	countsqlLower := strings.ToLower(countsql)
-
-	// 检查是否有 group by
+	// 检查是否有 group by, distinct, union, intersect, except
 	hasGroupBy := sqlPart.GroupBy.Start != sqlPart.GroupBy.End
+	hasIntersect := sqlPart.Intersect.Start != sqlPart.Intersect.End
+	hasExcept := sqlPart.Except.Start != sqlPart.Except.End
+	hasDistinct := sqlPart.Distinct.Start != sqlPart.Distinct.End
+	hasUnion := sqlPart.Union.Start != sqlPart.Union.End
+
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	// 特殊关键字, 包装 SQL
 	// Special keywords, wrap SQL
-	if strings.Contains(countsqlLower, " distinct ") || strings.Contains(countsqlLower, " union ") || hasGroupBy {
-		// countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
-		sqlBuilder.WriteString("SELECT COUNT(*)  frame_row_count FROM (")
+	if hasGroupBy || hasDistinct || hasUnion || hasIntersect || hasExcept {
+		// countsql = "SELECT COUNT(*)  temp_zorm_row_count FROM (" + countsql + ") temp_zorm_noob_table_name WHERE 1=1 "
+		sqlBuilder.WriteString("SELECT COUNT(*) AS temp_zorm_row_count FROM (")
 		sqlBuilder.WriteString(countsql)
-		sqlBuilder.WriteString(") temp_frame_noob_table_name WHERE 1=1 ")
+		sqlBuilder.WriteString(") temp_zorm_noob_table_name WHERE 1=1 ")
 	} else {
 		// 使用 Finder 中缓存的 FROM 子句位置
 		if sqlPart.From.Start == sqlPart.From.End {
