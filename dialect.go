@@ -405,7 +405,6 @@ func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder,
 	return sqlstr, err
 }
 
-
 // FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 // FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension
 var FuncGenerateStringID = func(ctx context.Context) string {
@@ -541,7 +540,7 @@ func wrapSQLHint(ctx context.Context, sqlstr *string) error {
 	}
 	sqlByte := []byte(*sqlstr)
 	// 获取第一个单词
-	_, start, end, err := firstOneWord(0, &sqlByte)
+	_, start, end, err := firstOneWord(0, sqlByte)
 	if err != nil {
 		return err
 	}
@@ -677,7 +676,7 @@ var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlst
 	// 处理clickhouse的特殊更新语法
 	sqlByte := []byte(*sqlstr)
 	// 获取第一个单词
-	firstWord, start, end, err := firstOneWord(0, &sqlByte)
+	firstWord, start, end, err := firstOneWord(0, sqlByte)
 	if err != nil {
 		return err
 	}
@@ -694,21 +693,21 @@ var reBuildUpdateSQL = func(ctx context.Context, config *DataSourceConfig, sqlst
 	tableName := ""
 	switch firstWord {
 	case "UPDATE": // 更新  update tableName set
-		tableName, _, end, err = firstOneWord(end, &sqlByte)
+		tableName, _, end, err = firstOneWord(end, sqlByte)
 		if err != nil {
 			return err
 		}
 		// 拿到 set
-		_, start, end, err = firstOneWord(end, &sqlByte)
+		_, start, end, err = firstOneWord(end, sqlByte)
 
 	case "DELETE": // 删除 delete from tableName
 		// 拿到from
-		_, _, end, err = firstOneWord(end, &sqlByte)
+		_, _, end, err = firstOneWord(end, sqlByte)
 		if err != nil {
 			return err
 		}
 		// 拿到 tableName
-		tableName, start, end, err = firstOneWord(end, &sqlByte)
+		tableName, start, end, err = firstOneWord(end, sqlByte)
 	default: // 只处理UPDATE 和 DELETE 语法
 		return nil
 	}
@@ -812,40 +811,32 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
 }
 
-// firstOneWord 从指定下标,获取第一个单词,不包含前后空格,并返回开始下标和结束下标,如果找不到合法的字符串,返回-1
-func firstOneWord(index int, strByte *[]byte) (string, int, int, error) {
-	start := -1
-	end := -1
-	byteLen := len(*strByte)
-	if index < 0 {
-		return "", start, end, errors.New("->firstOneWord索引小于0")
-	}
-	if index > byteLen { // 如果索引大于长度
-		return "", start, end, errors.New("->firstOneWord索引大于字符串长度")
-	}
-	var newStr strings.Builder
-	newStr.Grow(10)
-	for ; index < byteLen; index++ {
-		v := (*strByte)[index]
-		if v == '(' || v == ')' { // 不处理括号
-			continue
-		}
-		if start == -1 && v != ' ' { // 不是空格
-			start = index
-		}
-		if start == -1 && v == ' ' { // 空格
-			continue
-		}
-		if start >= 0 && v != ' ' { // 需要的字符
-			newStr.WriteByte(v)
-		} else { // 遇到空格结束记录
-			end = index
-			break
-		}
-	}
-	if start >= 0 && end == -1 { // 记录到结尾,不是空格结束
-		end = byteLen
+// firstOneWord 从指定下标, 获取第一个单词, 不包含前后空格, 并返回开始下标和结束下标, 如果找不到合法的字符串, 返回 -1
+// firstOneWord gets the first word from specified index, excluding spaces and parentheses, returns word, start index, end index
+// 跳过开头的空格和括号字符 (' ', '(', ')') / Skip leading spaces and parentheses
+func firstOneWord(index int, strByte []byte) (string, int, int, error) {
+	n := len(strByte)
+
+	if index < 0 || index >= n {
+		return "", -1, -1, errors.New("-->firstOneWord index out of range")
 	}
 
-	return newStr.String(), start, end, nil
+	// 跳过开头的空格和括号 / Skip leading spaces and parentheses
+	for index < n && (strByte[index] == ' ' || strByte[index] == '(' || strByte[index] == ')') {
+		index++
+	}
+
+	// 如果没有有效字符, 返回 -1 / Return -1 if no valid character found
+	if index >= n {
+		return "", -1, -1, nil
+	}
+
+	start := index
+
+	// 读取单词, 直到遇到空格或括号 / Read word until space or parenthesis
+	for index < n && strByte[index] != ' ' && strByte[index] != '(' && strByte[index] != ')' {
+		index++
+	}
+	str := string(strByte[start:index])
+	return str, start, index, nil
 }

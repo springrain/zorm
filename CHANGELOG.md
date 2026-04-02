@@ -1,4 +1,5 @@
 v1.8.4
+- 优化```firstOneWord```实现
 - 增加sqlParser解析器, 替换正则表达式解析SQL
 - 完善文档,注释
 
