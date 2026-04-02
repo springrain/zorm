@@ -185,11 +185,10 @@ func matchTwoKeywords(s *string, i int, w1, w2 string) bool {
 		case ' ', '\t', '\n', '\r':
 			j++
 		default:
-			goto CHECK
+			return matchKeyword(s, j, w2)
 		}
 	}
 
-CHECK:
 	// 匹配第二个关键字 / Match the second keyword
 	return matchKeyword(s, j, w2)
 }
