@@ -44,7 +44,8 @@ type Finder struct {
 	SelectTotalCount bool `json:"selectTotalCount"`
 	// SQL语句
 	// SQL statement
-	sqlstr string
+	sqlstr       string
+	sqlPartCache sqlPart // SQL 解析结果缓存, 避免重复解析 // SQL parsing result cache to avoid repeated parsing
 }
 
 // NewFinder  初始化一个Finder,生成一个空的Finder
@@ -182,6 +183,7 @@ func (finder *Finder) GetSQL() (string, error) {
 		return "", errors.New(`->finder-->GetSQL()SQL语句请不要直接拼接字符串参数,容易注入!!!请使用问号占位符,例如 finder.Append("and id=?","stringId"),如果必须拼接字符串,请设置 finder.InjectionCheck = false `)
 	}
 	finder.sqlstr = sqlstr
+	finder.sqlPartCache = parseSQL(&sqlstr)
 	return sqlstr, nil
 }
 

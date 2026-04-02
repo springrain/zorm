@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ import (
 
 // wrapPageSQL 包装分页的SQL语句
 // wrapPageSQL SQL statement for wrapping paging
-var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error {
+var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, finder *Finder, sqlstr *string, page *Page) error {
 	if page.PageNo < 1 { // 默认第一页
 		page.PageNo = 1
 	}
@@ -54,8 +53,8 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *st
 		sqlbuilder.WriteString(" OFFSET ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize * (page.PageNo - 1)))
 	case "mssql": // sqlserver 2012+
-		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) < 1 { // 如果没有 order by,增加默认的排序
+		sqlPart := finder.sqlPartCache
+		if sqlPart.OrderBy.Start == sqlPart.OrderBy.End { // 如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY (SELECT NULL) ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -64,8 +63,8 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *st
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" ROWS ONLY ")
 	case "oracle": // oracle 12c+
-		locOrderBy := findOrderByIndex(sqlstr)
-		if len(locOrderBy) < 1 { // 如果没有 order by,增加默认的排序
+		sqlPart := finder.sqlPartCache
+		if sqlPart.OrderBy.Start == sqlPart.OrderBy.End { // 如果没有 order by,增加默认的排序
 			sqlbuilder.WriteString(" ORDER BY NULL ")
 		}
 		sqlbuilder.WriteString(" OFFSET ")
@@ -398,7 +397,7 @@ func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder,
 		return "", err
 	}
 	if page != nil {
-		err = wrapPageSQL(ctx, config, &sqlstr, page)
+		err = wrapPageSQL(ctx, config, finder, &sqlstr, page)
 	}
 	if err != nil {
 		return "", err
@@ -406,62 +405,6 @@ func wrapQuerySQL(ctx context.Context, config *DataSourceConfig, finder *Finder,
 	return sqlstr, err
 }
 
-// 查询'order by'在sql中出现的开始位置和结束位置
-// Query the start position and end position of'order by' in SQL
-var (
-	orderByExpr      = `(?i)\s(order)\s+by\s`
-	orderByRegexp, _ = regexp.Compile(orderByExpr)
-)
-
-// findOrderByIndex 查询order by在sql中出现的开始位置和结束位置
-// findOrderByIndex Query the start position and end position of'order by' in SQL
-func findOrderByIndex(strsql *string) []int {
-	loc := orderByRegexp.FindStringIndex(*strsql)
-	return loc
-}
-
-// 查询'group by'在sql中出现的开始位置和结束位置
-// Query the start position and end position of'group by' in sql
-var (
-	groupByExpr      = `(?i)\s(group)\s+by\s`
-	groupByRegexp, _ = regexp.Compile(groupByExpr)
-)
-
-// findGroupByIndex 查询group by在sql中出现的开始位置和结束位置
-// findGroupByIndex Query the start position and end position of'group by' in sql
-func findGroupByIndex(strsql *string) []int {
-	loc := groupByRegexp.FindStringIndex(*strsql)
-	return loc
-}
-
-// 查询 from 在sql中出现的开始位置和结束位置
-// Query the start position and end position of 'from' in sql
-// var fromExpr = "(?i)(^\\s*select)(.+?\\(.+?\\))*.*?(from)"
-// 感谢奔跑(@zeqjone)提供的正则,排除不在括号内的from,已经满足绝大部分场景,
-// select id1,(select (id2) from t1 where id=2) _s FROM table select的子查询 _s中的 id2还有括号,才会出现问题,建议使用CountFinder处理分页语句
-// countFinder := zorm.NewFinder().Append("select count(*) from (")
-// countFinder.AppendFinder(finder)
-// countFinder.Append(") tempcountfinder")
-// finder.CountFinder = countFinder
-var (
-	// fromExpr      = "(?i)(^\\s*select)(\\(.*?\\)|[^()]+)*?( from )"
-	// 处理sql中from格式化换行的正则问题
-	fromExpr      = `(?i)(^\s*select)(\(.*?\)|[^()]+)*?(\s+from\s)`
-	fromRegexp, _ = regexp.Compile(fromExpr)
-)
-
-// findFromIndexa 查询from在sql中出现的开始位置和结束位置
-// findSelectFromIndex Query the start position and end position of 'from' in sql
-func findSelectFromIndex(strsql *string) []int {
-	// 匹配出来的是完整的字符串,用最后的FROM即可
-	loc := fromRegexp.FindStringIndex(*strsql)
-	if len(loc) < 2 {
-		return loc
-	}
-	// 最后的FROM前推5位字符串,没有空格
-	loc[0] = loc[1] - 5
-	return loc
-}
 
 // FuncGenerateStringID 默认生成字符串ID的函数.方便自定义扩展
 // FuncGenerateStringID Function to generate string ID by default. Convenient for custom extension

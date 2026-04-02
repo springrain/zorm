@@ -78,7 +78,7 @@ func Test_structFieldCache(t *testing.T) {
 	typeOf := reflect.TypeOf(testStruct{})
 
 	t.Run("测试结构体字段缓存", func(t *testing.T) {
-		// 由于我们不能直接调用 getStructTypeOfCache（需要 DataSourceConfig 类型）
+		// 由于我们不能直接调用 getStructTypeOfCache (需要 DataSourceConfig 类型)
 		// 我们测试字段解析的逻辑
 		entityCache := &entityStructCache{
 			fields:    make([]*fieldColumnCache, 0),

@@ -1954,39 +1954,35 @@ func selectCount(ctx context.Context, finder *Finder) (int, error) {
 		return -1, counterr
 	}
 
-	// 查询order by 的位置
-	// Query the position of order by
-	locOrderBy := findOrderByIndex(&countsql)
-	// 如果存在order by
-	// If there is order by
-	if len(locOrderBy) > 0 {
-		countsql = countsql[:locOrderBy[0]]
+	// 使用 Finder 中缓存的 SQL 解析结果
+	sqlPart := finder.sqlPartCache
+
+	// 如果存在 order by, 去掉 order by 部分
+	if sqlPart.OrderBy.Start != sqlPart.OrderBy.End {
+		countsql = countsql[:sqlPart.OrderBy.Start]
 	}
+
 	countsqlLower := strings.ToLower(countsql)
-	gbi := -1
-	locGroupBy := findGroupByIndex(&countsql)
-	if len(locGroupBy) > 0 {
-		gbi = locGroupBy[0]
-	}
+
+	// 检查是否有 group by
+	hasGroupBy := sqlPart.GroupBy.Start != sqlPart.GroupBy.End
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(stringBuilderGrowLen)
-	// 特殊关键字,包装SQL
+	// 特殊关键字, 包装 SQL
 	// Special keywords, wrap SQL
-	if strings.Contains(countsqlLower, " distinct ") || strings.Contains(countsqlLower, " union ") || gbi > -1 {
+	if strings.Contains(countsqlLower, " distinct ") || strings.Contains(countsqlLower, " union ") || hasGroupBy {
 		// countsql = "SELECT COUNT(*)  frame_row_count FROM (" + countsql + ") temp_frame_noob_table_name WHERE 1=1 "
 		sqlBuilder.WriteString("SELECT COUNT(*)  frame_row_count FROM (")
 		sqlBuilder.WriteString(countsql)
 		sqlBuilder.WriteString(") temp_frame_noob_table_name WHERE 1=1 ")
 	} else {
-		locFrom := findSelectFromIndex(&countsql)
-		// 没有找到FROM关键字,认为是异常语句
-		// The FROM keyword was not found, which is considered an abnormal statement
-		if len(locFrom) == 0 {
-			return -1, errors.New("->selectCount-->findFromIndex没有FROM关键字,语句错误")
+		// 使用 Finder 中缓存的 FROM 子句位置
+		if sqlPart.From.Start == sqlPart.From.End {
+			return -1, errors.New("->selectCount-->没有 FROM 关键字, 语句错误")
 		}
-		// countsql = "SELECT COUNT(*) " + countsql[locFrom[0]:]
+		// countsql = "SELECT COUNT(*) " + countsql[sqlPart.From.Start:]
 		sqlBuilder.WriteString("SELECT COUNT(*) ")
-		sqlBuilder.WriteString(countsql[locFrom[0]:])
+		sqlBuilder.WriteString(countsql[sqlPart.From.Start:])
 	}
 	countsql = sqlBuilder.String()
 	countFinder := NewFinder()

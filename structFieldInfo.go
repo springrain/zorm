@@ -698,14 +698,14 @@ func funcRecursiveAnonymous(ctx context.Context, entityCache *entityStructCache,
 	for i := 0; i < fieldNum; i++ {
 		anonymousField := anonymousTypeOf.Field(i)
 		if anonymousField.Anonymous { // 匿名struct里自身又有匿名struct,调用递归处理
-			// 构建完整的fieldIndex，组合父匿名字段的索引和当前字段的索引
+			// 构建完整的fieldIndex, 组合父匿名字段的索引和当前字段的索引
 			//anonymousFieldCopy := anonymousField
 			anonymousField.Index = append(anonymous.Index, anonymousField.Index...)
 			funcRecursiveAnonymous(ctx, entityCache, &anonymousField)
 			//} else if _, ok := entityCache.fieldMap[strings.ToLower(anonymousField.Name)]; !ok { // 普通命名字段,而且没有记录过
 		} else {
 			// 创建entityStruct缓存
-			// 构建完整的fieldIndex，组合父匿名字段的索引和当前字段的索引
+			// 构建完整的fieldIndex, 组合父匿名字段的索引和当前字段的索引
 			//anonymousFieldCopy := anonymousField
 			anonymousField.Index = append(anonymous.Index, anonymousField.Index...)
 			funcCreateEntityStructCache(ctx, entityCache, anonymousField)

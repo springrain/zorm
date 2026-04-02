@@ -169,7 +169,7 @@ func OverrideFunc(funcName string, funcObject interface{}) (bool, interface{}, e
 			reBuildUpdateSQL = newFunc
 		}
 	case "wrapPageSQL": //分页SQL
-		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, sqlstr *string, page *Page) error)
+		newFunc, ok := funcObject.(func(ctx context.Context, config *DataSourceConfig, finder *Finder, sqlstr *string, page *Page) error)
 		if ok {
 			oldFunc = wrapPageSQL
 			wrapPageSQL = newFunc
