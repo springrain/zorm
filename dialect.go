@@ -590,11 +590,23 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 		var valueOf reflect.Value
 		var kind reflect.Kind
 		var typeOf reflect.Type
+
+		// isBaseType 是否是基础类型
+		isBaseType := false
+		switch v.(type) {
+		case nil, string, int, int8, int16, int32, int64,
+			uint, uint8, uint16, uint32, uint64,
+			float32, float64, bool, time.Time, []byte,
+			sql.NullString, sql.NullBool, sql.NullInt16, sql.NullInt32, sql.NullInt64,
+			sql.NullFloat64, sql.NullByte, sql.NullTime:
+			isBaseType = true
+		}
+
 		// 参数值长度,默认是1,其他取值数组长度
 		valueLen := 1
 		// 值是否有效,例如指针类型的值为nil
 		isValid := false
-		if v != nil {
+		if !isBaseType && v != nil { // 如果不是基础类型,并且值不为nil,才进行反射获取类型和值
 			isValid = true
 			// 反射获取参数的值
 			valueOf = reflect.ValueOf(v)
@@ -610,11 +622,13 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 				isValid = valueOf.IsValid()
 			}
 		}
-		// 如果是有效值,获取类型
+		// 基础类型不会执行,因为isValid==false. 如果是有效值,获取类型
 		if isValid {
 			typeOf = valueOf.Type()
 		}
-		if !isValid { // 如果是无效值,设值为nil
+		if isBaseType { //基础类型不处理,直接记录值 | Basic types are not processed, just record the value
+			newValues = append(newValues, v)
+		} else if !isValid { // 如果是无效值,设值为nil
 			newValues = append(newValues, nil)
 		} else if kind != reflect.Array && kind != reflect.Slice { // 如果不是数组或者slice
 			// 记录新值
