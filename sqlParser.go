@@ -42,10 +42,10 @@ type sqlPart struct {
 // sqlScanner SQL 词法扫描器, 用于逐个字符解析 SQL
 // sqlScanner SQL lexical scanner for parsing SQL character by character
 type sqlScanner struct {
-	s     *string // 原始 SQL 字符串指针 / Original SQL string
-	i     int     // 当前扫描位置 / Current scan position
-	n     int     // SQL 字符串总长度 / Total length of SQL string
-	depth int     // 括号嵌套深度, 用于处理子查询 / Parentheses nesting depth for handling subqueries
+	sqlStrPtr *string // 原始 SQL 字符串指针 / Original SQL string
+	index     int     // 当前扫描位置 / Current scan position
+	sqlLen    int     // SQL 字符串总长度 / Total length of SQL string
+	depth     int     // 括号嵌套深度, 用于处理子查询 / Parentheses nesting depth for handling subqueries
 }
 
 // ================= 基础能力 / Basic Capabilities =================
@@ -64,29 +64,29 @@ func isIdentChar(c byte) bool {
 // skipString skips string literals (supports single quote ' and double quote ")
 // Handles escapes: \' and "" (SQL standard double single-quote escape)
 func (sc *sqlScanner) skipString() {
-	quote := (*sc.s)[sc.i] // 记录字符串的引号类型 / Record the quote type of the string
-	sc.i++                 // 跳过开引号 / Skip opening quote
+	quote := (*sc.sqlStrPtr)[sc.index] // 记录字符串的引号类型 / Record the quote type of the string
+	sc.index++                         // 跳过开引号 / Skip opening quote
 
-	for sc.i < sc.n {
+	for sc.index < sc.sqlLen {
 		// \ 转义: 处理 \' 这种情况
 		// Backslash escape: handles cases like \'
-		if (*sc.s)[sc.i] == '\\' && sc.i+1 < sc.n {
-			sc.i += 2 // 跳过转义字符和下一个字符 / Skip escape character and next character
+		if (*sc.sqlStrPtr)[sc.index] == '\\' && sc.index+1 < sc.sqlLen {
+			sc.index += 2 // 跳过转义字符和下一个字符 / Skip escape character and next character
 			continue
 		}
 
 		// '' 转义 (SQL 标准) : 处理 'O''Brien' 这种情况
 		// '' escape (SQL standard): handles cases like 'O''Brien'
-		if (*sc.s)[sc.i] == quote {
-			if sc.i+1 < sc.n && (*sc.s)[sc.i+1] == quote {
-				sc.i += 2 // 跳过两个连续的引号 / Skip two consecutive quotes
+		if (*sc.sqlStrPtr)[sc.index] == quote {
+			if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index+1] == quote {
+				sc.index += 2 // 跳过两个连续的引号 / Skip two consecutive quotes
 				continue
 			}
-			sc.i++ // 跳过闭引号 / Skip closing quote
-			return // 字符串结束 / End of string
+			sc.index++ // 跳过闭引号 / Skip closing quote
+			return     // 字符串结束 / End of string
 		}
 
-		sc.i++ // 继续扫描下一个字符 / Continue to scan next character
+		sc.index++ // 继续扫描下一个字符 / Continue to scan next character
 	}
 	// 字符串未闭合也会正常退出, 不会报错 / Exits normally even if string is unclosed, no error
 }
@@ -97,25 +97,25 @@ func (sc *sqlScanner) skipString() {
 // Supports two comment formats: -- single-line comment and /* */ multi-line comment
 func (sc *sqlScanner) skipComment() bool {
 	// -- comment: 单行注释 / Single-line comment
-	if sc.i+1 < sc.n && (*sc.s)[sc.i] == '-' && (*sc.s)[sc.i+1] == '-' {
-		sc.i += 2 // 跳过 -- / Skip --
+	if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] == '-' && (*sc.sqlStrPtr)[sc.index+1] == '-' {
+		sc.index += 2 // 跳过 -- / Skip --
 		// 扫描到行尾或 EOF (EOF 也视为注释结束)
 		// Scan to end of line or EOF (EOF also counts as end of comment)
-		for sc.i < sc.n && (*sc.s)[sc.i] != '\n' {
-			sc.i++
+		for sc.index < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] != '\n' {
+			sc.index++
 		}
 		return true
 	}
 
 	// /* comment */: 多行注释 / Multi-line comment
-	if sc.i+1 < sc.n && (*sc.s)[sc.i] == '/' && (*sc.s)[sc.i+1] == '*' {
-		sc.i += 2 // 跳过 /* / Skip /*
-		for sc.i+1 < sc.n {
-			if (*sc.s)[sc.i] == '*' && (*sc.s)[sc.i+1] == '/' {
-				sc.i += 2 // 跳过 */ / Skip */
+	if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] == '/' && (*sc.sqlStrPtr)[sc.index+1] == '*' {
+		sc.index += 2 // 跳过 /* / Skip /*
+		for sc.index+1 < sc.sqlLen {
+			if (*sc.sqlStrPtr)[sc.index] == '*' && (*sc.sqlStrPtr)[sc.index+1] == '/' {
+				sc.index += 2 // 跳过 */ / Skip */
 				return true
 			}
-			sc.i++
+			sc.index++
 		}
 		// 注释未闭合也返回 true / Returns true even if comment is unclosed
 		return true
@@ -211,17 +211,17 @@ CHECK:
 //   - Correctly handles parentheses nesting (FROM in subquery doesn't affect outer query)
 //   - Correctly handles pseudo-keywords in strings and comments
 //   - Case-insensitive
-func parseSQL(sql *string) sqlPart {
+func parseSQL(sqlStrPtr *string) sqlPart {
 	// 使用局部变量存储字符串值, 避免频繁解引用
 	// Use local variable to store string value and avoid frequent dereferencing
-	s := *sql
-	sc := &sqlScanner{s: &s, n: len(s)}
+	sqlStr := *sqlStrPtr
+	sc := &sqlScanner{sqlStrPtr: sqlStrPtr, sqlLen: len(sqlStr)}
 	var parts sqlPart
 	current := &parts.Select // 当前正在解析的子句, 默认为 SELECT / Current clause being parsed, defaults to SELECT
 	current.Start = 0        // SELECT 始终从位置 0 开始 / SELECT always starts at position 0
 
-	for sc.i < sc.n {
-		c := s[sc.i]
+	for sc.index < sc.sqlLen {
+		c := sqlStr[sc.index]
 
 		// 1. 字符串字面量: 跳过整个字符串, 避免误解析字符串中的关键字
 		// String literal: skip the entire string to avoid misparsing keywords inside
@@ -243,14 +243,14 @@ func parseSQL(sql *string) sqlPart {
 		switch c {
 		case '(':
 			sc.depth++ // 进入子查询 / Enter subquery
-			sc.i++
+			sc.index++
 			continue
 
 		case ')':
 			if sc.depth > 0 {
 				sc.depth-- // 退出子查询 / Exit subquery
 			}
-			sc.i++
+			sc.index++
 			continue
 		}
 
@@ -259,67 +259,67 @@ func parseSQL(sql *string) sqlPart {
 		if sc.depth == 0 {
 			switch c {
 			case 'f', 'F':
-				if matchKeyword(sc.s, sc.i, "from") {
-					current.End = sc.i      // 结束当前子句 / End current clause
-					parts.From.Start = sc.i // 设置 FROM 起始位置 / Set FROM start position
-					current = &parts.From   // 切换到 FROM 子句 / Switch to FROM clause
+				if matchKeyword(sc.sqlStrPtr, sc.index, "from") {
+					current.End = sc.index      // 结束当前子句 / End current clause
+					parts.From.Start = sc.index // 设置 FROM 起始位置 / Set FROM start position
+					current = &parts.From       // 切换到 FROM 子句 / Switch to FROM clause
 				}
 
 			case 'w', 'W':
-				if matchKeyword(sc.s, sc.i, "where") {
-					current.End = sc.i       // 结束当前子句 / End current clause
-					parts.Where.Start = sc.i // 设置 WHERE 起始位置 / Set WHERE start position
-					current = &parts.Where   // 切换到 WHERE 子句 / Switch to WHERE clause
+				if matchKeyword(sc.sqlStrPtr, sc.index, "where") {
+					current.End = sc.index       // 结束当前子句 / End current clause
+					parts.Where.Start = sc.index // 设置 WHERE 起始位置 / Set WHERE start position
+					current = &parts.Where       // 切换到 WHERE 子句 / Switch to WHERE clause
 				}
 
 			case 'g', 'G':
-				if matchTwoKeywords(sc.s, sc.i, "group", "by") {
-					current.End = sc.i         // 结束当前子句 / End current clause
-					parts.GroupBy.Start = sc.i // 设置 GROUP BY 起始位置 / Set GROUP BY start position
-					current = &parts.GroupBy   // 切换到 GROUP BY 子句 / Switch to GROUP BY clause
+				if matchTwoKeywords(sc.sqlStrPtr, sc.index, "group", "by") {
+					current.End = sc.index         // 结束当前子句 / End current clause
+					parts.GroupBy.Start = sc.index // 设置 GROUP BY 起始位置 / Set GROUP BY start position
+					current = &parts.GroupBy       // 切换到 GROUP BY 子句 / Switch to GROUP BY clause
 				}
 
 			case 'o', 'O':
-				if matchTwoKeywords(sc.s, sc.i, "order", "by") {
-					current.End = sc.i         // 结束当前子句 / End current clause
-					parts.OrderBy.Start = sc.i // 设置 ORDER BY 起始位置 / Set ORDER BY start position
-					current = &parts.OrderBy   // 切换到 ORDER BY 子句 / Switch to ORDER BY clause
+				if matchTwoKeywords(sc.sqlStrPtr, sc.index, "order", "by") {
+					current.End = sc.index         // 结束当前子句 / End current clause
+					parts.OrderBy.Start = sc.index // 设置 ORDER BY 起始位置 / Set ORDER BY start position
+					current = &parts.OrderBy       // 切换到 ORDER BY 子句 / Switch to ORDER BY clause
 				}
 
 			case 'd', 'D':
-				if matchKeyword(sc.s, sc.i, "distinct") {
-					parts.Distinct.Start = sc.i
-					parts.Distinct.End = sc.i + 8
+				if matchKeyword(sc.sqlStrPtr, sc.index, "distinct") {
+					parts.Distinct.Start = sc.index
+					parts.Distinct.End = sc.index + 8
 				}
 
 			case 'u', 'U':
-				if matchKeyword(sc.s, sc.i, "union") {
-					parts.Union.Start = sc.i
-					parts.Union.End = sc.i + 5
+				if matchKeyword(sc.sqlStrPtr, sc.index, "union") {
+					parts.Union.Start = sc.index
+					parts.Union.End = sc.index + 5
 				}
 
 			case 'i', 'I':
-				if matchKeyword(sc.s, sc.i, "intersect") {
-					parts.Intersect.Start = sc.i
-					parts.Intersect.End = sc.i + 9
+				if matchKeyword(sc.sqlStrPtr, sc.index, "intersect") {
+					parts.Intersect.Start = sc.index
+					parts.Intersect.End = sc.index + 9
 				}
 
 			case 'e', 'E':
-				if matchKeyword(sc.s, sc.i, "except") {
-					parts.Except.Start = sc.i
-					parts.Except.End = sc.i + 6
+				if matchKeyword(sc.sqlStrPtr, sc.index, "except") {
+					parts.Except.Start = sc.index
+					parts.Except.End = sc.index + 6
 				}
 
 			}
 		}
 
-		sc.i++
+		sc.index++
 	}
 
 	// 设置最后一个子句的结束位置
 	// Set end position for the last clause
 	if current != nil {
-		current.End = sc.n
+		current.End = sc.sqlLen
 	}
 
 	// 为所有已启动但未设置 End 的 part 补全 End 值
@@ -327,16 +327,16 @@ func parseSQL(sql *string) sqlPart {
 	// 使用 Start > 0 判断, 因为正常 SQL 中这些关键字不可能在位置 0
 	// Uses Start > 0 check because these keywords cannot be at position 0 in normal SQL
 	if parts.From.Start > 0 && parts.From.End == 0 {
-		parts.From.End = sc.n
+		parts.From.End = sc.sqlLen
 	}
 	if parts.Where.Start > 0 && parts.Where.End == 0 {
-		parts.Where.End = sc.n
+		parts.Where.End = sc.sqlLen
 	}
 	if parts.GroupBy.Start > 0 && parts.GroupBy.End == 0 {
-		parts.GroupBy.End = sc.n
+		parts.GroupBy.End = sc.sqlLen
 	}
 	if parts.OrderBy.Start > 0 && parts.OrderBy.End == 0 {
-		parts.OrderBy.End = sc.n
+		parts.OrderBy.End = sc.sqlLen
 	}
 
 	return parts
