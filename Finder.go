@@ -183,7 +183,7 @@ func (finder *Finder) GetSQL() (string, error) {
 		return "", errors.New(`->finder-->GetSQL()SQL语句请不要直接拼接字符串参数,容易注入!!!请使用问号占位符,例如 finder.Append("and id=?","stringId"),如果必须拼接字符串,请设置 finder.InjectionCheck = false `)
 	}
 	finder.sqlstr = sqlstr
-	finder.sqlPartCache = parseSQL(&sqlstr)
+	finder.sqlPartCache = parseSQL(sqlstr)
 	return sqlstr, nil
 }
 

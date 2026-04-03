@@ -42,7 +42,7 @@ func assertPart(t *testing.T, sql string, part sqlSpan, expectedKeyword string) 
 func TestParseSQL_Basic(t *testing.T) {
 	sql := `SELECT name, count(*) FROM user WHERE age > 18 GROUP BY name ORDER BY count(*) DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -62,7 +62,7 @@ func TestParseSQL_Subquery(t *testing.T) {
 		GROUP   BY name
 		ORDER BY count(*) DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -82,7 +82,7 @@ func TestParseSQL_Subquery(t *testing.T) {
 func TestParseSQL_NoWhere(t *testing.T) {
 	sql := `SELECT * FROM users ORDER BY id`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -99,7 +99,7 @@ func TestParseSQL_NoWhere(t *testing.T) {
 func TestParseSQL_NoOrderBy(t *testing.T) {
 	sql := `SELECT id, name FROM users WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -116,7 +116,7 @@ func TestParseSQL_NoOrderBy(t *testing.T) {
 func TestParseSQL_NoGroupBy(t *testing.T) {
 	sql := `SELECT * FROM users WHERE id = 1 ORDER BY created_at`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -134,7 +134,7 @@ func TestParseSQL_NoGroupBy(t *testing.T) {
 func TestParseSQL_StringWithQuote(t *testing.T) {
 	sql := `SELECT * FROM users WHERE name = 'O''Brien' AND desc = 'It''s fine'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -146,7 +146,7 @@ func TestParseSQL_StringWithQuote(t *testing.T) {
 func TestParseSQL_StringWithBackslash(t *testing.T) {
 	sql := `SELECT * FROM users WHERE path = 'C:\\Users\\test' AND regex = 'a\b'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -158,7 +158,7 @@ func TestParseSQL_StringWithBackslash(t *testing.T) {
 func TestParseSQL_DoubleQuoteString(t *testing.T) {
 	sql := `SELECT "name", "age" FROM "users" WHERE "id" = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -171,7 +171,7 @@ func TestParseSQL_LineComment(t *testing.T) {
 	sql := `SELECT * FROM users -- 这是注释
 		WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -184,7 +184,7 @@ func TestParseSQL_LineComment(t *testing.T) {
 func TestParseSQL_LineCommentEOF(t *testing.T) {
 	sql := "SELECT * FROM users -- comment at end without newline"
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -200,7 +200,7 @@ func TestParseSQL_LineCommentEOF(t *testing.T) {
 func TestParseSQL_LineCommentNoSpace(t *testing.T) {
 	sql := "SELECT * FROM users--comment without space\nWHERE id = 1"
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -212,7 +212,7 @@ func TestParseSQL_LineCommentNoSpace(t *testing.T) {
 func TestParseSQL_MultiLineComment(t *testing.T) {
 	sql := `SELECT /* 这是注释 */ * FROM users WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -224,7 +224,7 @@ func TestParseSQL_MultiLineComment(t *testing.T) {
 func TestParseSQL_NestedParentheses(t *testing.T) {
 	sql := `SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) AS order_count FROM users WHERE status IN (1, 2, 3)`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -236,7 +236,7 @@ func TestParseSQL_NestedParentheses(t *testing.T) {
 func TestParseSQL_CaseInsensitive(t *testing.T) {
 	sql := `select * from USERS where ID = 1 group by NAME order by TIME limit 10`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -250,7 +250,7 @@ func TestParseSQL_CaseInsensitive(t *testing.T) {
 func TestParseSQL_MixedCase(t *testing.T) {
 	sql := `SeLeCt * FrOm users WhErE id = 1 GrOuP By name OrDeR By id`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -264,7 +264,7 @@ func TestParseSQL_MixedCase(t *testing.T) {
 func TestParseSQL_ExtraSpaces(t *testing.T) {
 	sql := `SELECT    *    FROM    users    WHERE    id = 1    GROUP    BY    name    ORDER    BY    id`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -282,7 +282,7 @@ WHERE id = 1
 GROUP BY name
 ORDER BY id`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -296,7 +296,7 @@ ORDER BY id`
 func TestParseSQL_KeywordInString(t *testing.T) {
 	sql := `SELECT * FROM users WHERE name = 'SELECT FROM WHERE' AND desc = 'ORDER BY LIMIT'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -313,7 +313,7 @@ func TestParseSQL_KeywordInString(t *testing.T) {
 func TestParseSQL_KeywordInIdentifier(t *testing.T) {
 	sql := `SELECT select_time, from_addr, where_field FROM table1 WHERE orderby = 1 AND grouping = 2`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -333,7 +333,7 @@ func TestParseSQL_KeywordInIdentifier(t *testing.T) {
 func TestParseSQL_Union(t *testing.T) {
 	sql := `SELECT id, name FROM users WHERE status = 1 UNION SELECT id, name FROM admins WHERE status = 1 ORDER BY id`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	// FROM 应该指向第一个 FROM
@@ -356,7 +356,7 @@ func TestParseSQL_Union(t *testing.T) {
 func TestParseSQL_UnionAll(t *testing.T) {
 	sql := `SELECT id FROM users UNION ALL SELECT id FROM orders UNION ALL SELECT id FROM products`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -372,7 +372,7 @@ func TestParseSQL_UnionAll(t *testing.T) {
 func TestParseSQL_Distinct(t *testing.T) {
 	sql := `SELECT DISTINCT name FROM users WHERE status = 1 GROUP BY name`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -394,7 +394,7 @@ func TestParseSQL_Distinct(t *testing.T) {
 func TestParseSQL_DistinctInString(t *testing.T) {
 	sql := `SELECT * FROM users WHERE note = 'SELECT DISTINCT is a keyword'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -411,7 +411,7 @@ func TestParseSQL_DistinctInString(t *testing.T) {
 func TestParseSQL_DistinctAsIdentifier(t *testing.T) {
 	sql := `SELECT distinct_count, is_distinct FROM metrics WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -428,7 +428,7 @@ func TestParseSQL_DistinctAsIdentifier(t *testing.T) {
 func TestParseSQL_DistinctOrderBy(t *testing.T) {
 	sql := `SELECT DISTINCT name FROM users ORDER BY name`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -445,7 +445,7 @@ func TestParseSQL_DistinctOrderBy(t *testing.T) {
 func TestParseSQL_UnionInSubquery(t *testing.T) {
 	sql := `SELECT * FROM (SELECT id FROM users UNION SELECT id FROM orders) AS temp WHERE id > 0`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -464,7 +464,7 @@ func TestParseSQL_UnionInSubquery(t *testing.T) {
 func TestParseSQL_Intersect(t *testing.T) {
 	sql := `SELECT id FROM users INTERSECT SELECT id FROM admins`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -484,7 +484,7 @@ func TestParseSQL_Intersect(t *testing.T) {
 func TestParseSQL_Except(t *testing.T) {
 	sql := `SELECT id FROM users EXCEPT SELECT id FROM admins`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -504,7 +504,7 @@ func TestParseSQL_Except(t *testing.T) {
 func TestParseSQL_Join(t *testing.T) {
 	sql := `SELECT u.id, u.name, o.amount FROM users u LEFT JOIN orders o ON u.id = o.user_id WHERE u.status = 1 ORDER BY o.created_at`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -520,7 +520,7 @@ func TestParseSQL_MultipleJoins(t *testing.T) {
 		LEFT JOIN products p ON o.product_id = p.id
 		WHERE u.status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -532,7 +532,7 @@ func TestParseSQL_MultipleJoins(t *testing.T) {
 func TestParseSQL_WithHint(t *testing.T) {
 	sql := `SELECT /*+ INDEX(users idx_status) */ * FROM users WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -544,7 +544,7 @@ func TestParseSQL_WithHint(t *testing.T) {
 func TestParseSQL_Count(t *testing.T) {
 	sql := `SELECT COUNT(*) AS total FROM users WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -556,7 +556,7 @@ func TestParseSQL_Count(t *testing.T) {
 func TestParseSQL_CountSubquery(t *testing.T) {
 	sql := `SELECT COUNT(*) temp_zorm_row_count FROM (SELECT DISTINCT name FROM users WHERE age > 18 GROUP BY name ORDER BY name) temp_zorm_noob_table_name WHERE 1=1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -576,7 +576,7 @@ func TestParseSQL_CountSubquery(t *testing.T) {
 func TestParseSQL_Insert(t *testing.T) {
 	sql := `INSERT INTO users (name, age) VALUES ('test', 18)`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// INSERT 语句没有 SELECT 关键字, Select 会包含整个语句
 	if parts.Select.End != len(sql) {
@@ -589,7 +589,7 @@ func TestParseSQL_Insert(t *testing.T) {
 func TestParseSQL_Update(t *testing.T) {
 	sql := `UPDATE users SET name = 'test', age = 18 WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// UPDATE 语句没有 SELECT/FROM 关键字
 	if parts.Where.Start == 0 || parts.Where.End == 0 {
@@ -602,7 +602,7 @@ func TestParseSQL_Update(t *testing.T) {
 func TestParseSQL_Delete(t *testing.T) {
 	sql := `DELETE FROM users WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// DELETE FROM 语句应解析 FROM 和 WHERE
 	assertPart(t, sql, parts.From, "FROM")
@@ -614,7 +614,7 @@ func TestParseSQL_Delete(t *testing.T) {
 func TestParseSQL_EmptyString(t *testing.T) {
 	sql := ``
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// 空 SQL 应返回全 0 的 part
 	if parts.Select.Start != 0 || parts.Select.End != 0 {
@@ -627,7 +627,7 @@ func TestParseSQL_EmptyString(t *testing.T) {
 func TestParseSQL_OnlySelect(t *testing.T) {
 	sql := `SELECT 1 + 1 AS result`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 
@@ -651,7 +651,7 @@ func TestParseSQL_OnlySelect(t *testing.T) {
 func TestParseSQL_MultipleOrderBy(t *testing.T) {
 	sql := `SELECT * FROM users ORDER BY status DESC, created_at ASC, id DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -680,7 +680,7 @@ func TestParseSQL_ComplexPaging(t *testing.T) {
 		WHERE u.age > 18
 		ORDER BY u.created_at DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -703,7 +703,7 @@ func TestParseSQL_MultiTableJoin(t *testing.T) {
 		HAVING SUM(oi.quantity) > 0
 		ORDER BY o.created_at DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -718,7 +718,7 @@ func TestParseSQL_CountForPaging(t *testing.T) {
 	originalSQL := `SELECT DISTINCT u.name, u.age FROM users u WHERE u.age > 18 GROUP BY u.name ORDER BY u.name`
 
 	// 去掉 ORDER BY
-	parts := parseSQL(&originalSQL)
+	parts := parseSQL(originalSQL)
 	if parts.OrderBy.Start != parts.OrderBy.End {
 		countSQL := originalSQL[:parts.OrderBy.Start]
 		if strings.Contains(strings.ToUpper(countSQL), "ORDER") {
@@ -742,7 +742,7 @@ func TestParseSQL_CountForPaging(t *testing.T) {
 func TestParseSQL_UnclosedString(t *testing.T) {
 	sql := `SELECT * FROM users WHERE name = 'unclosed`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// 不应 panic, 能正常解析
 	if parts.Select.Start != 0 {
@@ -754,7 +754,7 @@ func TestParseSQL_UnclosedString(t *testing.T) {
 func TestParseSQL_UnclosedComment(t *testing.T) {
 	sql := `SELECT /* unclosed comment * FROM users`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// 不应 panic, 能正常解析
 	if parts.Select.Start != 0 {
@@ -766,7 +766,7 @@ func TestParseSQL_UnclosedComment(t *testing.T) {
 func TestParseSQL_NestedBrackets(t *testing.T) {
 	sql := `SELECT (((1 + 2) * 3) - 4) AS result FROM (((users)))`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -776,7 +776,7 @@ func TestParseSQL_NestedBrackets(t *testing.T) {
 func TestParseSQL_KeywordInSubquery(t *testing.T) {
 	sql := `SELECT (SELECT name FROM inner_table WHERE id = 1) AS name FROM outer_table WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -803,7 +803,7 @@ func TestParseSQL_CaseWhen(t *testing.T) {
 		FROM users
 		WHERE created_at > '2024-01-01'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -825,7 +825,7 @@ func TestParseSQL_CaseWhenInWhere(t *testing.T) {
 			ELSE 'pending'
 		END = 'active'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -841,7 +841,7 @@ func TestParseSQL_WindowFunction(t *testing.T) {
 		FROM employees
 		WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -863,7 +863,7 @@ func TestParseSQL_WindowFunctionWithOrderBy(t *testing.T) {
 		WHERE status = 1
 		ORDER BY id DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -891,7 +891,7 @@ func TestParseSQL_CTE(t *testing.T) {
 		LEFT JOIN order_counts oc ON u.id = oc.user_id
 		WHERE oc.cnt > 5`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// WITH 子句会被包含在 SELECT 中
 	assertPart(t, sql, parts.Select, "SELECT")
@@ -917,7 +917,7 @@ func TestParseSQL_CTEWithOrderBy(t *testing.T) {
 		)
 		SELECT * FROM ranked_users WHERE rn <= 10 ORDER BY rn`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -938,7 +938,7 @@ func TestParseSQL_RecursiveCTE(t *testing.T) {
 		)
 		SELECT * FROM hierarchy ORDER BY level, name`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -951,7 +951,7 @@ func TestParseSQL_SelectInto(t *testing.T) {
 	// MySQL 的 SELECT INTO 语法
 	sql := `SELECT id, name INTO @var_id, @var_name FROM users WHERE id = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -966,7 +966,7 @@ func TestParseSQL_SelectIntoOutfile(t *testing.T) {
 		FIELDS TERMINATED BY ','
 		LINES TERMINATED BY '\n'`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -982,7 +982,7 @@ func TestParseSQL_InsertSelect(t *testing.T) {
 	sql := `INSERT INTO users_backup (id, name, email)
 		SELECT id, name, email FROM users WHERE status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// INSERT INTO ... SELECT 语句中, SELECT 会被解析
 	// FROM 应该指向 SELECT 中的 FROM
@@ -999,7 +999,7 @@ func TestParseSQL_UpdateJoin(t *testing.T) {
 		SET u.total_orders = (SELECT COUNT(*) FROM orders WHERE user_id = u.id)
 		WHERE o.status = 1`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// UPDATE 语句的解析可能不同于 SELECT
 	// 但 WHERE 应该被正确解析
@@ -1015,7 +1015,7 @@ func TestParseSQL_DeleteJoin(t *testing.T) {
 		LEFT JOIN orders o ON u.id = o.user_id
 		WHERE o.id IS NULL`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.From, "FROM")
 	assertPart(t, sql, parts.Where, "WHERE")
@@ -1026,7 +1026,7 @@ func TestParseSQL_DeleteJoin(t *testing.T) {
 func TestParseSQL_ForUpdate(t *testing.T) {
 	sql := `SELECT * FROM users WHERE id = 1 FOR UPDATE`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -1044,7 +1044,7 @@ func TestParseSQL_ForUpdate(t *testing.T) {
 func TestParseSQL_LockInShareMode(t *testing.T) {
 	sql := `SELECT * FROM users WHERE id = 1 LOCK IN SHARE MODE`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -1058,7 +1058,7 @@ func TestParseSQL_Values(t *testing.T) {
 	sql := `INSERT INTO users (id, name) VALUES (1, 'test')
 		ON DUPLICATE KEY UPDATE name = VALUES(name)`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	// 这是 INSERT 语句, 主要验证不会出错
 	if parts.Select.Start != 0 {
@@ -1099,7 +1099,7 @@ func TestParseSQL_EcommerceOrderQuery(t *testing.T) {
 		WHERE ro.rn <= 5
 		ORDER BY ro.created_at DESC, u.name ASC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")
@@ -1144,7 +1144,7 @@ func TestParseSQL_FinancialReport(t *testing.T) {
 		FROM moving_avg
 		ORDER BY stat_date DESC`
 
-	parts := parseSQL(&sql)
+	parts := parseSQL(sql)
 
 	assertPart(t, sql, parts.Select, "SELECT")
 	assertPart(t, sql, parts.From, "FROM")

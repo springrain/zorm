@@ -42,10 +42,10 @@ type sqlPart struct {
 // sqlScanner SQL 词法扫描器, 用于逐个字符解析 SQL
 // sqlScanner SQL lexical scanner for parsing SQL character by character
 type sqlScanner struct {
-	sqlStrPtr *string // 原始 SQL 字符串指针 / Original SQL string
-	index     int     // 当前扫描位置 / Current scan position
-	sqlLen    int     // SQL 字符串总长度 / Total length of SQL string
-	depth     int     // 括号嵌套深度, 用于处理子查询 / Parentheses nesting depth for handling subqueries
+	sqlStr string // 原始 SQL 字符串 / Original SQL string
+	index  int    // 当前扫描位置 / Current scan position
+	sqlLen int    // SQL 字符串总长度 / Total length of SQL string
+	depth  int    // 括号嵌套深度, 用于处理子查询 / Parentheses nesting depth for handling subqueries
 }
 
 // ================= 基础能力 / Basic Capabilities =================
@@ -64,21 +64,21 @@ func isIdentChar(c byte) bool {
 // skipString skips string literals (supports single quote ' and double quote ")
 // Handles escapes: \' and "" (SQL standard double single-quote escape)
 func (sc *sqlScanner) skipString() {
-	quote := (*sc.sqlStrPtr)[sc.index] // 记录字符串的引号类型 / Record the quote type of the string
-	sc.index++                         // 跳过开引号 / Skip opening quote
+	quote := sc.sqlStr[sc.index] // 记录字符串的引号类型 / Record the quote type of the string
+	sc.index++                   // 跳过开引号 / Skip opening quote
 
 	for sc.index < sc.sqlLen {
 		// \ 转义: 处理 \' 这种情况
 		// Backslash escape: handles cases like \'
-		if (*sc.sqlStrPtr)[sc.index] == '\\' && sc.index+1 < sc.sqlLen {
+		if sc.sqlStr[sc.index] == '\\' && sc.index+1 < sc.sqlLen {
 			sc.index += 2 // 跳过转义字符和下一个字符 / Skip escape character and next character
 			continue
 		}
 
 		// '' 转义 (SQL 标准) : 处理 'O''Brien' 这种情况
 		// '' escape (SQL standard): handles cases like 'O''Brien'
-		if (*sc.sqlStrPtr)[sc.index] == quote {
-			if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index+1] == quote {
+		if sc.sqlStr[sc.index] == quote {
+			if sc.index+1 < sc.sqlLen && sc.sqlStr[sc.index+1] == quote {
 				sc.index += 2 // 跳过两个连续的引号 / Skip two consecutive quotes
 				continue
 			}
@@ -97,21 +97,21 @@ func (sc *sqlScanner) skipString() {
 // Supports two comment formats: -- single-line comment and /* */ multi-line comment
 func (sc *sqlScanner) skipComment() bool {
 	// -- comment: 单行注释 / Single-line comment
-	if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] == '-' && (*sc.sqlStrPtr)[sc.index+1] == '-' {
+	if sc.index+1 < sc.sqlLen && sc.sqlStr[sc.index] == '-' && sc.sqlStr[sc.index+1] == '-' {
 		sc.index += 2 // 跳过 -- / Skip --
 		// 扫描到行尾或 EOF (EOF 也视为注释结束)
 		// Scan to end of line or EOF (EOF also counts as end of comment)
-		for sc.index < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] != '\n' {
+		for sc.index < sc.sqlLen && sc.sqlStr[sc.index] != '\n' {
 			sc.index++
 		}
 		return true
 	}
 
 	// /* comment */: 多行注释 / Multi-line comment
-	if sc.index+1 < sc.sqlLen && (*sc.sqlStrPtr)[sc.index] == '/' && (*sc.sqlStrPtr)[sc.index+1] == '*' {
+	if sc.index+1 < sc.sqlLen && sc.sqlStr[sc.index] == '/' && sc.sqlStr[sc.index+1] == '*' {
 		sc.index += 2 // 跳过 /* / Skip /*
 		for sc.index+1 < sc.sqlLen {
-			if (*sc.sqlStrPtr)[sc.index] == '*' && (*sc.sqlStrPtr)[sc.index+1] == '/' {
+			if sc.sqlStr[sc.index] == '*' && sc.sqlStr[sc.index+1] == '/' {
 				sc.index += 2 // 跳过 */ / Skip */
 				return true
 			}
@@ -130,8 +130,8 @@ func (sc *sqlScanner) skipComment() bool {
 // 例如: 匹配 "from" 时不会匹配到 "from_addr" 或 "afrom"
 // matchKeyword matches keywords case-insensitively and checks word boundaries
 // For example: matching "from" will not match "from_addr" or "afrom"
-func matchKeyword(s *string, i int, word string) bool {
-	n := len(*s)
+func matchKeyword(s string, i int, word string) bool {
+	n := len(s)
 	wlen := len(word)
 
 	// 长度检查 / Length check
@@ -141,14 +141,14 @@ func matchKeyword(s *string, i int, word string) bool {
 
 	// 前边界检查: 前面的字符不能是标识符字符
 	// Front boundary check: previous character must not be an identifier character
-	if i > 0 && isIdentChar((*s)[i-1]) {
+	if i > 0 && isIdentChar(s[i-1]) {
 		return false
 	}
 
 	// 匹配内容 (忽略大小写)
 	// Match content (case-insensitive)
 	for j := 0; j < wlen; j++ {
-		c := (*s)[i+j]
+		c := s[i+j]
 		if c >= 'A' && c <= 'Z' {
 			c += 32 // 转换为小写 / Convert to lowercase
 		}
@@ -159,7 +159,7 @@ func matchKeyword(s *string, i int, word string) bool {
 
 	// 后边界检查: 后面的字符不能是标识符字符
 	// Back boundary check: next character must not be an identifier character
-	if i+wlen < n && isIdentChar((*s)[i+wlen]) {
+	if i+wlen < n && isIdentChar(s[i+wlen]) {
 		return false
 	}
 
@@ -170,7 +170,7 @@ func matchKeyword(s *string, i int, word string) bool {
 // 允许两个关键字之间有空格、制表符、换行符
 // matchTwoKeywords matches two consecutive keywords like "group by" or "order by"
 // Allows spaces, tabs, and newlines between the two keywords
-func matchTwoKeywords(s *string, i int, w1, w2 string) bool {
+func matchTwoKeywords(s string, i int, w1, w2 string) bool {
 	// 先匹配第一个关键字 / First match the first keyword
 	if !matchKeyword(s, i, w1) {
 		return false
@@ -180,8 +180,8 @@ func matchTwoKeywords(s *string, i int, w1, w2 string) bool {
 
 	// 跳过中间的空白字符 (空格、制表符、换行符)
 	// Skip whitespace between keywords (spaces, tabs, newlines)
-	for j < len(*s) {
-		switch (*s)[j] {
+	for j < len(s) {
+		switch s[j] {
 		case ' ', '\t', '\n', '\r':
 			j++
 		default:
@@ -210,11 +210,10 @@ func matchTwoKeywords(s *string, i int, w1, w2 string) bool {
 //   - Correctly handles parentheses nesting (FROM in subquery doesn't affect outer query)
 //   - Correctly handles pseudo-keywords in strings and comments
 //   - Case-insensitive
-func parseSQL(sqlStrPtr *string) sqlPart {
+func parseSQL(sqlStr string) sqlPart {
 	// 使用局部变量存储字符串值, 避免频繁解引用
 	// Use local variable to store string value and avoid frequent dereferencing
-	sqlStr := *sqlStrPtr
-	sc := &sqlScanner{sqlStrPtr: sqlStrPtr, sqlLen: len(sqlStr)}
+	sc := &sqlScanner{sqlStr: sqlStr, sqlLen: len(sqlStr)}
 	var parts sqlPart
 	current := &parts.Select // 当前正在解析的子句, 默认为 SELECT / Current clause being parsed, defaults to SELECT
 	current.Start = 0        // SELECT 始终从位置 0 开始 / SELECT always starts at position 0
@@ -258,53 +257,53 @@ func parseSQL(sqlStrPtr *string) sqlPart {
 		if sc.depth == 0 {
 			switch c {
 			case 'f', 'F':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "from") {
+				if matchKeyword(sc.sqlStr, sc.index, "from") {
 					current.End = sc.index      // 结束当前子句 / End current clause
 					parts.From.Start = sc.index // 设置 FROM 起始位置 / Set FROM start position
 					current = &parts.From       // 切换到 FROM 子句 / Switch to FROM clause
 				}
 
 			case 'w', 'W':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "where") {
+				if matchKeyword(sc.sqlStr, sc.index, "where") {
 					current.End = sc.index       // 结束当前子句 / End current clause
 					parts.Where.Start = sc.index // 设置 WHERE 起始位置 / Set WHERE start position
 					current = &parts.Where       // 切换到 WHERE 子句 / Switch to WHERE clause
 				}
 
 			case 'g', 'G':
-				if matchTwoKeywords(sc.sqlStrPtr, sc.index, "group", "by") {
+				if matchTwoKeywords(sc.sqlStr, sc.index, "group", "by") {
 					current.End = sc.index         // 结束当前子句 / End current clause
 					parts.GroupBy.Start = sc.index // 设置 GROUP BY 起始位置 / Set GROUP BY start position
 					current = &parts.GroupBy       // 切换到 GROUP BY 子句 / Switch to GROUP BY clause
 				}
 
 			case 'o', 'O':
-				if matchTwoKeywords(sc.sqlStrPtr, sc.index, "order", "by") {
+				if matchTwoKeywords(sc.sqlStr, sc.index, "order", "by") {
 					current.End = sc.index         // 结束当前子句 / End current clause
 					parts.OrderBy.Start = sc.index // 设置 ORDER BY 起始位置 / Set ORDER BY start position
 					current = &parts.OrderBy       // 切换到 ORDER BY 子句 / Switch to ORDER BY clause
 				}
 
 			case 'd', 'D':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "distinct") {
+				if matchKeyword(sc.sqlStr, sc.index, "distinct") {
 					parts.Distinct.Start = sc.index
 					parts.Distinct.End = sc.index + 8
 				}
 
 			case 'u', 'U':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "union") {
+				if matchKeyword(sc.sqlStr, sc.index, "union") {
 					parts.Union.Start = sc.index
 					parts.Union.End = sc.index + 5
 				}
 
 			case 'i', 'I':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "intersect") {
+				if matchKeyword(sc.sqlStr, sc.index, "intersect") {
 					parts.Intersect.Start = sc.index
 					parts.Intersect.End = sc.index + 9
 				}
 
 			case 'e', 'E':
-				if matchKeyword(sc.sqlStrPtr, sc.index, "except") {
+				if matchKeyword(sc.sqlStr, sc.index, "except") {
 					parts.Except.Start = sc.index
 					parts.Except.End = sc.index + 6
 				}
