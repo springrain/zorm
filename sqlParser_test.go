@@ -347,7 +347,7 @@ func TestParseSQL_Union(t *testing.T) {
 	}
 	unionContent := sql[parts.Union.Start:parts.Union.End]
 	if strings.ToUpper(strings.TrimSpace(unionContent)) != "UNION" {
-		t.Errorf("UNION 内容不正确，实际：%s", unionContent)
+		t.Errorf("UNION 内容不正确, 实际：%s", unionContent)
 	}
 }
 
@@ -385,7 +385,7 @@ func TestParseSQL_Distinct(t *testing.T) {
 	}
 	distinctContent := sql[parts.Distinct.Start:parts.Distinct.End]
 	if strings.ToUpper(strings.TrimSpace(distinctContent)) != "DISTINCT" {
-		t.Errorf("DISTINCT 内容不正确，实际：%s", distinctContent)
+		t.Errorf("DISTINCT 内容不正确, 实际：%s", distinctContent)
 	}
 }
 
@@ -451,7 +451,7 @@ func TestParseSQL_UnionInSubquery(t *testing.T) {
 	assertPart(t, sql, parts.From, "FROM")
 	assertPart(t, sql, parts.Where, "WHERE")
 
-	// UNION 应被解析 (即使在子查询中，当前实现会解析)
+	// UNION 应被解析 (即使在子查询中, 当前实现会解析)
 	// 但 FROM 应该指向外层的 FROM
 	fromContent := sql[parts.From.Start:parts.From.End]
 	if !strings.Contains(fromContent, "temp") {
@@ -475,7 +475,7 @@ func TestParseSQL_Intersect(t *testing.T) {
 	}
 	intersectContent := sql[parts.Intersect.Start:parts.Intersect.End]
 	if strings.ToUpper(strings.TrimSpace(intersectContent)) != "INTERSECT" {
-		t.Errorf("INTERSECT 内容不正确，实际：%s", intersectContent)
+		t.Errorf("INTERSECT 内容不正确, 实际：%s", intersectContent)
 	}
 }
 
@@ -495,7 +495,7 @@ func TestParseSQL_Except(t *testing.T) {
 	}
 	exceptContent := sql[parts.Except.Start:parts.Except.End]
 	if strings.ToUpper(strings.TrimSpace(exceptContent)) != "EXCEPT" {
-		t.Errorf("EXCEPT 内容不正确，实际：%s", exceptContent)
+		t.Errorf("EXCEPT 内容不正确, 实际：%s", exceptContent)
 	}
 }
 

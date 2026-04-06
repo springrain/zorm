@@ -569,7 +569,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 	// 优化: 预分配容量,减少扩容开销
 	// 重新记录参数值
 	// Re-record the parameter value
-	newValues := make([]interface{}, 0, argsNum)
+	newValues := make([]interface{}, 0, argsNum*2)
 	// 记录sql参数值的下标,例如 $1 @p1 ,从1开始
 	sqlParamIndex := 1
 

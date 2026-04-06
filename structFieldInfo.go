@@ -35,6 +35,9 @@ const tagColumnName = "column"
 // entityStructCacheMap 用于缓存entity和struct反射的信息,sync.Map内部处理了并发锁
 var entityStructCacheMap = sync.Map{}
 
+// entityCacheMu 用于缓存构建时的并发控制
+var entityCacheMu sync.Mutex
+
 // fieldColumnCache 字段和数据库列的缓存
 type fieldColumnCache struct {
 	// columnName 数据库的原始列名,不带包裹符号
@@ -116,6 +119,13 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 
 	// 如果缓存存在值,不再处理
 	if cacheOK {
+		return entityCacheLoad.(*entityStructCache), nil
+	}
+	// 加锁双重检查, 避免并发重复构建缓存
+	entityCacheMu.Lock()
+	defer entityCacheMu.Unlock()
+	// 再次检查缓存, 可能其他goroutine已经构建完成
+	if entityCacheLoad, cacheOK = entityStructCacheMap.Load(key); cacheOK {
 		return entityCacheLoad.(*entityStructCache), nil
 	}
 	// 获取字段长度
@@ -654,11 +664,13 @@ func funcCreateEntityStructCache(ctx context.Context, entityCache *entityStructC
 	// dbColumnFieldMap[tagColumnValue] = field
 	// 使用数据库字段的小写,处理oracle和达梦数据库的sql返回值大写
 	columnName := columnTag
-	//去掉可能的包裹符号
-	columnName = strings.Trim(columnName, "`")
-	columnName = strings.Trim(columnName, "\"")
-	columnName = strings.TrimLeft(columnName, "[")
-	columnName = strings.TrimRight(columnName, "]")
+	//去掉可能的包裹符号,假设首尾包裹符成对出现
+	if len(columnName) > 1 {
+		first := columnName[0]
+		if first == '`' || first == '"' || first == '[' {
+			columnName = columnName[1 : len(columnName)-1]
+		}
+	}
 	fieldCache.columnName = columnName
 	fieldCache.columnNameLower = strings.ToLower(columnName)
 
