@@ -186,7 +186,14 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 		return entityCache, nil
 	}
 
-	// @TODO 是否需要考虑并发?
+	// 使用锁确保并发安全
+	entityCacheMu.Lock()
+	defer entityCacheMu.Unlock()
+
+	// 再次检查, 防止在等待锁时已经被其他goroutine处理
+	if entityCache.insertSQL != "" {
+		return entityCache, nil
+	}
 
 	// 处理主键自增. 第一次插入手动插入(ID=0)会影响后续的autoIncrement判断,因为被缓存了,主键自增默认都是从1开始
 	sequence := entity.GetPkSequence()
