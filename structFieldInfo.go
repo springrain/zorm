@@ -97,6 +97,34 @@ type entityStructCache struct {
 	autoIncrement int
 }
 
+// buildStructCache 构建基础的Struct字段缓存,不存储到map中
+func buildStructCache(ctx context.Context, typeOf reflect.Type) (*entityStructCache, error) {
+	// 获取字段长度
+	fieldNum := typeOf.NumField()
+	// 如果没有字段
+	if fieldNum < 1 {
+		return nil, errors.New("->buildStructCache-->NumField entity没有属性")
+	}
+	// 创建实体类字段缓存
+	entityCache := &entityStructCache{}
+	entityCache.fields = make([]*fieldColumnCache, 0, fieldNum)
+	entityCache.fieldMap = make(map[string]*fieldColumnCache)
+	entityCache.columns = make([]*fieldColumnCache, 0, fieldNum)
+	entityCache.columnMap = make(map[string]*fieldColumnCache)
+
+	// 遍历所有字段,包括匿名属性
+	for i := 0; i < fieldNum; i++ {
+		field := typeOf.Field(i)
+		if field.Anonymous { // 如果是匿名的,调用递归处理
+			funcRecursiveAnonymous(ctx, entityCache, &field)
+		} else { // 普通字段
+			// 创建entityStruct缓存
+			funcCreateEntityStructCache(ctx, entityCache, field)
+		}
+	}
+	return entityCache, nil
+}
+
 // getStructTypeOfCache 获取Struct实体类的结构体缓存,可以是普通的Struct
 func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *DataSourceConfig) (*entityStructCache, error) {
 	// pkgPath + _ + pkgName(因为单独用这个不保证唯一)
@@ -128,29 +156,11 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 	if entityCacheLoad, cacheOK = entityStructCacheMap.Load(key); cacheOK {
 		return entityCacheLoad.(*entityStructCache), nil
 	}
-	// 获取字段长度
-	fieldNum := typeOf.NumField()
-	// 如果没有字段
-	if fieldNum < 1 {
-		return nil, errors.New("->getEntityStructCache-->NumField entity没有属性")
-	}
-	// 创建实体类字段缓存
-	entityCache := &entityStructCache{}
-	entityCache.fields = make([]*fieldColumnCache, 0, fieldNum)
-	entityCache.fieldMap = make(map[string]*fieldColumnCache)
-	entityCache.columns = make([]*fieldColumnCache, 0, fieldNum)
-	entityCache.columnMap = make(map[string]*fieldColumnCache)
 
-	// 遍历所有字段,包括匿名属性
-	for i := 0; i < fieldNum; i++ {
-		field := typeOf.Field(i)
-		if field.Anonymous { // 如果是匿名的,调用递归处理
-			funcRecursiveAnonymous(ctx, entityCache, &field)
-			//} else if _, ok := entityCache.fieldMap[strings.ToLower(field.Name)]; !ok { // 普通命名字段,而且没有记录过
-		} else { // 普通字段
-			// 创建entityStruct缓存
-			funcCreateEntityStructCache(ctx, entityCache, field)
-		}
+	// 构建基础缓存
+	entityCache, err := buildStructCache(ctx, typeOf)
+	if err != nil {
+		return nil, err
 	}
 
 	// 记录到缓存中
@@ -171,30 +181,52 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 	}
 	// 反射类型
 	typeOf := valueOf.Type()
-	// 获取Struct类型的缓存
-	entityCache, err := getStructTypeOfCache(ctx, &typeOf, config)
-	if err != nil {
-		return nil, err
-	}
-	if entityCache == nil {
-		return nil, errors.New("->getEntityStructCache-->getStructTypeOfCache返回nil")
-	}
-	if len(entityCache.columns) < 1 {
-		return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
-	}
-	if entityCache.insertSQL != "" { // 已经处理过了
-		return entityCache, nil
+	pkgPath := typeOf.PkgPath()
+	typeOfString := typeOf.String()
+	// 生成和getStructTypeOfCache相同的缓存key
+	var keyBuilder strings.Builder
+	keyBuilder.Grow(len(config.Dialect) + len(pkgPath) + len(typeOfString) + 3)
+	keyBuilder.WriteString(config.Dialect)
+	keyBuilder.WriteByte('_')
+	keyBuilder.WriteString(pkgPath)
+	keyBuilder.WriteByte('_')
+	keyBuilder.WriteString(typeOfString)
+	key := keyBuilder.String()
+
+	// 先检查缓存是否存在且已经完全构建
+	entityCacheLoad, cacheOK := entityStructCacheMap.Load(key)
+	if cacheOK {
+		entityCache := entityCacheLoad.(*entityStructCache)
+		if entityCache.insertSQL != "" { // 已经完整处理过了
+			return entityCache, nil
+		}
 	}
 
-	// 使用锁确保并发安全
+	// 加锁处理,全程只锁一次
 	entityCacheMu.Lock()
 	defer entityCacheMu.Unlock()
 
-	// 再次检查, 防止在等待锁时已经被其他goroutine处理
-	if entityCache.insertSQL != "" {
-		return entityCache, nil
+	// 再次检查缓存,防止其他goroutine已经处理完成
+	entityCacheLoad, cacheOK = entityStructCacheMap.Load(key)
+	var entityCache *entityStructCache
+	var err error
+	if cacheOK {
+		entityCache = entityCacheLoad.(*entityStructCache)
+		if entityCache.insertSQL != "" { // 已经被其他goroutine完整处理过了
+			return entityCache, nil
+		}
+	} else {
+		// 缓存不存在,完整构建整个缓存
+		entityCache, err = buildStructCache(ctx, typeOf)
+		if err != nil {
+			return nil, err
+		}
+		if len(entityCache.columns) < 1 {
+			return nil, errors.New("->getEntityStructCache-->没有column信息,请检查struct中 column 的tag")
+		}
 	}
 
+	// 处理实体特有字段(insertSQL/deleteSQL/主键等)
 	// 处理主键自增. 第一次插入手动插入(ID=0)会影响后续的autoIncrement判断,因为被缓存了,主键自增默认都是从1开始
 	sequence := entity.GetPkSequence()
 	if sequence != "" { // 序列自增 Sequence increment
@@ -237,6 +269,11 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 	entityCache.deleteSQL, err = wrapDeleteSQL(ctx, entity)
 	if err != nil {
 		return nil, err
+	}
+
+	// 如果是新构建的缓存,存储到map中
+	if !cacheOK {
+		entityStructCacheMap.Store(key, entityCache)
 	}
 
 	return entityCache, nil
