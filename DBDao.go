@@ -383,7 +383,8 @@ var transaction = func(ctx context.Context, doTransaction func(ctx context.Conte
 			//if _, ok := r.(runtime.Error); ok {
 			//	panic(r)
 			//}
-			err, errOk := r.(error)
+			var errOk bool
+			err, errOk = r.(error)
 			if errOk {
 				err = fmt.Errorf("->Transaction-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)

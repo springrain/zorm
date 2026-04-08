@@ -1,4 +1,5 @@
 v1.8.4
+- 修复```Transaction```中 defer recover error遮蔽的问题
 - 优化```reBuildSQL```,基础类型不反射
 - 优化```firstOneWord```实现
 - 增加sqlParser解析器, 替换正则表达式解析SQL
