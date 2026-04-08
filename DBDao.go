@@ -502,12 +502,13 @@ func QueryRow(ctx context.Context, finder *Finder, entity interface{}) (bool, er
 	return queryRow(ctx, finder, entity)
 }
 
-var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (has bool, err error) {
-	typeOf, errCheck := checkEntityKind(entity)
-	if errCheck != nil {
-		errCheck = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", errCheck)
-		FuncLogError(ctx, errCheck)
-		return has, errCheck
+var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bool, error) {
+	typeOf, err := checkEntityKind(entity)
+	has := false
+	if err != nil {
+		err = fmt.Errorf("->QueryRow-->checkEntityKind类型检查错误:%w", err)
+		FuncLogError(ctx, err)
+		return has, err
 	}
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
@@ -562,11 +563,12 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (ha
 		// 先判断error 再关闭
 		// First determine error and then close
 		rows.Close()
+		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
 			has = false
-			err, errOk := r.(error)
+			err, errOk = r.(error)
 			if errOk {
 				err = fmt.Errorf("->QueryRow-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -684,11 +686,12 @@ var Query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	return query(ctx, finder, rowsSlicePtr, page)
 }
 
-var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) (err error) {
+var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, page *Page) error {
 	if rowsSlicePtr == nil { // 如果为nil
 		FuncLogError(ctx, errQuerySlice)
 		return errQuerySlice
 	}
+	var err error
 
 	pvPtr := reflect.ValueOf(rowsSlicePtr)
 	if pvPtr.Kind() != reflect.Ptr { // 如果不是指针 | If it is not a pointer
@@ -766,10 +769,11 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		// 先判断error 再关闭
 		// First determine error and then close
 		rows.Close()
+		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
-			err, errOk := r.(error)
+			err, errOk = r.(error)
 			if errOk {
 				err = fmt.Errorf("->Query-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -880,7 +884,7 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 		page.setTotalCount(count)
 	}
 
-	return nil
+	return err
 }
 
 var (
@@ -931,11 +935,13 @@ func QueryMap(ctx context.Context, finder *Finder, page *Page) ([]map[string]int
 	return queryMap(ctx, finder, page)
 }
 
-var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapList []map[string]interface{}, err error) {
+var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[string]interface{}, error) {
 	if finder == nil {
 		FuncLogError(ctx, errQueryMapFinder)
 		return nil, errQueryMapFinder
 	}
+	resultMapList := make([]map[string]interface{}, 0)
+	var err error
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -986,10 +992,11 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		// 先判断error 再关闭
 		// First determine error and then close
 		rows.Close()
+		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
-			err, errOk := r.(error)
+			err, errOk = r.(error)
 			if errOk {
 				err = fmt.Errorf("->QueryMap-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -1202,7 +1209,7 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 		page.setTotalCount(count)
 	}
 
-	return resultMapList, nil
+	return resultMapList, err
 }
 
 // ResultSetRows 根据Finder和Page查询,用户自己处理结果集,一般用于处理多结果集,游标等特殊情况
