@@ -150,6 +150,7 @@ func NewDBDao(config *DataSourceConfig) (*DBDao, error) {
 	}
 	// dbdao 存在,但是有error的情况
 	if err != nil {
+		_ = dataSource.Close()
 		return dbdao, err
 	}
 	return &DBDao{config, dataSource}, nil
@@ -1031,12 +1032,14 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) (resultMapL
 	for i, columnType := range columnTypes {
 		databaseTypeNames[i] = strings.ToUpper(columnType.DatabaseTypeName())
 	}
+	// 预分配变量,循环内复用,循环的旧值会被完全覆盖,减少GC压力
+	// Pre-allocate variables for reuse in the loop to reduce GC pressure
+	// 接收数据库返回的数据,需要使用指针接收
+	// To receive the data returned by the database, you need to use the pointer to receive
+	values := make([]interface{}, columnTypeLen)
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
-		// 接收数据库返回的数据,需要使用指针接收
-		// To receive the data returned by the database, you need to use the pointer to receive
-		values := make([]interface{}, columnTypeLen)
 		// 使用指针类型接收字段值,需要使用interface{}包装一下
 		// To use the pointer type to receive the field value, you need to use interface() to wrap it
 		// 预分配map容量,提高性能
@@ -1209,6 +1212,7 @@ func ResultSetRows(ctx context.Context, finder *Finder, page *Page, doRows func(
 }
 
 var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows func(ctx context.Context, rows *sql.Rows) (interface{}, error)) (interface{}, error) {
+	var err error
 	//从contxt中获取数据库连接,可能为nil
 	//Get database connection from contxt, may be nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
@@ -1255,7 +1259,8 @@ var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
-			err, errOk := r.(error)
+			var errOk bool
+			err, errOk = r.(error)
 			if errOk {
 				err = fmt.Errorf("->ResultSetRows-->recover异常:%w", err)
 				FuncLogPanic(ctx, err)
@@ -1267,7 +1272,8 @@ var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows
 	}()
 
 	// 执行处理结果集的函数
-	result, err := doRows(ctx, rows)
+	var result interface{}
+	result, err = doRows(ctx, rows)
 	return result, err
 }
 

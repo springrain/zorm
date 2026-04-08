@@ -133,14 +133,7 @@ func getStructTypeOfCache(ctx context.Context, typeOfPtr *reflect.Type, config *
 	pkgPath := typeOf.PkgPath()
 	typeOfString := typeOf.String()
 	// 不同方言的缓存分开存储.不同方言的columnTag并不一样,例如 `name` 和 "name",一个项目使用多种数据库时,同一个Struct的映射会有区别
-	var keyBuilder strings.Builder
-	keyBuilder.Grow(len(config.Dialect) + len(pkgPath) + len(typeOfString) + 3)
-	keyBuilder.WriteString(config.Dialect)
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(pkgPath)
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(typeOfString)
-	key := keyBuilder.String()
+	key := config.Dialect + "_" + pkgPath + "_" + typeOfString
 
 	// 缓存的值
 	entityCacheLoad, cacheOK := entityStructCacheMap.Load(key)
@@ -184,14 +177,7 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 	pkgPath := typeOf.PkgPath()
 	typeOfString := typeOf.String()
 	// 生成和getStructTypeOfCache相同的缓存key
-	var keyBuilder strings.Builder
-	keyBuilder.Grow(len(config.Dialect) + len(pkgPath) + len(typeOfString) + 3)
-	keyBuilder.WriteString(config.Dialect)
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(pkgPath)
-	keyBuilder.WriteByte('_')
-	keyBuilder.WriteString(typeOfString)
-	key := keyBuilder.String()
+	key := config.Dialect + "_" + pkgPath + "_" + typeOfString
 
 	// 先检查缓存是否存在且已经完全构建
 	entityCacheLoad, cacheOK := entityStructCacheMap.Load(key)
