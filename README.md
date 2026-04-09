@@ -28,8 +28,6 @@ ZORM transaction operations need ```zorm.Transaction(ctx, func(ctx context.Conte
 
 ## Description of the source repository
 The main libraries of the open source projects I led are all in GitHub, and there are project descriptions on GitHub to guide the jump to GitHub, which also causes the slow growth of the project, after all, there are more GitHub users.  
-**Open source has no borders, but developers have their own homeland.**  
-Strictly speaking, GitHub is governed by US law https://www.infoq.cn/article/SA72SsSeZBpUSH_ZH8XB
 do my best to support the domestic open source community, don't like it, don't spray, thank you!
 
 ## Support domestic database  

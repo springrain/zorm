@@ -28,8 +28,6 @@ zorm的事务操作需要显式使用```zorm.Transaction(ctx, func(ctx context.C
 
 ## 源码仓库说明
 我主导的开源项目主库都在gitee,github上留有项目说明,引导跳转到gitee,这样也造成了项目star增长缓慢,毕竟github用户多些.  
-**开源没有国界,开发者却有自己的祖国.**   
-严格意义上,github是受美国法律管辖的 https://www.infoq.cn/article/SA72SsSeZBpUSH_ZH8XB  
 尽我所能,支持国内开源社区,不喜勿喷,谢谢!
 
 ## 支持国产数据库  
