@@ -174,11 +174,13 @@ func (dbConnection *dataBaseConnection) rollback() error {
 	}
 
 	err := dbConnection.tx.Rollback()
-	if err != nil {
+	dbConnection.tx = nil
+	if err != nil && err != sql.ErrTxDone {
+		// sql.ErrTxDone 表示事务已经提交或回滚,属于预期情况,不作为错误处理
+		// sql.ErrTxDone means the transaction has already been committed or rolled back, treat as expected
 		err = fmt.Errorf("->rollback事务回滚失败:%w", err)
 		return err
 	}
-	dbConnection.tx = nil
 	return nil
 }
 
