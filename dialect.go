@@ -366,8 +366,9 @@ var wrapUpdateEntityMapSQL = func(ctx context.Context, entity IEntityMap) (*stri
 	// Primary key name
 	var pkValue interface{}
 	dbFieldMapIndex := 0
-	for k, v := range dbFieldMap {
-
+	dbFieldMapKey := entity.GetDBFieldMapKey()
+	for _, k := range dbFieldMapKey {
+		v := dbFieldMap[k]
 		if k == entity.GetPKColumnName() { // 如果是主键  | If it is the primary key
 			pkValue = v
 			continue

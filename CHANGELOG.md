@@ -1,4 +1,8 @@
 v1.8.4
+- ```wrapUpdateEntityMapSQL```固定SQL列顺序
+- 事务提交的 sql.ErrTxDone 不做处理
+- 检查rows.Err
+- 添加缺少的gbase方言
 - 修复 defer recover 的 error 遮蔽问题
 - 修复```getEntityStructCache```并发时缓存竞态条件问题
 - 优化```reBuildSQL```,基础类型不反射
