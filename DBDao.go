@@ -664,11 +664,18 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 		}
 
 		if err != nil {
-			err = fmt.Errorf("->Query-->sqlRowsValues错误:%w", err)
+			err = fmt.Errorf("->QueryRow-->sqlRowsValues错误:%w", err)
 			FuncLogError(ctx, err)
 			return has, err
 		}
 
+	}
+
+	// 检查rows遍历过程中是否发生IO错误
+	if rowErr := rows.Err(); rowErr != nil {
+		rowErr = fmt.Errorf("->QueryRow-->rows.Err()结果集遍历错误:%w", rowErr)
+		FuncLogError(ctx, rowErr)
+		return has, rowErr
 	}
 
 	return has, err
@@ -870,6 +877,13 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 			sliceValue.Set(reflect.Append(sliceValue, pv))
 		}
 
+	}
+
+	// 检查rows遍历过程中是否发生IO错误
+	if rowErr := rows.Err(); rowErr != nil {
+		rowErr = fmt.Errorf("->Query-->rows.Err()结果集遍历错误:%w", rowErr)
+		FuncLogError(ctx, rowErr)
+		return rowErr
 	}
 
 	// 查询总条数
@@ -1195,6 +1209,13 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 		// Add Map to the array
 		resultMapList = append(resultMapList, result)
 
+	}
+
+	// 检查rows遍历过程中是否发生IO错误
+	if rowErr := rows.Err(); rowErr != nil {
+		rowErr = fmt.Errorf("->QueryMap-->rows.Err()结果集遍历错误:%w", rowErr)
+		FuncLogError(ctx, rowErr)
+		return resultMapList, rowErr
 	}
 
 	// 查询总条数
