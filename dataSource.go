@@ -49,6 +49,7 @@ var dbDialectMap = map[string]string{
 	"clickhouse": "clickhouse",
 	"dm":         "dm",
 	"kingbase":   "kingbase",
+	"gbase":      "odbc",
 	"shentong":   "aci",
 	"tdengine":   "taosSql",
 }
