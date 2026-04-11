@@ -638,3 +638,297 @@ func Test_wrapUpdateEntityMapSQL_PKFirstInSet(t *testing.T) {
 		t.Errorf("values[2] = %v, want 42", (*values)[2])
 	}
 }
+
+func Test_reBuildSQL_arrayParameterBoundaries(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("mysql dialect - array parameter expansion", func(t *testing.T) {
+		config := &DataSourceConfig{Dialect: "mysql"}
+
+		// Test 1: Single element slice -> unwrapped to single value
+		t.Run("single element slice", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			args := []interface{}{[]int{42}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN (?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN (?)'", *result)
+			}
+			if len(*values) != 1 {
+				t.Fatalf("values length = %d, want 1", len(*values))
+			}
+			if (*values)[0] != 42 {
+				t.Errorf("value[0] = %v, want 42", (*values)[0])
+			}
+		})
+
+		// Test 2: Multi element slice -> expanded to multiple placeholders
+		t.Run("multi element slice", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			args := []interface{}{[]int{1, 2, 3}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN (?,?,?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN (?,?,?)'", *result)
+			}
+			if len(*values) != 3 {
+				t.Fatalf("values length = %d, want 3", len(*values))
+			}
+			if (*values)[0] != 1 || (*values)[1] != 2 || (*values)[2] != 3 {
+				t.Errorf("values = %v, want [1 2 3]", *values)
+			}
+		})
+
+		// Test 3: Empty slice -> treated as nil
+		t.Run("empty slice", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			args := []interface{}{[]int{}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN (?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN (?)'", *result)
+			}
+			if len(*values) != 1 {
+				t.Fatalf("values length = %d, want 1", len(*values))
+			}
+			if (*values)[0] != nil {
+				t.Errorf("value[0] = %v, want nil", (*values)[0])
+			}
+		})
+
+		// Test 4: nil pointer to slice
+		t.Run("nil pointer slice", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			var nilSlice *[]int = nil
+			args := []interface{}{nilSlice}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN (?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN (?)'", *result)
+			}
+			if len(*values) != 1 {
+				t.Fatalf("values length = %d, want 1", len(*values))
+			}
+			if (*values)[0] != nil {
+				t.Errorf("value[0] = %v, want nil", (*values)[0])
+			}
+		})
+
+		// Test 5: Multiple placeholders with mixed array params
+		t.Run("mixed single and multi element arrays", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE a IN (?) AND b IN (?)"
+			args := []interface{}{[]int{1}, []string{"x", "y"}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE a IN (?) AND b IN (?,?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM t WHERE a IN (?) AND b IN (?,?)'", *result)
+			}
+			if len(*values) != 3 {
+				t.Fatalf("values length = %d, want 3", len(*values))
+			}
+			if (*values)[0] != 1 || (*values)[1] != "x" || (*values)[2] != "y" {
+				t.Errorf("values = %v, want [1 x y]", *values)
+			}
+		})
+
+		// Test 6: Large array expansion
+		t.Run("large array", func(t *testing.T) {
+			items := make([]int, 100)
+			for i := 0; i < 100; i++ {
+				items[i] = i + 1
+			}
+			sqlstr := "SELECT * FROM t WHERE id IN (?)"
+			args := []interface{}{items}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			// Should have 100 placeholders
+			expectedPlaceholders := strings.Repeat("?,", 99) + "?"
+			expectedSQL := "SELECT * FROM t WHERE id IN (" + expectedPlaceholders + ")"
+			if *result != expectedSQL {
+				t.Errorf("SQL length = %d, want %d", len(*result), len(expectedSQL))
+			}
+			if len(*values) != 100 {
+				t.Fatalf("values length = %d, want 100", len(*values))
+			}
+		})
+	})
+
+	t.Run("postgresql dialect - $N indexed placeholders", func(t *testing.T) {
+		config := &DataSourceConfig{Dialect: "postgresql"}
+
+		t.Run("single element slice -> $1", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			args := []interface{}{[]int{42}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN ($1)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN ($1)'", *result)
+			}
+			if len(*values) != 1 || (*values)[0] != 42 {
+				t.Errorf("values = %v, want [42]", *values)
+			}
+		})
+
+		t.Run("multi element slice -> $1,$2,$3", func(t *testing.T) {
+			sqlstr := "SELECT * FROM users WHERE id IN (?)"
+			args := []interface{}{[]int{10, 20, 30}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM users WHERE id IN ($1,$2,$3)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM users WHERE id IN ($1,$2,$3)'", *result)
+			}
+			if len(*values) != 3 {
+				t.Fatalf("values length = %d, want 3", len(*values))
+			}
+		})
+
+		t.Run("multiple placeholders with different arrays", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE a IN (?) AND b = ? AND c IN (?)"
+			args := []interface{}{[]int{1, 2}, "hello", []string{"x"}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE a IN ($1,$2) AND b = $3 AND c IN ($4)" {
+				t.Errorf("SQL = %q, want correct indexed placeholders", *result)
+			}
+			if len(*values) != 4 {
+				t.Fatalf("values length = %d, want 4", len(*values))
+			}
+		})
+	})
+
+	t.Run("tdengine dialect - string wrapped with single quotes", func(t *testing.T) {
+		config := &DataSourceConfig{Dialect: "tdengine"}
+
+		// Single string is a base type, not wrapped with single quotes by reBuildSQL
+		// Only string slices get the '?' quoting in tdengine
+		t.Run("single string -> ?", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE name = ?"
+			args := []interface{}{"hello"}
+			result, _, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE name = ?" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM t WHERE name = ?'", *result)
+			}
+		})
+
+		t.Run("string array -> '?','?','?'", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE name IN (?)"
+			args := []interface{}{[]string{"a", "b"}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE name IN ('?','?')" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM t WHERE name IN ('\\?'','\\?'')'", *result)
+			}
+			if len(*values) != 2 {
+				t.Fatalf("values length = %d, want 2", len(*values))
+			}
+		})
+
+		t.Run("int array stays with ?", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE id IN (?)"
+			args := []interface{}{[]int{1, 2, 3}}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE id IN (?,?,?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM t WHERE id IN (?,?,?)'", *result)
+			}
+			if len(*values) != 3 {
+				t.Fatalf("values length = %d, want 3", len(*values))
+			}
+		})
+	})
+
+	t.Run("edge cases", func(t *testing.T) {
+		config := &DataSourceConfig{Dialect: "mysql"}
+
+		t.Run("no args, no placeholders", func(t *testing.T) {
+			sqlstr := "SELECT 1"
+			args := []interface{}{}
+			result, _, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT 1" {
+				t.Errorf("SQL = %q, want 'SELECT 1'", *result)
+			}
+		})
+
+		t.Run("placeholder mismatch", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE a = ? AND b = ?"
+			args := []interface{}{1}
+			_, _, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err == nil {
+				t.Error("expected error for placeholder mismatch, got nil")
+			}
+		})
+
+		t.Run("too many placeholders", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE a = ?"
+			args := []interface{}{1, 2}
+			_, _, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err == nil {
+				t.Error("expected error for too many placeholders, got nil")
+			}
+		})
+
+		t.Run("pointer to single element slice", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE id IN (?)"
+			slice := []int{99}
+			pslice := &slice
+			args := []interface{}{pslice}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE id IN (?)" {
+				t.Errorf("SQL = %q, want 'SELECT * FROM t WHERE id IN (?)'", *result)
+			}
+			if len(*values) != 1 || (*values)[0] != 99 {
+				t.Errorf("values = %v, want [99]", *values)
+			}
+		})
+
+		t.Run("multiple non-adjacent placeholders with arrays", func(t *testing.T) {
+			sqlstr := "SELECT * FROM t WHERE id = ? AND status IN (?) AND name = ?"
+			args := []interface{}{1, []string{"active", "pending"}, "test"}
+			result, values, err := reBuildSQL(ctx, config, &sqlstr, &args)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if *result != "SELECT * FROM t WHERE id = ? AND status IN (?,?) AND name = ?" {
+				t.Errorf("SQL = %q", *result)
+			}
+			if len(*values) != 4 {
+				t.Fatalf("values length = %d, want 4", len(*values))
+			}
+			// Order: 1, "active", "pending", "test"
+			if (*values)[0] != 1 || (*values)[1] != "active" || (*values)[2] != "pending" || (*values)[3] != "test" {
+				t.Errorf("values = %v, want [1 active pending test]", *values)
+			}
+		})
+	})
+}
