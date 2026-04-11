@@ -580,7 +580,9 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 	// 优化: 预估SQL长度,减少扩容
 	newSQLStr.Grow(len(*sqlstr) + argsNum*3)
 	i := -1
-	for _, vbyte := range []byte(*sqlstr) {
+	sqlStrLen := len(*sqlstr)
+	for idx := 0; idx < sqlStrLen; idx++ {
+		vbyte := (*sqlstr)[idx]
 		if vbyte != '?' { // 如果不是?问号
 			newSQLStr.WriteByte(vbyte)
 			continue
