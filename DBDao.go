@@ -560,9 +560,10 @@ var queryRow = func(ctx context.Context, finder *Finder, entity interface{}) (bo
 	// 先判断error 再关闭
 	// First determine error and then close
 	defer func() {
-		// 先判断error 再关闭
-		// First determine error and then close
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("->QueryRow-->rows.Close()关闭结果集错误:%w", closeErr)
+			FuncLogError(ctx, err)
+		}
 		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
@@ -773,9 +774,10 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// 先判断error 再关闭
 	// First determine error and then close
 	defer func() {
-		// 先判断error 再关闭
-		// First determine error and then close
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("->Query-->rows.Close()关闭结果集错误:%w", closeErr)
+			FuncLogError(ctx, err)
+		}
 		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
@@ -1003,9 +1005,10 @@ var queryMap = func(ctx context.Context, finder *Finder, page *Page) ([]map[stri
 	// 先判断error 再关闭
 	// First determine error and then close
 	defer func() {
-		// 先判断error 再关闭
-		// First determine error and then close
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("->QueryMap-->rows.Close()关闭结果集错误:%w", closeErr)
+			FuncLogError(ctx, err)
+		}
 		var errOk bool
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
@@ -1281,9 +1284,16 @@ var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows
 	// 先判断error 再关闭
 	// First determine error and then close
 	defer func() {
-		// 先判断error 再关闭
-		// First determine error and then close
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("->ResultSetRows-->rows.Close()关闭结果集错误:%w", closeErr)
+			FuncLogError(ctx, err)
+		}
+		// 如果doRows没有遍历完结果集,检查rows.Err()捕获潜在IO错误
+		// If doRows didn't iterate through the entire result set, check rows.Err() for potential IO errors
+		if rowErr := rows.Err(); rowErr != nil && err == nil {
+			rowErr = fmt.Errorf("->ResultSetRows-->rows.Err()结果集遍历未完整:%w", rowErr)
+			FuncLogError(ctx, rowErr)
+		}
 		// 捕获panic,赋值给err,避免程序崩溃
 		// Capture panic, assign it to err, and avoid program crash
 		if r := recover(); r != nil {
@@ -1302,6 +1312,7 @@ var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows
 	// 执行处理结果集的函数
 	var result interface{}
 	result, err = doRows(ctx, rows)
+	
 	return result, err
 }
 
