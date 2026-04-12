@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -333,36 +334,36 @@ func Test_firstOneWord(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:     "normal word",
-			input:    "SELECT * FROM users",
-			index:    0,
-			wantWord: "SELECT",
+			name:      "normal word",
+			input:     "SELECT * FROM users",
+			index:     0,
+			wantWord:  "SELECT",
 			wantStart: 0,
-			wantErr:  false,
+			wantErr:   false,
 		},
 		{
-			name:     "skip leading spaces, start points to word after spaces",
-			input:    "  FROM users",
-			index:    0,
-			wantWord: "FROM",
+			name:      "skip leading spaces, start points to word after spaces",
+			input:     "  FROM users",
+			index:     0,
+			wantWord:  "FROM",
 			wantStart: 2,
-			wantErr:  false,
+			wantErr:   false,
 		},
 		{
-			name:     "skip leading parentheses, start points to word",
-			input:    "(SELECT)",
-			index:    0,
-			wantWord: "SELECT",
+			name:      "skip leading parentheses, start points to word",
+			input:     "(SELECT)",
+			index:     0,
+			wantWord:  "SELECT",
 			wantStart: 1,
-			wantErr:  false,
+			wantErr:   false,
 		},
 		{
-			name:     "mixed spaces and parentheses",
-			input:    " ( ( FROM ",
-			index:    0,
-			wantWord: "FROM",
+			name:      "mixed spaces and parentheses",
+			input:     " ( ( FROM ",
+			index:     0,
+			wantWord:  "FROM",
 			wantStart: 5,
-			wantErr:  false,
+			wantErr:   false,
 		},
 		{
 			name:      "index out of range",
@@ -931,4 +932,59 @@ func Test_reBuildSQL_arrayParameterBoundaries(t *testing.T) {
 			}
 		})
 	})
+}
+
+func Test_FuncGenerateStringID_NoDuplicate(t *testing.T) {
+	ctx := context.Background()
+	const count = 100000
+	seen := make(map[string]struct{}, count)
+
+	for i := 0; i < count; i++ {
+		id := FuncGenerateStringID(ctx)
+		if len(id) != 32 {
+			t.Fatalf("iteration %d: ID length = %d, want 32", i, len(id))
+		}
+		if _, ok := seen[id]; ok {
+			t.Fatalf("iteration %d: duplicate ID found: %s", i, id)
+		}
+		seen[id] = struct{}{}
+	}
+}
+
+func Test_FuncGenerateStringID_ConcurrentNoDuplicate(t *testing.T) {
+	const goroutines = 100
+	const perGoroutine = 1000
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	seen := make(map[string]struct{}, goroutines*perGoroutine)
+	t.Cleanup(func() {
+		if r := recover(); r != nil {
+			t.Fatalf("goroutine panic: %v", r)
+		}
+	})
+
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func() {
+			defer wg.Done()
+			ctx := context.Background()
+			for i := 0; i < perGoroutine; i++ {
+				id := FuncGenerateStringID(ctx)
+				if len(id) != 32 {
+					t.Errorf("goroutine: ID length = %d, want 32", len(id))
+					return
+				}
+				mu.Lock()
+				if _, ok := seen[id]; ok {
+					mu.Unlock()
+					t.Errorf("duplicate ID found: %s", id)
+					return
+				}
+				seen[id] = struct{}{}
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
 }
