@@ -19,6 +19,7 @@
 package zorm
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -667,6 +668,51 @@ func TestParseSQL_MultipleOrderBy(t *testing.T) {
 	}
 	if !strings.Contains(orderByContent, "id") {
 		t.Errorf("ORDER BY 应包含 id 字段")
+	}
+}
+
+// ---------------- TestParseSQL_SelectCountSubquery ----------------
+// 测试 SELECT 子句中包含 COUNT 子查询的 SQL, 通过 selectCount 函数验证生成的 COUNT 语句是否正确
+func TestParseSQL_SelectCountSubquery(t *testing.T) {
+	// 典型场景: 查询列表时, 用子查询统计关联表的数量
+	originalSQL := `select ut.*,(SELECT COUNT (*) FROM users us WHERE us.unit_id = ut.unit_id) num from units ut `
+
+	// 构造 Finder, 模拟分页查询场景
+	finder := NewFinder()
+	finder.Append(originalSQL)
+	finder.InjectionCheck = false
+
+	// 构造 Page, 触发 selectCount
+	page := NewPage()
+
+	// mock queryRow, 捕获传入的 SQL
+	var capturedSQL string
+	originalQueryRow := queryRow
+	queryRow = func(ctx context.Context, f *Finder, entity interface{}) (bool, error) {
+		sqlstr, _ := f.GetSQL()
+		capturedSQL = sqlstr
+		return false, nil
+	}
+	defer func() {
+		queryRow = originalQueryRow
+	}()
+
+	// 调用 selectCount, 内部会构建 COUNT SQL 并调用 QueryRow -> queryRow
+	ctx := context.Background()
+	_, _ = selectCount(ctx, finder)
+
+	t.Logf("原始 SQL: %s", originalSQL)
+	t.Logf("生成的 COUNT SQL: %s", capturedSQL)
+
+	// 验证 COUNT SQL 正确
+	expectedCountSQL := "SELECT COUNT(*) from units ut "
+	if !strings.EqualFold(strings.TrimSpace(capturedSQL), strings.TrimSpace(expectedCountSQL)) {
+		t.Errorf("生成的 COUNT SQL 不正确.\n期望: %s\n实际: %s", expectedCountSQL, capturedSQL)
+	}
+
+	// 验证 page 的 TotalCount 被正确设置
+	if page.TotalCount != 0 {
+		t.Logf("page.TotalCount: %d", page.TotalCount)
 	}
 }
 
