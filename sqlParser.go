@@ -28,6 +28,9 @@ type sqlSpan struct {
 // sqlPart 表示 SQL 语句的各个子句片段
 // sqlPart represents the fragments of each clause in a SQL statement
 type sqlPart struct {
+	// @TODO: With 子句暂不处理 / WITH clause is not handled for now
+	// With sqlSpan   // WITH 子句 / WITH clause
+
 	Select    sqlSpan // SELECT 子句 / SELECT clause
 	From      sqlSpan // FROM 子句 / FROM clause
 	Where     sqlSpan // WHERE 子句 / WHERE clause

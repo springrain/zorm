@@ -1,3 +1,6 @@
+v1.8.5
+- 完善文档,注释
+
 v1.8.4
 - 完善测试用例
 - ```wrapUpdateEntityMapSQL```固定SQL列顺序
