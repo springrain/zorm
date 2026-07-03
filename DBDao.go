@@ -1312,7 +1312,7 @@ var resultSetRows = func(ctx context.Context, finder *Finder, page *Page, doRows
 	// 执行处理结果集的函数
 	var result interface{}
 	result, err = doRows(ctx, rows)
-	
+
 	return result, err
 }
 
@@ -1410,10 +1410,13 @@ var insertEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	// If it is postgresql's SERIAL self increment, RETURNING is used to return the value of the primary key
 	if entityCache.autoIncrement > 0 {
-		config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
-		if errConfig != nil {
-			return affected, errConfig
-		}
+		/*
+			// config 已在上方获取,无需重复调用 getConfigFromConnection
+			config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+			if errConfig != nil {
+				return affected, errConfig
+			}
+		*/
 		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), sqlstr, &values)
 	}
 
@@ -1600,7 +1603,7 @@ var updateEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
-		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
+		errexec = fmt.Errorf("->Update-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
 	}
 
@@ -1630,7 +1633,7 @@ var updateNotZeroValue = func(ctx context.Context, entity IEntityStruct) (int, e
 	// Package update execution, assign it to the function pointer variable affected, and return *sql.Result
 	_, errexec := wrapExecUpdateValuesAffected(ctx, &affected, sqlstr, values, nil)
 	if errexec != nil {
-		errexec = fmt.Errorf("->UpdateFinder-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
+		errexec = fmt.Errorf("->UpdateNotZeroValue-->wrapExecUpdateValuesAffected执行更新错误:%w", errexec)
 		FuncLogError(ctx, errexec)
 	}
 
@@ -1743,10 +1746,13 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	// 如果是postgresql的SERIAL自增,需要使用 RETURNING 返回主键的值
 	// If it is postgresql's SERIAL self increment, RETURNING is used to return the value of the primary key
 	if autoIncrement && entity.GetPKColumnName() != "" {
-		config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
-		if errConfig != nil {
-			return affected, errConfig
-		}
+		/*
+			// config 已在上方获取,无需重复调用 getConfigFromConnection
+			config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+			if errConfig != nil {
+				return affected, errConfig
+			}
+		*/
 		lastInsertID, zormSQLOutReturningID = wrapAutoIncrementInsertSQL(ctx, config, entity.GetPKColumnName(), &sqlstr, values)
 	}
 

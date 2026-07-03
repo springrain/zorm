@@ -1,4 +1,5 @@
 v1.8.5
+- 去掉重复调用的`getConfigFromConnection`
 - 完善文档,注释
 
 v1.8.4
