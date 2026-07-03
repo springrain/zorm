@@ -1,4 +1,5 @@
 v1.8.5
+- 预分配 slice 容量,避免 reflect.Append 在循环中多次扩容
 - 去掉重复调用的`getConfigFromConnection`
 - 完善文档,注释
 

@@ -853,6 +853,16 @@ var query = func(ctx context.Context, finder *Finder, rowsSlicePtr interface{}, 
 	// Reflect to get the value of []driver.Value, used to deal with nil values ​​and custom types
 	driverValue := reflect.Indirect(reflect.ValueOf(rows))
 	driverValue = driverValue.FieldByName("lastcols")
+	// 预分配 slice 容量,避免 reflect.Append 在循环中多次扩容
+	// Pre-allocate slice capacity to avoid repeated growth in reflect.Append during the loop
+	if page != nil && page.PageSize > 0 {
+		curLen := sliceValue.Len()
+		if sliceValue.Cap() < curLen+page.PageSize {
+			newSlice := reflect.MakeSlice(sliceValue.Type(), curLen, curLen+page.PageSize)
+			reflect.Copy(newSlice, sliceValue)
+			sliceValue.Set(newSlice)
+		}
+	}
 	// 循环遍历结果集
 	// Loop through the result set
 	for rows.Next() {
