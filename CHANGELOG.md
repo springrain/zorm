@@ -1,4 +1,5 @@
 v1.8.5
+- 复用`sqlRowsValues`中的载体数组,减少每行结果扫描时的内存分配
 - 预分配 slice 容量,避免 reflect.Append 在循环中多次扩容
 - 去掉重复调用的`getConfigFromConnection`
 - 完善文档,注释
