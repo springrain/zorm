@@ -1,5 +1,5 @@
 ## Introduction
-![zorm logo](zorm-logo.png)  
+![zorm logo](logo-zorm.png) **ZORM**    
 This is a lightweight ORM,zero dependency, that supports DM,Kingbase,shentong,TDengine,mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse...
 
 Official website:https://zorm.cn  
