@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="lgBadge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="0.55" stop-color="#10b981"/>
+      <stop offset="1" stop-color="#087a4a"/>
+    </linearGradient>
+    <linearGradient id="lgGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="lgClip"><rect x="2" y="2" width="44" height="44" rx="13"/></clipPath>
+  </defs>
+  <g clip-path="url(#lgClip)"><rect x="2" y="2" width="44" height="44" fill="url(#lgBadge)"/><rect x="2" y="2" width="44" height="22" fill="url(#lgGlass)"/></g>
+  <rect x="2.6" y="2.6" width="42.8" height="42.8" rx="12.4" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1"/>
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 14 H35" stroke-width="2.2"/>
+    <path d="M13 24 H35" stroke-width="2.2" stroke-opacity="0.55"/>
+    <path d="M13 34 H35" stroke-width="2.2"/>
+    <path d="M13 14 C 30 14, 30 34, 13 34" stroke-width="2.4"/>
+    <circle cx="28" cy="24" r="1.8" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>
