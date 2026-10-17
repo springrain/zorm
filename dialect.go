@@ -185,6 +185,32 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 	if err != nil {
 		return &sqlstr, values, err
 	}
+	// 预分配参数切片的总容量,一次到位.
+	// wrapInsertValueEntityMapSQL 只预分配了"第一行"的容量(cap = 字段数),而下面每行
+	// 还要再 append len(dbFieldMapKey) 个值.若不预分配,从第二行起 append 会触发多次扩容:
+	// slice 增长是 2 倍翻倍并按新容量重新分配底层数组+拷贝旧元素,批量插入 N 行大约要
+	// 扩容 log2(N) 次,每次都是一次分配加一次全量拷贝.这里直接把总容量开足,后续 append
+	// 全部落在已分配的底层数组内,不再有任何扩容.
+	// 容量上界 = 第一行已有的字段数 + (总行数-1) * 每行字段数 = sliceLen * len(dbFieldMapKey),
+	// 与实际 append 的总量精确相等,不存在过度分配.
+	// 注意只在容量确实不足时才重分配(cap 已够则跳过),避免无谓的一次拷贝.
+	//
+	// Pre-allocate the total capacity of the parameter slice in one shot.
+	// wrapInsertValueEntityMapSQL only pre-allocates capacity for the FIRST row (cap = field
+	// count), yet each subsequent row appends len(dbFieldMapKey) more values below. Without
+	// this, append from row 2 onward repeatedly grows the slice: growth doubles capacity and
+	// reallocates the backing array plus copies every existing element. A batch of N rows
+	// would grow roughly log2(N) times, each growth being one allocation and one full copy.
+	// Reserving the total capacity up front keeps every later append inside the already
+	// allocated array, so no growth happens at all.
+	// The bound is exact: first row's fields + (rows-1) * fields-per-row = sliceLen *
+	// len(dbFieldMapKey), precisely the number of values appended below -- no over-allocation.
+	// Only reallocate when capacity is genuinely insufficient, to avoid a pointless copy.
+	if needCap := sliceLen * len(dbFieldMapKey); cap(*values) < needCap {
+		newValues := make([]interface{}, len(*values), needCap)
+		copy(newValues, *values)
+		*values = newValues
+	}
 
 	// 用于处理 tdengine 的多条插入语法
 	tableName := entity.GetTableName()
@@ -798,6 +824,16 @@ func getConfigFromConnection(ctx context.Context, dbConnection *dataBaseConnecti
 // symbols(占位符) valueLen(参数长度) sqlParamIndexPtr(参数的下标指针,数组会改变值) newSQLStr(SQL字符串Builder) valueOf(参数值的反射对象) hasParamIndex(是否拼接参数下标 $1 $2) isTDengine(TDengine数据库需要单独处理字符串类型)
 func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr *strings.Builder, valueOf *reflect.Value, newValues *[]interface{}, hasParamIndex bool, isTDengine bool) {
 	sqlParamIndex := *sqlParamIndexPtr
+	// 栈上临时缓冲,用于把参数下标直接格式化进 Builder,避免 strconv.Itoa 每次分配一个字符串.
+	// 必须是函数内局部变量:wrapParamSQL 会被并发调用,包级缓冲会产生数据竞争.
+	// [0:0] 只借用底层数组、长度为 0,AppendInt 会就地追加并返回切片,不产生堆分配.
+	//
+	// Stack-local scratch buffer used to format the parameter index straight into the Builder,
+	// avoiding the per-placeholder string that strconv.Itoa would allocate.
+	// Must stay function-local: wrapParamSQL is called concurrently, so a package-level buffer
+	// would race. [0:0] borrows the backing array with length 0; AppendInt appends in place and
+	// returns a slice -- no heap allocation.
+	var indexBuf [20]byte
 	if valueLen == 1 {
 		if isTDengine && valueOf.Kind() == reflect.String { // 处理tdengine的字符串类型
 			symbols = "'?'"
@@ -805,7 +841,13 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 		newSQLStr.WriteString(symbols)
 
 		if hasParamIndex {
-			newSQLStr.WriteString(strconv.Itoa(sqlParamIndex))
+			// strconv.Itoa 每次分配一个 string;AppendInt 把十进制数字直接写进
+			// Builder 的底层数组,省掉这次分配.参数下标是整数,int64 十进制最多 19 位.
+			//
+			// strconv.Itoa allocates a string each call; AppendInt writes the decimal digits
+			// directly into the Builder's backing array, removing that allocation. The index is
+			// an integer; int64 in decimal is at most 19 digits.
+			newSQLStr.Write(strconv.AppendInt(indexBuf[:0], int64(sqlParamIndex), 10))
 		}
 
 	} else if valueLen > 1 { // 如果值是数组
@@ -821,7 +863,7 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 				newSQLStr.WriteString(symbols)
 			}
 			if hasParamIndex {
-				newSQLStr.WriteString(strconv.Itoa(sqlParamIndex + j))
+				newSQLStr.Write(strconv.AppendInt(indexBuf[:0], int64(sqlParamIndex+j), 10))
 			}
 			sliceValue := valuej.Interface()
 			*newValues = append(*newValues, sliceValue)
