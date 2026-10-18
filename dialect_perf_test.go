@@ -1,8 +1,8 @@
 package zorm
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -112,11 +112,11 @@ func Test_P0_3_SQLShape(t *testing.T) {
 // --- P0-4 正确性: AppendInt 产出的占位符下标必须与 Itoa 完全一致 ---
 
 // 用旧的 Itoa 实现作为参照, 穷举对比下标边界
-func itoaReference(symbols string, valueLen int, sqlParamIndex int) string {
+func itoaReference(symbols string, valueLen int, sqlParamIndex int64) string {
 	var b strings.Builder
 	if valueLen == 1 {
 		b.WriteString(symbols)
-		b.WriteString(strconv.Itoa(sqlParamIndex))
+		b.WriteString(strconv.FormatInt(sqlParamIndex, 10))
 	} else if valueLen > 1 {
 		for j := 0; j < valueLen; j++ {
 			if j == 0 {
@@ -125,7 +125,7 @@ func itoaReference(symbols string, valueLen int, sqlParamIndex int) string {
 				b.WriteByte(',')
 				b.WriteString(symbols)
 			}
-			b.WriteString(strconv.Itoa(sqlParamIndex + j))
+			b.WriteString(strconv.FormatInt(sqlParamIndex+int64(j), 10))
 		}
 	}
 	return b.String()
@@ -134,14 +134,20 @@ func itoaReference(symbols string, valueLen int, sqlParamIndex int) string {
 func Test_P0_4_AppendIntMatchesItoa(t *testing.T) {
 	symbolsSet := []string{"?", "$", "@p", ":", "'?'"}
 	// 覆盖到 int64 十进制的位数边界: 1位/2位/3位/10位/18位/19位
-	indices := []int{0, 1, 9, 10, 99, 100, 999, 1000, 1 << 20, 999999999, 1 << 40, 1<<62 + 7, 1<<63 - 1}
+	indices := []int64{0, 1, 9, 10, 99, 100, 999, 1000, 1 << 20, 999999999, 1 << 40, 1<<62 + 7, 1<<63 - 1}
 	lengths := []int{1, 2, 3, 8}
+	// 生产函数的参数下标类型是 int, 32 位平台上超过 MaxInt 的值无法构造, 跳过即可.
+	// 下标在 32 位上的实际取值远达不到这个量级.
+	maxIndex := int64(1<<(strconv.IntSize-1) - 1)
 
 	for _, symbols := range symbolsSet {
 		for _, idx := range indices {
+			if idx > maxIndex {
+				continue
+			}
 			for _, L := range lengths {
 				var b strings.Builder
-				p := idx
+				p := int(idx)
 				var vals []interface{}
 				// 构造一个长度为 L 的可索引反射值
 				slice := make([]int, L)
@@ -155,8 +161,8 @@ func Test_P0_4_AppendIntMatchesItoa(t *testing.T) {
 				if got != want {
 					t.Fatalf("symbols=%q idx=%d L=%d\n got=%q\nwant=%q", symbols, idx, L, got, want)
 				}
-				if p != idx+L {
-					t.Fatalf("下标推进错误: %d, 期望 %d", p, idx+L)
+				if p != int(idx)+L {
+					t.Fatalf("下标推进错误: %d, 期望 %d", p, int(idx)+L)
 				}
 			}
 		}
