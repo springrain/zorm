@@ -70,12 +70,11 @@ type DataSourceConfig struct {
 	// DSN DataSourceName Database connection string
 	DSN string
 
-	// DriverName 数据库驱动名称:mysql,postgres,oracle(go-ora),sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful 和Dialect对应
-	// DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful corresponds to Dialect
+	// DriverName 数据库驱动名称:mysql,postgres,oracle(go-ora),sqlserver,sqlite3,go_ibm_db,clickhouse,dm,kingbase,aci,taosSql|taosRestful,iotdb 和Dialect对应
+	// DriverName:mysql,dm,postgres,opi8,sqlserver,sqlite3,go_ibm_db,clickhouse,kingbase,aci,taosSql|taosRestful,iotdb corresponds to Dialect
 	DriverName string
 
-	// Dialect 数据库方言:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine 和 DriverName 对应
-	// Dialect:mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine corresponds to DriverName
+	// Dialect names the SQL dialect for DriverName. Use iotdb for IoTDB Tree SQL.
 	Dialect string
 
 	// Deprecated
@@ -102,7 +101,7 @@ type DataSourceConfig struct {
 	// DefaultTxOptions 事务隔离级别的默认配置,默认为nil
 	DefaultTxOptions *sql.TxOptions
 
-	// DisableTransaction 禁用事务,默认false,如果设置了DisableTransaction=true,Transaction方法失效,不再要求有事务.为了处理某些数据库不支持事务,比如TDengine
+	// DisableTransaction disables transaction handling for engines without transactions.
 	// 禁用事务应该有驱动伪造事务API,不应该由orm实现
 	DisableTransaction bool
 
@@ -1410,6 +1409,9 @@ var insertEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 		return affected, err
 	}
 	insertSQL := entityCache.insertSQL
+	if config.Dialect == "iotdb" {
+		insertSQL = wrapIoTDBInsertSQL(entity.GetTableName(), entityCache)
+	}
 	sqlstr := &insertSQL
 	// oracle 12c+ 支持IDENTITY属性的自增列,因为分页也要求12c+的语法,所以数据库就IDENTITY创建自增吧
 	// 处理序列产生的自增主键,例如oracle,postgresql等
@@ -1437,6 +1439,9 @@ var insertEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 		errexec = fmt.Errorf("->Insert-->wrapExecUpdateValuesAffected执行保存错误:%w", errexec)
 		FuncLogError(ctx, errexec)
 		return affected, errexec
+	}
+	if config.Dialect == "iotdb" {
+		return 1, nil
 	}
 
 	// 如果是自增主键
@@ -1536,6 +1541,16 @@ var insertSlice = func(ctx context.Context, entityStructSlice []IEntityStruct) (
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
+	}
+	if config.Dialect == "iotdb" {
+		inserted := 0
+		for i, entity := range entityStructSlice {
+			if _, err := insertEntity(ctx, entity); err != nil {
+				return inserted, fmt.Errorf("->InsertSlice-->IoTDB逐条插入在第%d条失败(已成功%d条):%w", i+1, inserted, err)
+			}
+			inserted++
+		}
+		return inserted, nil
 	}
 	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {
@@ -1661,9 +1676,6 @@ func Delete(ctx context.Context, entity IEntityStruct) (int, error) {
 
 var deleteEntity = func(ctx context.Context, entity IEntityStruct) (int, error) {
 	affected := -1
-	if entity.GetPKColumnName() == "" { // 没有主键
-		return affected, errors.New("->deleteEntity-->entity没有主键")
-	}
 
 	// 从contxt中获取数据库连接,可能为nil
 	// Get database connection from contxt, may be nil
@@ -1681,6 +1693,12 @@ var deleteEntity = func(ctx context.Context, entity IEntityStruct) (int, error) 
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
+	}
+	if config.Dialect == "iotdb" {
+		return affected, errors.New("->Delete-->IoTDB tree model does not support deleting an entity by primary key; use UpdateFinder with a native DELETE statement")
+	}
+	if entity.GetPKColumnName() == "" { // 没有主键
+		return affected, errors.New("->deleteEntity-->entity没有主键")
 	}
 	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {
@@ -1774,6 +1792,9 @@ var insertEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 		FuncLogError(ctx, errexec)
 		return affected, errexec
 	}
+	if config.Dialect == "iotdb" {
+		return 1, nil
+	}
 
 	// 如果是自增主键
 	// If it is an auto-incrementing primary key
@@ -1821,6 +1842,9 @@ func InsertEntityMapSlice(ctx context.Context, entityMapSlice []IEntityMap) (int
 
 var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap) (int, error) {
 	affected := -1
+	if len(entityMapSlice) < 1 {
+		return affected, errors.New("->InsertEntityMapSlice-->entityMapSlice对象数组不能为空")
+	}
 	// 从contxt中获取数据库连接,可能为nil
 	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
 	if errFromContxt != nil {
@@ -1835,6 +1859,16 @@ var insertEntityMapSlice = func(ctx context.Context, entityMapSlice []IEntityMap
 	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
 	if errConfig != nil {
 		return affected, errConfig
+	}
+	if config.Dialect == "iotdb" {
+		inserted := 0
+		for i, entity := range entityMapSlice {
+			if _, err := insertEntityMap(ctx, entity); err != nil {
+				return inserted, fmt.Errorf("->InsertEntityMapSlice-->IoTDB逐条插入在第%d条失败(已成功%d条):%w", i+1, inserted, err)
+			}
+			inserted++
+		}
+		return inserted, nil
 	}
 	// SQL语句
 	sqlstr, values, err := wrapInsertEntityMapSliceSQL(ctx, config, entityMapSlice)
@@ -1871,6 +1905,17 @@ var updateEntityMap = func(ctx context.Context, entity IEntityMap) (int, error) 
 	_, checkerr := checkEntityKind(entity)
 	if checkerr != nil {
 		return affected, checkerr
+	}
+	dbConnection, errFromContxt := getDBConnectionFromContext(ctx)
+	if errFromContxt != nil {
+		return affected, errFromContxt
+	}
+	config, errConfig := getConfigFromConnection(ctx, dbConnection, 1)
+	if errConfig != nil {
+		return affected, errConfig
+	}
+	if config.Dialect == "iotdb" {
+		return affected, errors.New("->UpdateEntityMap-->IoTDB tree model does not support relational UPDATE; use a native IoTDB statement")
 	}
 	/*
 		// 从contxt中获取数据库连接,可能为nil
@@ -1981,6 +2026,9 @@ var wrapUpdateSQLValue = func(ctx context.Context, entity IEntityStruct, onlyUpd
 	if errConfig != nil {
 		FuncLogError(ctx, errConfig)
 		return nil, nil, errConfig
+	}
+	if config.Dialect == "iotdb" {
+		return nil, nil, errors.New("->WrapUpdateSQLValue-->IoTDB tree model does not support relational UPDATE; use a native IoTDB statement")
 	}
 	entityCache, err := getEntityStructCache(ctx, entity, config) // 预热缓存
 	if err != nil {

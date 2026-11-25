@@ -127,6 +127,14 @@ func init() {
 - 测试用例: https://zorm.cn/docs/zorm_tdengine_3_test   
 - TDengine已收录: https://github.com/taosdata/awesome-tdengine/#orm   
 
+### Apache IoTDB
+- 使用官方 Go 客户端：`go get github.com/apache/iotdb-client-go/v2`，并空导入 `github.com/apache/iotdb-client-go/v2/database` 注册 `database/sql` 驱动。当前客户端要求 Go 1.25 或更高版本。
+- `zorm.DataSourceConfig` 配置 `DriverName: "iotdb"`、`Dialect: "iotdb"`、`DisableTransaction: true`；该驱动不支持事务。
+- 官方客户端的 `database/sql` 适配器目前只支持 IoTDB Tree 模型，不支持 Table 模型。将 `root.sg.device1` 这类设备路径作为 `GetTableName()`，并把时间戳和测点映射为插入列；不要将 Tree 设备建模为带自动生成主键的关系表。
+- `Insert` 和 `InsertEntityMap` 会生成包含列名的 Tree 模型插入语句。`InsertSlice` 和 `InsertEntityMapSlice` 按记录逐条执行，因此不具备原子性；发生错误时返回已成功提交的语句数，之前成功的记录不会回滚。
+- Tree 模型没有关系型 `UPDATE`，按主键生成的实体删除也不符合 IoTDB 按时间范围删除数据的语义，因此 `Update`、`UpdateNotZeroValue`、`UpdateEntityMap` 和实体 `Delete` 会返回错误。需要执行受支持的原生 SQL（例如 `DELETE FROM root.sg.device1 WHERE time < ?`）时使用 `UpdateFinder`。
+- 驱动对成功的 `Exec` 固定报告 0 受影响行。zorm 的 IoTDB 插入方法按成功提交的插入语句数返回；`UpdateFinder` 保留驱动提供的受影响行结果。
+
 ## 数据库脚本和实体类
 生成实体类或手动编写,建议使用代码生成器 https://gitee.com/zhou-a-xing/zorm-generate-struct
 ```go 

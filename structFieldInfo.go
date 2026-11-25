@@ -259,6 +259,10 @@ func getEntityStructCache(ctx context.Context, entity IEntityStruct, config *Dat
 			entityCache.autoIncrement = 1 // 普通自增
 		}
 	}
+	if config.Dialect == "iotdb" {
+		// A zero timestamp is valid in IoTDB and must not be treated as an auto-generated key.
+		entityCache.autoIncrement = 0
+	}
 
 	entityCache.insertSQL = "INSERT INTO " + entity.GetTableName()
 
