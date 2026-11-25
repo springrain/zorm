@@ -122,6 +122,14 @@ Use odbc driver for the time being, ```DriverName:odbc ,Dialect:gbase```
 - Test case: https://zorm.cn/docs/zorm_tdengine_3_test  
 - TDengine is included: https://github.com/taosdata/awesome-tdengine/#orm
 
+### Apache IoTDB
+- Add the Apache Go client with `go get github.com/apache/iotdb-client-go/v2` and blank-import `github.com/apache/iotdb-client-go/v2/database` to register its `database/sql` driver. The current client requires Go 1.25 or later.
+- Configure `zorm.DataSourceConfig` with `DriverName: "iotdb"`, `Dialect: "iotdb"`, and `DisableTransaction: true`. The driver does not support transactions.
+- The driver's `database/sql` adapter currently supports the IoTDB Tree model only; the Table model is not supported by that adapter. Use a device path such as `root.sg.device1` as `GetTableName()`, and map the timestamp and measurements to insert columns. Do not model a Tree device as a relational table with a generated primary key.
+- `Insert` and `InsertEntityMap` generate column-qualified Tree-model inserts. `InsertSlice` and `InsertEntityMapSlice` execute one statement per record; they are not atomic and return the number of statements accepted before any error. A later failure can leave earlier records written.
+- `Update` / `UpdateNotZeroValue`, `UpdateEntityMap`, and entity `Delete` are rejected because Tree-model SQL has no relational `UPDATE` and entity deletion by primary key does not match IoTDB's time-range deletion semantics. Use `UpdateFinder` with native IoTDB SQL for supported operations such as `DELETE FROM root.sg.device1 WHERE time < ?`.
+- The driver reports zero affected rows for successful `Exec` calls. zorm's IoTDB insert methods return one per accepted insert statement; native statements executed through `UpdateFinder` retain the driver's affected-row result.
+
 ## Database scripts and entity classes  
 Generate entity classes or write them manually, we recommend using a code generator https://gitee.com/zhou-a-xing/zorm-generate-struct  
 

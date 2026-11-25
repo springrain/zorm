@@ -52,6 +52,7 @@ var dbDialectMap = map[string]string{
 	"gbase":      "odbc",
 	"shentong":   "aci",
 	"tdengine":   "taosSql",
+	"iotdb":      "iotdb",
 }
 
 // newDataSource 创建一个新的datasource,内部调用,避免外部直接使用datasource
@@ -71,7 +72,7 @@ func newDataSource(config *DataSourceConfig) (*dataSource, error) {
 
 	_, has := dbDialectMap[config.Dialect]
 	if !has {
-		return nil, errors.New("->newDataSource-->Dialect not supported, please check the Dialect configuration. Supported Dialect include mysql,postgresql,oracle,mssql,sqlite,db2,clickhouse,dm,kingbase,shentong,tdengine ")
+		return nil, fmt.Errorf("unsupported database dialect %q; check the Dialect configuration", config.Dialect)
 	}
 
 	var db *sql.DB

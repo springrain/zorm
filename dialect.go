@@ -54,7 +54,7 @@ var wrapPageSQL = func(ctx context.Context, config *DataSourceConfig, finder *Fi
 		sqlbuilder.WriteByte(',')
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 
-	case "postgresql", "kingbase", "shentong": // postgresql,kingbase,神通数据库
+	case "postgresql", "kingbase", "shentong", "iotdb": // postgresql,kingbase,神通数据库,IoTDB
 		sqlbuilder.WriteString(" LIMIT ")
 		sqlbuilder.WriteString(strconv.Itoa(page.PageSize))
 		sqlbuilder.WriteString(" OFFSET ")
@@ -221,7 +221,7 @@ var wrapInsertEntityMapSliceSQL = func(ctx context.Context, config *DataSourceCo
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(tableName)
 	// sqlstr = sqlstr + insertsql + " VALUES" + valuesql
-	if !config.InsertSQLNoColumn {
+	if !config.InsertSQLNoColumn || config.Dialect == "iotdb" {
 		sqlBuilder.WriteString(*inserColumnName)
 	}
 	sqlBuilder.WriteString(" VALUES")
@@ -279,6 +279,9 @@ var wrapInsertEntityMapSQL = func(ctx context.Context, config *DataSourceConfig,
 	if err != nil {
 		return sqlstr, nil, autoIncrement, err
 	}
+	if config.Dialect == "iotdb" {
+		autoIncrement = false
+	}
 	// 拼接SQL语句,带上列名,因为Map取值是无序的
 	// sqlstr := "INSERT INTO " + insertsql + " VALUES" + valuesql
 
@@ -287,7 +290,7 @@ var wrapInsertEntityMapSQL = func(ctx context.Context, config *DataSourceConfig,
 	sqlBuilder.Grow(stringBuilderGrowLen)
 	sqlBuilder.WriteString("INSERT INTO ")
 	sqlBuilder.WriteString(entity.GetTableName())
-	if !config.InsertSQLNoColumn {
+	if !config.InsertSQLNoColumn || config.Dialect == "iotdb" {
 		sqlBuilder.WriteString(*inserColumnName)
 	}
 	sqlBuilder.WriteString(" VALUES")
@@ -689,7 +692,7 @@ var reBuildSQL = func(ctx context.Context, config *DataSourceConfig, sqlstr *str
 		}
 
 		switch config.Dialect {
-		case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2":
+		case "mysql", "sqlite", "dm", "gbase", "clickhouse", "db2", "iotdb":
 			wrapParamSQL("?", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, false, false)
 		case "postgresql", "kingbase": // postgresql,kingbase
 			wrapParamSQL("$", valueLen, &sqlParamIndex, &newSQLStr, &valueOf, &newValues, true, false)
@@ -877,6 +880,23 @@ func wrapParamSQL(symbols string, valueLen int, sqlParamIndexPtr *int, newSQLStr
 		}
 	}
 	*sqlParamIndexPtr = *sqlParamIndexPtr + valueLen
+}
+
+func wrapIoTDBInsertSQL(tableName string, entityCache *entityStructCache) string {
+	var sqlBuilder strings.Builder
+	sqlBuilder.Grow(stringBuilderGrowLen)
+	sqlBuilder.WriteString("INSERT INTO ")
+	sqlBuilder.WriteString(tableName)
+	sqlBuilder.WriteByte('(')
+	for i, column := range entityCache.columns {
+		if i > 0 {
+			sqlBuilder.WriteByte(',')
+		}
+		sqlBuilder.WriteString(column.columnTag)
+	}
+	sqlBuilder.WriteString(") VALUES")
+	sqlBuilder.WriteString(entityCache.valuesSQL)
+	return sqlBuilder.String()
 }
 
 // firstOneWord 从指定下标, 获取第一个单词, 不包含前后空格, 并返回开始下标和结束下标, 如果找不到合法的字符串, 返回 -1
